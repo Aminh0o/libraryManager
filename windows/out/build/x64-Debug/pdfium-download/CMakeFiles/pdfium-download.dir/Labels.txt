@@ -1,0 +1,14 @@
+# Target labels
+ pdfium-download
+# Source files and their labels
+C:/flutter_apps/library/windows/out/build/x64-Debug/pdfium-download/CMakeFiles/pdfium-download
+C:/flutter_apps/library/windows/out/build/x64-Debug/pdfium-download/CMakeFiles/pdfium-download.rule
+C:/flutter_apps/library/windows/out/build/x64-Debug/pdfium-download/CMakeFiles/pdfium-download-complete.rule
+C:/flutter_apps/library/windows/out/build/x64-Debug/pdfium-download/pdfium-download-prefix/src/pdfium-download-stamp/pdfium-download-build.rule
+C:/flutter_apps/library/windows/out/build/x64-Debug/pdfium-download/pdfium-download-prefix/src/pdfium-download-stamp/pdfium-download-configure.rule
+C:/flutter_apps/library/windows/out/build/x64-Debug/pdfium-download/pdfium-download-prefix/src/pdfium-download-stamp/pdfium-download-download.rule
+C:/flutter_apps/library/windows/out/build/x64-Debug/pdfium-download/pdfium-download-prefix/src/pdfium-download-stamp/pdfium-download-install.rule
+C:/flutter_apps/library/windows/out/build/x64-Debug/pdfium-download/pdfium-download-prefix/src/pdfium-download-stamp/pdfium-download-mkdir.rule
+C:/flutter_apps/library/windows/out/build/x64-Debug/pdfium-download/pdfium-download-prefix/src/pdfium-download-stamp/pdfium-download-patch.rule
+C:/flutter_apps/library/windows/out/build/x64-Debug/pdfium-download/pdfium-download-prefix/src/pdfium-download-stamp/pdfium-download-test.rule
+C:/flutter_apps/library/windows/out/build/x64-Debug/pdfium-download/pdfium-download-prefix/src/pdfium-download-stamp/pdfium-download-update.rule

@@ -1,0 +1,14 @@
+# Target labels
+ sqlite3-populate
+# Source files and their labels
+C:/flutter_apps/library/windows/out/build/x64-Debug/_deps/sqlite3-subbuild/CMakeFiles/sqlite3-populate
+C:/flutter_apps/library/windows/out/build/x64-Debug/_deps/sqlite3-subbuild/CMakeFiles/sqlite3-populate.rule
+C:/flutter_apps/library/windows/out/build/x64-Debug/_deps/sqlite3-subbuild/CMakeFiles/sqlite3-populate-complete.rule
+C:/flutter_apps/library/windows/out/build/x64-Debug/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src/sqlite3-populate-stamp/sqlite3-populate-build.rule
+C:/flutter_apps/library/windows/out/build/x64-Debug/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src/sqlite3-populate-stamp/sqlite3-populate-configure.rule
+C:/flutter_apps/library/windows/out/build/x64-Debug/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src/sqlite3-populate-stamp/sqlite3-populate-download.rule
+C:/flutter_apps/library/windows/out/build/x64-Debug/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src/sqlite3-populate-stamp/sqlite3-populate-install.rule
+C:/flutter_apps/library/windows/out/build/x64-Debug/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src/sqlite3-populate-stamp/sqlite3-populate-mkdir.rule
+C:/flutter_apps/library/windows/out/build/x64-Debug/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src/sqlite3-populate-stamp/sqlite3-populate-patch.rule
+C:/flutter_apps/library/windows/out/build/x64-Debug/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src/sqlite3-populate-stamp/sqlite3-populate-test.rule
+C:/flutter_apps/library/windows/out/build/x64-Debug/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src/sqlite3-populate-stamp/sqlite3-populate-update.rule

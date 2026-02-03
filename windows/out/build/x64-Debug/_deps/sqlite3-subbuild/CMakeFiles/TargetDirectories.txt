@@ -1,0 +1,3 @@
+C:/flutter_apps/library/windows/out/build/x64-Debug/_deps/sqlite3-subbuild/CMakeFiles/sqlite3-populate.dir
+C:/flutter_apps/library/windows/out/build/x64-Debug/_deps/sqlite3-subbuild/CMakeFiles/edit_cache.dir
+C:/flutter_apps/library/windows/out/build/x64-Debug/_deps/sqlite3-subbuild/CMakeFiles/rebuild_cache.dir

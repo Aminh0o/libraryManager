@@ -1,0 +1,11 @@
+{
+	"InstallScripts" : 
+	[
+		"C:/flutter_apps/library/windows/out/build/x64-Debug/cmake_install.cmake",
+		"C:/flutter_apps/library/windows/out/build/x64-Debug/flutter/cmake_install.cmake",
+		"C:/flutter_apps/library/windows/out/build/x64-Debug/runner/cmake_install.cmake",
+		"C:/flutter_apps/library/windows/out/build/x64-Debug/plugins/printing/cmake_install.cmake",
+		"C:/flutter_apps/library/windows/out/build/x64-Debug/plugins/sqlite3_flutter_libs/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
