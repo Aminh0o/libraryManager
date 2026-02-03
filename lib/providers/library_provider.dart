@@ -38,6 +38,8 @@ class LibraryProvider with ChangeNotifier {
   HttpServerService? _server;
   Timer? _backupTimer;
   Timer? _healthTimer;
+  Timer? _immediateBackupTimer;
+  bool _healthCheckBusy = false;
   
   bool _isConnected = true;
   String _adminPassword = '';
@@ -104,20 +106,62 @@ class LibraryProvider with ChangeNotifier {
 
   Future<String?> getLocalIp() async {
     try {
-      for (var interface in await NetworkInterface.list()) {
-        for (var addr in interface.addresses) {
-          if (addr.type == InternetAddressType.IPv4 && !addr.isLoopback) {
-            return addr.address;
+      final interfaces = await NetworkInterface.list(
+        includeLoopback: false,
+        includeLinkLocal: false,
+        type: InternetAddressType.IPv4,
+      );
+
+      final privateAddresses = <String>[];
+      final otherAddresses = <String>[];
+
+      for (final interface in interfaces) {
+        for (final addr in interface.addresses) {
+          final ip = addr.address;
+          if (_isPrivateIpv4(ip)) {
+            privateAddresses.add(ip);
+          } else {
+            otherAddresses.add(ip);
           }
         }
       }
+
+      if (privateAddresses.isNotEmpty) return privateAddresses.first;
+      if (otherAddresses.isNotEmpty) return otherAddresses.first;
     } catch (e) {
       debugPrint('Error getting local IP: $e');
     }
     return null;
   }
 
+  bool _isPrivateIpv4(String ip) {
+    if (ip.startsWith('10.')) return true;
+    if (ip.startsWith('192.168.')) return true;
+    final parts = ip.split('.');
+    if (parts.length == 4) {
+      final first = int.tryParse(parts[0]);
+      final second = int.tryParse(parts[1]);
+      if (first == 172 && second != null && second >= 16 && second <= 31) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   Future<void> _initRepository() async {
+    if (_repository is ApiService) {
+      try {
+        (_repository as ApiService).close();
+      } catch (_) {}
+    }
+
+    if (!_isHost && _server != null) {
+      try {
+        await _server!.stopServer();
+      } catch (_) {}
+      _server = null;
+    }
+
     if (_isHost) {
       _repository = DatabaseService();
       if (_server == null) {
@@ -191,6 +235,9 @@ class LibraryProvider with ChangeNotifier {
   void _startHealthCheck() {
     _healthTimer?.cancel();
     _healthTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
+      if (_healthCheckBusy) return;
+      _healthCheckBusy = true;
+      try {
       if (_isHost) {
         // Host is always "connected" to itself
         if (!_isConnected) {
@@ -205,11 +252,11 @@ class LibraryProvider with ChangeNotifier {
           if (!_isConnected) {
             _isConnected = true;
             _lastDbVersion = version;
-            reload();
+            await _reloadAll();
             notifyListeners();
           } else if (version != _lastDbVersion) {
             _lastDbVersion = version;
-            reload();
+            await _reloadAll();
           }
         } catch (_) {
           if (_isConnected) {
@@ -218,7 +265,16 @@ class LibraryProvider with ChangeNotifier {
           }
         }
       }
+      } finally {
+        _healthCheckBusy = false;
+      }
     });
+  }
+
+  Future<void> _reloadAll() async {
+    await _loadItems();
+    await _loadMembers();
+    await _loadLoans();
   }
 
   Future<void> _loadItems({bool more = false}) async {
@@ -302,6 +358,7 @@ class LibraryProvider with ChangeNotifier {
   }
 
   Future<void> _logOperation(String operation, String details) async {
+    if (!_isHost) return;
     final entry = {
       'timestamp': DateTime.now().toIso8601String(),
       'operation': operation,
@@ -360,8 +417,10 @@ class LibraryProvider with ChangeNotifier {
 
   void _triggerImmediateBackup() {
     if (_isHost) {
-      // Non-blocking immediate backup
-      backupData().catchError((e) => debugPrint('Immediate backup error: $e'));
+      _immediateBackupTimer?.cancel();
+      _immediateBackupTimer = Timer(const Duration(seconds: 15), () {
+        backupData().catchError((e) => debugPrint('Immediate backup error: $e'));
+      });
     }
   }
 
@@ -731,6 +790,16 @@ class LibraryProvider with ChangeNotifier {
   void dispose() {
     _backupTimer?.cancel();
     _healthTimer?.cancel();
+    _immediateBackupTimer?.cancel();
+    _healthCheckBusy = false;
+    if (_repository is ApiService) {
+      try {
+        (_repository as ApiService).close();
+      } catch (_) {}
+    }
+    if (_server != null) {
+      _server!.stopServer().catchError((_) {});
+    }
     super.dispose();
   }
 }

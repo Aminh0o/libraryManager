@@ -124,17 +124,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   title: Text(l10n.scanServerCode),
                   subtitle: Text(l10n.scanServerDescription),
                   onTap: () async {
+                     final messenger = ScaffoldMessenger.of(context);
+                     final savedText = l10n.savedSuccessfully;
                      final code = await showBarcodeScanner(context);
+                     if (!mounted) return;
                      if (code != null && code.startsWith('LIB_SYNC:')) {
                        final ip = code.split(':').last;
                        setState(() {
                          _ipController.text = ip;
                        });
-                       if (mounted) {
-                         ScaffoldMessenger.of(context).showSnackBar(
-                           SnackBar(content: Text(l10n.savedSuccessfully)),
-                         );
-                       }
+                       messenger.showSnackBar(
+                         SnackBar(content: Text(savedText)),
+                       );
                      }
                   },
                 ),
@@ -148,34 +149,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   subtitle: Text(l10n.pairingCodeDescription),
                   onTap: () async {
                      final provider = Provider.of<LibraryProvider>(context, listen: false);
+                     final pairingTitle = l10n.pairingCode;
+                     final cancelText = l10n.cancel;
                      final ip = await provider.getLocalIp();
-                     if (ip != null && context.mounted) {
-                       showDialog(
-                         context: context,
-                         builder: (context) => AlertDialog(
-                           title: Text(l10n.pairingCode),
-                           content: Column(
-                             mainAxisSize: MainAxisSize.min,
-                             children: [
-                               SizedBox(
-                                 width: 200,
-                                 height: 200,
-                                 child: QrImageView(
-                                   data: 'LIB_SYNC:$ip',
-                                   version: QrVersions.auto,
-                                   size: 200.0,
-                                 ),
+                     if (!context.mounted) return;
+                     if (ip == null) return;
+
+                     await showDialog<void>(
+                       context: context,
+                       builder: (dialogContext) => AlertDialog(
+                         title: Text(pairingTitle),
+                         content: Column(
+                           mainAxisSize: MainAxisSize.min,
+                           children: [
+                             SizedBox(
+                               width: 200,
+                               height: 200,
+                               child: QrImageView(
+                                 data: 'LIB_SYNC:$ip',
+                                 version: QrVersions.auto,
+                                 size: 200.0,
                                ),
-                               const SizedBox(height: 16),
-                               Text('IP: $ip', style: const TextStyle(fontWeight: FontWeight.bold)),
-                             ],
-                           ),
-                           actions: [
-                             TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancel)),
+                             ),
+                             const SizedBox(height: 16),
+                             Text('IP: $ip', style: const TextStyle(fontWeight: FontWeight.bold)),
                            ],
                          ),
-                       );
-                     }
+                         actions: [
+                           TextButton(
+                             onPressed: () => Navigator.pop(dialogContext),
+                             child: Text(cancelText),
+                           ),
+                         ],
+                       ),
+                     );
                   },
                 ),
               ),
@@ -207,7 +214,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 title: Text(l10n.checkForUpdates),
                 onTap: () async {
                   final update = await UpdateService.checkForUpdate();
-                  if (update != null && mounted) {
+                  if (!context.mounted) return;
+                  if (update != null) {
                     showDialog(
                       context: context,
                       builder: (context) => AlertDialog(
@@ -223,9 +231,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     );
                   } else {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.noUpdateAvailable)));
-                    }
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.noUpdateAvailable)));
                   }
                 },
               ),
@@ -417,15 +423,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   title: Text(l10n.setupRoadmap),
                   subtitle: Text(l10n.resetOnboardingDesc, style: const TextStyle(fontSize: 12, color: Colors.red)),
                   onTap: () async {
+                    final messenger = ScaffoldMessenger.of(context);
+                    final resetText = l10n.resetRestartApp;
                     final passed = await _showPasswordPrompt(context, title: l10n.enterPassword);
-                    if (passed && mounted) {
-                       await OnboardingService.resetSetup();
-                       if (mounted) {
-                         ScaffoldMessenger.of(context).showSnackBar(
-                           SnackBar(content: Text(l10n.resetRestartApp)),
-                         );
-                       }
-                    }
+                    if (!context.mounted || !passed) return;
+                    await OnboardingService.resetSetup();
+                    if (!context.mounted) return;
+                    messenger.showSnackBar(
+                      SnackBar(content: Text(resetText)),
+                    );
                   },
                 ),
               ),
@@ -454,7 +460,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     final passed = await _showPasswordPrompt(context, title: l10n.enterPassword);
-    if (!mounted || !passed) return;
+    if (!context.mounted || !passed) return;
 
     final confirm = await showDialog<bool>(
       context: context,
@@ -471,15 +477,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
 
-    if (confirm == true && mounted) {
+    if (confirm == true) {
+      if (!context.mounted) return;
       final messenger = ScaffoldMessenger.of(context);
       final successString = l10n.dataWiped;
       await provider.clearAllData();
-      if (mounted) {
-        messenger.showSnackBar(
-          SnackBar(content: Text(successString)),
-        );
-      }
+      if (!context.mounted) return;
+      messenger.showSnackBar(
+        SnackBar(content: Text(successString)),
+      );
     }
   }
 

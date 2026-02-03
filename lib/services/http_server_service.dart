@@ -1,8 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_router/shelf_router.dart';
-import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/foundation.dart' show debugPrint, kReleaseMode;
 import '../models/library_item.dart';
 import '../models/member.dart';
 import '../models/loan.dart';
@@ -11,8 +12,23 @@ import 'database_service.dart';
 class HttpServerService {
   late Handler _handler;
   final DatabaseService _db = DatabaseService();
+  HttpServer? _server;
+
+  bool get isRunning => _server != null;
+
+  Future<void> stopServer() async {
+    final server = _server;
+    if (server == null) return;
+    _server = null;
+    try {
+      await server.close(force: true);
+    } catch (e) {
+      debugPrint('Error stopping server: $e');
+    }
+  }
 
   Future<void> startServer({Function(String ip)? onActivity}) async {
+    if (_server != null) return;
     final router = Router();
 
     // GET /items
@@ -256,7 +272,7 @@ class HttpServerService {
     });
 
     _handler = Pipeline()
-        .addMiddleware(logRequests())
+        .addMiddleware(kReleaseMode ? (Handler inner) => inner : logRequests())
         .addMiddleware((innerHandler) {
           return (request) async {
             final connectionInfo = request.context['shelf.io.connection_info'] as dynamic;
@@ -274,7 +290,7 @@ class HttpServerService {
         .addHandler(router.call);
 
     // Listen on all interfaces (0.0.0.0) to allow LAN access
-    final server = await shelf_io.serve(_handler, '0.0.0.0', 8080);
-    debugPrint('Server listening on port ${server.port}');
+    _server = await shelf_io.serve(_handler, '0.0.0.0', 8080);
+    debugPrint('Server listening on port ${_server!.port}');
   }
 }

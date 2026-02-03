@@ -22,7 +22,7 @@ class UpdateService {
         if (_isNewer('1.1.0', currentVersion)) {
           return {
             'version': '1.1.0',
-            'url': 'https://github.com/example/library_manager/releases/latest'
+            'url': 'https://github.com/Aminh0o/libraryManager/releases/latest'
           };
         }
         return null;

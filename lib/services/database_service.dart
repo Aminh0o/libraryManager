@@ -582,7 +582,7 @@ class DatabaseService implements LibraryRepository {
   Future<void> addMember(Member member) async {
     final db = await database;
     await db.insert('members', member.toMap());
-    await _addToHistory('ADD_MEMBER', 'Added member ${member.firstName}');
+    await _updateDbVersion();
   }
 
   @override
@@ -594,7 +594,7 @@ class DatabaseService implements LibraryRepository {
       where: 'id = ?',
       whereArgs: [member.id],
     );
-    await _addToHistory('UPDATE_MEMBER', 'Updated member ${member.firstName}');
+    await _updateDbVersion();
   }
 
   @override
@@ -605,7 +605,7 @@ class DatabaseService implements LibraryRepository {
       where: 'member_id = ?',
       whereArgs: [memberId],
     );
-    await _addToHistory('DELETE_MEMBER', 'Deleted member $memberId');
+    await _updateDbVersion();
   }
 
   // Loans
@@ -641,7 +641,7 @@ class DatabaseService implements LibraryRepository {
         whereArgs: [loan.itemCode],
       );
     });
-    await _addToHistory('LOAN_OUT', 'Loaned ${loan.itemCode} to ${loan.memberName}');
+    await _updateDbVersion();
   }
 
   @override
@@ -665,19 +665,7 @@ class DatabaseService implements LibraryRepository {
         );
       }
     });
-
-    if (loan.status == 'Returned') {
-        await _addToHistory('LOAN_RETURN', 'Returned ${loan.itemCode}');
-    }
-  }
-
-  Future<void> _addToHistory(String operation, String details) async {
-    await addHistoryEntry({
-      'timestamp': DateTime.now().toIso8601String(),
-      'operation': operation,
-      'details': details,
-      'user': 'Host',
-    });
+    await _updateDbVersion();
   }
 }
 

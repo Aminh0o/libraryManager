@@ -19,6 +19,9 @@ class _BarcodeScannerDialogState extends State<BarcodeScannerDialog> {
   bool _isControllerInitialized = false;
   double _zoomFactor = 0.0;
   int _availableCamerasCount = 0;
+  int _currentCameraIndex = 0;
+  int _selectedCameraIndex = 0;
+  bool _useDesktopCamera = false;
   
   final TextEditingController _desktopController = TextEditingController();
   final FocusNode _desktopFocus = FocusNode();
@@ -41,6 +44,13 @@ class _BarcodeScannerDialogState extends State<BarcodeScannerDialog> {
       );
       _checkPermission();
     }
+  }
+
+  void _ensureController() {
+    controller ??= MobileScannerController(
+      detectionSpeed: DetectionSpeed.noDuplicates,
+      returnImage: false,
+    );
   }
 
   Future<void> _checkPermission() async {
@@ -104,14 +114,59 @@ class _BarcodeScannerDialogState extends State<BarcodeScannerDialog> {
     if (!_isControllerInitialized || controller == null) return;
     try {
       controller!.switchCamera();
+      if (_availableCamerasCount > 0) {
+        setState(() {
+          _currentCameraIndex = (_currentCameraIndex + 1) % _availableCamerasCount;
+          _selectedCameraIndex = _currentCameraIndex;
+        });
+      }
     } catch (e) {
       debugPrint('Error switching camera: $e');
     }
   }
 
+  void _setCameraIndex(int index) {
+    if (!_isControllerInitialized || controller == null) return;
+    if (_availableCamerasCount <= 1) return;
+    if (index == _currentCameraIndex) {
+      setState(() => _selectedCameraIndex = index);
+      return;
+    }
+
+    var steps = index - _currentCameraIndex;
+    if (steps < 0) steps += _availableCamerasCount;
+    for (var i = 0; i < steps; i++) {
+      try {
+        controller!.switchCamera();
+      } catch (e) {
+        debugPrint('Error switching camera: $e');
+        break;
+      }
+    }
+
+    setState(() {
+      _currentCameraIndex = index;
+      _selectedCameraIndex = index;
+    });
+  }
+
+  String _cameraLabel(AppLocalizations l10n, int index) {
+    if (_availableCamerasCount <= 1) return l10n.cameraUnknown;
+    if (index == 0) return l10n.cameraBack;
+    if (index == 1) return l10n.cameraExternal;
+    return '${l10n.cameraUnknown} ${index + 1}';
+  }
+
   void _onDesktopSubmit(String value) {
-    if (value.isNotEmpty && mounted) {
-       Navigator.pop(context, value);
+    final cleaned = value.trim();
+    if (cleaned.isNotEmpty && mounted) {
+      Navigator.pop(context, cleaned);
+    }
+  }
+
+  void _onDesktopChanged(String value) {
+    if (value.contains('\n') || value.contains('\r') || value.contains('\t')) {
+      _onDesktopSubmit(value);
     }
   }
 
@@ -120,6 +175,167 @@ class _BarcodeScannerDialogState extends State<BarcodeScannerDialog> {
     final l10n = AppLocalizations.of(context)!;
     
     if (_isDesktop) {
+      if (_useDesktopCamera) {
+        _ensureController();
+        return AlertDialog(
+          title: Text(l10n.scanBarcode),
+          contentPadding: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          content: SizedBox(
+            width: double.maxFinite,
+            height: 420,
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+              child: Stack(
+                children: [
+                  MobileScanner(
+                    controller: controller!,
+                    onDetect: (capture) {
+                      final List<Barcode> barcodes = capture.barcodes;
+                      if (barcodes.isNotEmpty) {
+                        final String? code = barcodes.first.rawValue;
+                        if (code != null && mounted) {
+                          Navigator.pop(context, code);
+                        }
+                      }
+                    },
+                    errorBuilder: (context, error, child) {
+                      return Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.error, color: Colors.red, size: 32),
+                            const SizedBox(height: 8),
+                            Text('Scanner Error: ${error.errorCode}'),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                  Positioned(
+                    top: 12,
+                    left: 12,
+                    right: 12,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: ValueListenableBuilder(
+                            valueListenable: controller!,
+                            builder: (context, state, child) {
+                              final isInitialized = state.isInitialized;
+                              final count = state.availableCameras ?? 0;
+                              if (isInitialized && (!_isControllerInitialized || count != _availableCamerasCount)) {
+                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  if (!mounted) return;
+                                  setState(() {
+                                    _availableCamerasCount = count;
+                                    _isControllerInitialized = true;
+                                    if (_selectedCameraIndex >= count && count > 0) {
+                                      _selectedCameraIndex = 0;
+                                      _currentCameraIndex = 0;
+                                    }
+                                  });
+                                });
+                              }
+
+                              if (!isInitialized || count <= 1) return const SizedBox.shrink();
+
+                              return DecoratedBox(
+                                decoration: BoxDecoration(
+                                  color: Colors.black54,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                  child: DropdownButtonHideUnderline(
+                                    child: DropdownButton<int>(
+                                      value: _selectedCameraIndex,
+                                      dropdownColor: Colors.black87,
+                                      iconEnabledColor: Colors.white,
+                                      style: const TextStyle(color: Colors.white),
+                                      items: List.generate(count, (i) {
+                                        return DropdownMenuItem(
+                                          value: i,
+                                          child: Text(_cameraLabel(l10n, i)),
+                                        );
+                                      }),
+                                      onChanged: (value) {
+                                        if (value == null) return;
+                                        _setCameraIndex(value);
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          onPressed: () {
+                            setState(() => _useDesktopCamera = false);
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              _desktopFocus.requestFocus();
+                            });
+                          },
+                          icon: const Icon(Icons.keyboard, color: Colors.white),
+                          style: IconButton.styleFrom(backgroundColor: Colors.black45),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 12,
+                    left: 12,
+                    right: 12,
+                    child: Column(
+                      children: [
+                        ValueListenableBuilder(
+                          valueListenable: controller!,
+                          builder: (context, state, child) {
+                            final isInitialized = state.isInitialized;
+                            return Slider(
+                              value: _zoomFactor,
+                              onChanged: isInitialized ? _handleZoom : null,
+                              activeColor: Colors.orange,
+                              inactiveColor: Colors.white24,
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            _ControlButton(
+                              icon: Icons.flash_on,
+                              onPressed: _toggleTorch,
+                              label: l10n.flash,
+                              enabled: _isControllerInitialized,
+                            ),
+                            _ControlButton(
+                              icon: Icons.switch_camera,
+                              onPressed: _switchCamera,
+                              label: l10n.switchCamera,
+                              enabled: _isControllerInitialized && _availableCamerasCount > 1,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(l10n.cancel),
+            ),
+          ],
+        );
+      }
+
       return AlertDialog(
         title: Text(l10n.scanBarcode),
         content: SizedBox(
@@ -167,12 +383,22 @@ class _BarcodeScannerDialogState extends State<BarcodeScannerDialog> {
                     onPressed: () => _onDesktopSubmit(_desktopController.text),
                   ),
                 ),
+                onChanged: _onDesktopChanged,
                 onSubmitted: _onDesktopSubmit,
               ),
             ],
           ),
         ),
         actions: [
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _useDesktopCamera = true;
+                _zoomFactor = 0.0;
+              });
+            },
+            child: Text(l10n.switchCamera),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(l10n.cancel),
@@ -240,6 +466,61 @@ class _BarcodeScannerDialogState extends State<BarcodeScannerDialog> {
                             );
                           },
                         ),
+                        Positioned(
+                          top: 12,
+                          right: 12,
+                          child: ValueListenableBuilder(
+                            valueListenable: controller!,
+                            builder: (context, state, child) {
+                              final isInitialized = state.isInitialized;
+                              final count = state.availableCameras ?? 0;
+
+                              if (isInitialized && (!_isControllerInitialized || count != _availableCamerasCount)) {
+                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  if (!mounted) return;
+                                  setState(() {
+                                    _availableCamerasCount = count;
+                                    _isControllerInitialized = true;
+                                    if (_selectedCameraIndex >= count && count > 0) {
+                                      _selectedCameraIndex = 0;
+                                      _currentCameraIndex = 0;
+                                    }
+                                  });
+                                });
+                              }
+
+                              if (!isInitialized || count <= 1) return const SizedBox.shrink();
+
+                              return DecoratedBox(
+                                decoration: BoxDecoration(
+                                  color: Colors.black54,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                  child: DropdownButtonHideUnderline(
+                                    child: DropdownButton<int>(
+                                      value: _selectedCameraIndex,
+                                      dropdownColor: Colors.black87,
+                                      iconEnabledColor: Colors.white,
+                                      style: const TextStyle(color: Colors.white),
+                                      items: List.generate(count, (i) {
+                                        return DropdownMenuItem(
+                                          value: i,
+                                          child: Text(_cameraLabel(l10n, i)),
+                                        );
+                                      }),
+                                      onChanged: (value) {
+                                        if (value == null) return;
+                                        _setCameraIndex(value);
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
                         // Scanner Overlay
                         IgnorePointer(
                           child: Container(
@@ -279,20 +560,6 @@ class _BarcodeScannerDialogState extends State<BarcodeScannerDialog> {
                                 valueListenable: controller!,
                                 builder: (context, state, child) {
                                   final isInitialized = state.isInitialized;
-                                  
-                                  if (isInitialized && _availableCamerasCount == 0) {
-                                    final count = state.availableCameras ?? 0;
-                                    if (count > 0) {
-                                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                                        if (mounted) {
-                                          setState(() {
-                                            _availableCamerasCount = count;
-                                            _isControllerInitialized = true;
-                                          });
-                                        }
-                                      });
-                                    }
-                                  }
 
                                   return Slider(
                                     value: _zoomFactor,

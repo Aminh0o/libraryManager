@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart' show debugPrint;
@@ -10,20 +11,31 @@ import 'repository.dart';
 class ApiService implements LibraryRepository {
   final String hostIp;
   final int port;
+  final http.Client _client;
+  final Duration _timeout;
 
-  ApiService({required this.hostIp, this.port = 8080});
+  ApiService({
+    required this.hostIp,
+    this.port = 8080,
+    http.Client? client,
+    Duration timeout = const Duration(seconds: 6),
+  })  : _client = client ?? http.Client(),
+        _timeout = timeout;
 
   String get _baseUrl => 'http://$hostIp:$port';
 
-  Future<T> _retry<T>(Future<T> Function() action) async {
-    int retries = 0;
-    const maxRetries = 3;
+  bool _isRetryable(Object e) {
+    return e is http.ClientException || e is SocketException || e is TimeoutException;
+  }
+
+  Future<T> _retry<T>(Future<T> Function() action, {int maxRetries = 2}) async {
+    var retries = 0;
     while (true) {
       try {
         return await action();
       } catch (e) {
         retries++;
-        if (retries > maxRetries || (e is! http.ClientException && e is! SocketException)) {
+        if (retries > maxRetries || !_isRetryable(e)) {
           rethrow;
         }
         final delay = Duration(milliseconds: 500 * retries);
@@ -32,10 +44,21 @@ class ApiService implements LibraryRepository {
     }
   }
 
+  Future<http.Response> _get(Uri uri) => _client.get(uri).timeout(_timeout);
+  Future<http.Response> _post(Uri uri, {Map<String, String>? headers, Object? body}) =>
+      _client.post(uri, headers: headers, body: body).timeout(_timeout);
+  Future<http.Response> _put(Uri uri, {Map<String, String>? headers, Object? body}) =>
+      _client.put(uri, headers: headers, body: body).timeout(_timeout);
+  Future<http.Response> _delete(Uri uri) => _client.delete(uri).timeout(_timeout);
+
+  void close() {
+    _client.close();
+  }
+
   @override
   Future<List<LibraryItem>> getItems({int limit = 1000, int offset = 0}) async {
     return _retry(() async {
-      final response = await http.get(Uri.parse('$_baseUrl/items?limit=$limit&offset=$offset'));
+      final response = await _get(Uri.parse('$_baseUrl/items?limit=$limit&offset=$offset'));
       if (response.statusCode == 200) {
         final List<dynamic> jsonList = jsonDecode(response.body);
         return jsonList.map((map) => LibraryItem.fromMap(map)).toList();
@@ -48,7 +71,7 @@ class ApiService implements LibraryRepository {
   @override
   Future<void> addItem(LibraryItem item) async {
     await _retry(() async {
-      final response = await http.post(
+      final response = await _post(
         Uri.parse('$_baseUrl/items'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(item.toMap()),
@@ -62,7 +85,7 @@ class ApiService implements LibraryRepository {
   @override
   Future<void> updateItem(LibraryItem item) async {
     await _retry(() async {
-      final response = await http.put(
+      final response = await _put(
         Uri.parse('$_baseUrl/items'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(item.toMap()),
@@ -76,7 +99,7 @@ class ApiService implements LibraryRepository {
   @override
   Future<void> deleteItem(String code) async {
     await _retry(() async {
-      final response = await http.delete(Uri.parse('$_baseUrl/items/$code'));
+      final response = await _delete(Uri.parse('$_baseUrl/items/$code'));
       if (response.statusCode != 200) {
         throw Exception('Failed to delete item');
       }
@@ -86,7 +109,7 @@ class ApiService implements LibraryRepository {
   @override
   Future<List<Map<String, dynamic>>> getHistory({int limit = 20, int offset = 0}) async {
     return _retry(() async {
-      final response = await http.get(Uri.parse('$_baseUrl/history?limit=$limit&offset=$offset'));
+      final response = await _get(Uri.parse('$_baseUrl/history?limit=$limit&offset=$offset'));
       if (response.statusCode == 200) {
         return List<Map<String, dynamic>>.from(jsonDecode(response.body));
       } else {
@@ -98,7 +121,7 @@ class ApiService implements LibraryRepository {
   @override
   Future<void> addHistoryEntry(Map<String, dynamic> entry) async {
     await _retry(() async {
-      final response = await http.post(
+      final response = await _post(
         Uri.parse('$_baseUrl/history'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(entry),
@@ -112,7 +135,7 @@ class ApiService implements LibraryRepository {
   @override
   Future<LibraryItem?> getItemByBarcode(String barcode) async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/barcode/$barcode'));
+      final response = await _get(Uri.parse('$_baseUrl/barcode/$barcode'));
       if (response.statusCode == 200) {
         return LibraryItem.fromMap(jsonDecode(response.body));
       }
@@ -125,7 +148,7 @@ class ApiService implements LibraryRepository {
   @override
   Future<Map<String, dynamic>> getStats() async {
     return _retry(() async {
-      final response = await http.get(Uri.parse('$_baseUrl/stats'));
+      final response = await _get(Uri.parse('$_baseUrl/stats'));
       if (response.statusCode == 200) {
         return Map<String, dynamic>.from(jsonDecode(response.body));
       } else {
@@ -134,22 +157,20 @@ class ApiService implements LibraryRepository {
     });
   }
 
-  Future<String> getDbVersion() async {
-    try {
-      final response = await http.get(Uri.parse('$_baseUrl/db-version'));
+  Future<String> getDbVersion({int maxRetries = 0}) async {
+    return _retry(() async {
+      final response = await _get(Uri.parse('$_baseUrl/db-version'));
       if (response.statusCode == 200) {
-        return jsonDecode(response.body)['version'];
+        return (jsonDecode(response.body)['version'] ?? '0').toString();
       }
-    } catch (e) {
-      debugPrint('Error fetching DB version: $e');
-    }
-    return '0';
+      throw Exception('Failed to load DB version');
+    }, maxRetries: maxRetries);
   }
 
   @override
   Future<List<Map<String, dynamic>>> getCodeDefinitions() async {
     return _retry(() async {
-      final response = await http.get(Uri.parse('$_baseUrl/code-definitions'));
+      final response = await _get(Uri.parse('$_baseUrl/code-definitions'));
       if (response.statusCode == 200) {
         return List<Map<String, dynamic>>.from(jsonDecode(response.body));
       } else {
@@ -161,7 +182,7 @@ class ApiService implements LibraryRepository {
   @override
   Future<void> addCodeDefinition(String prefix, String label) async {
     await _retry(() async {
-      final response = await http.post(
+      final response = await _post(
         Uri.parse('$_baseUrl/code-definitions'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'prefix': prefix, 'label': label}),
@@ -175,7 +196,7 @@ class ApiService implements LibraryRepository {
   @override
   Future<void> updateCodeDefinition(String oldPrefix, String newPrefix, String label) async {
     await _retry(() async {
-      final response = await http.put(
+      final response = await _put(
         Uri.parse('$_baseUrl/code-definitions/$oldPrefix'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'prefix': newPrefix, 'label': label}),
@@ -189,7 +210,7 @@ class ApiService implements LibraryRepository {
   @override
   Future<void> deleteCodeDefinition(String prefix) async {
     await _retry(() async {
-      final response = await http.delete(Uri.parse('$_baseUrl/code-definitions/$prefix'));
+      final response = await _delete(Uri.parse('$_baseUrl/code-definitions/$prefix'));
       if (response.statusCode != 200) {
         throw Exception('Failed to delete code definition');
       }
@@ -200,7 +221,7 @@ class ApiService implements LibraryRepository {
   Future<List<Map<String, dynamic>>> getAttributeDefinitions(String? type) async {
     return _retry(() async {
       final url = type != null ? '$_baseUrl/attribute-definitions?type=$type' : '$_baseUrl/attribute-definitions';
-      final response = await http.get(Uri.parse(url));
+      final response = await _get(Uri.parse(url));
       if (response.statusCode == 200) {
         return List<Map<String, dynamic>>.from(jsonDecode(response.body));
       } else {
@@ -212,7 +233,7 @@ class ApiService implements LibraryRepository {
   @override
   Future<void> addAttributeDefinition(String type, String value) async {
     await _retry(() async {
-      final response = await http.post(
+      final response = await _post(
         Uri.parse('$_baseUrl/attribute-definitions'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'type': type, 'value': value}),
@@ -226,7 +247,7 @@ class ApiService implements LibraryRepository {
   @override
   Future<void> deleteAttributeDefinition(int id) async {
     await _retry(() async {
-      final response = await http.delete(Uri.parse('$_baseUrl/attribute-definitions/$id'));
+      final response = await _delete(Uri.parse('$_baseUrl/attribute-definitions/$id'));
       if (response.statusCode != 200) {
         throw Exception('Failed to delete attribute definition');
       }
@@ -237,7 +258,7 @@ class ApiService implements LibraryRepository {
   @override
   Future<List<Member>> getMembers() async {
     return _retry(() async {
-      final response = await http.get(Uri.parse('$_baseUrl/members'));
+      final response = await _get(Uri.parse('$_baseUrl/members'));
       if (response.statusCode == 200) {
         final List<dynamic> jsonList = jsonDecode(response.body);
         return jsonList.map((map) => Member.fromMap(map)).toList();
@@ -250,7 +271,7 @@ class ApiService implements LibraryRepository {
   @override
   Future<void> addMember(Member member) async {
     await _retry(() async {
-      final response = await http.post(
+      final response = await _post(
         Uri.parse('$_baseUrl/members'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(member.toMap()),
@@ -264,7 +285,7 @@ class ApiService implements LibraryRepository {
   @override
   Future<void> updateMember(Member member) async {
     await _retry(() async {
-      final response = await http.put(
+      final response = await _put(
         Uri.parse('$_baseUrl/members'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(member.toMap()),
@@ -278,7 +299,7 @@ class ApiService implements LibraryRepository {
   @override
   Future<void> deleteMember(String memberId) async {
     await _retry(() async {
-      final response = await http.delete(Uri.parse('$_baseUrl/members/$memberId'));
+      final response = await _delete(Uri.parse('$_baseUrl/members/$memberId'));
       if (response.statusCode != 200) {
         throw Exception('Failed to delete member');
       }
@@ -290,7 +311,7 @@ class ApiService implements LibraryRepository {
   Future<List<Loan>> getLoans({bool activeOnly = false}) async {
     return _retry(() async {
       final url = activeOnly ? '$_baseUrl/loans?activeOnly=true' : '$_baseUrl/loans';
-      final response = await http.get(Uri.parse(url));
+      final response = await _get(Uri.parse(url));
       if (response.statusCode == 200) {
         final List<dynamic> jsonList = jsonDecode(response.body);
         return jsonList.map((map) => Loan.fromMap(map)).toList();
@@ -303,7 +324,7 @@ class ApiService implements LibraryRepository {
   @override
   Future<void> addLoan(Loan loan) async {
     await _retry(() async {
-      final response = await http.post(
+      final response = await _post(
         Uri.parse('$_baseUrl/loans'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(loan.toMap()),
@@ -317,7 +338,7 @@ class ApiService implements LibraryRepository {
   @override
   Future<void> updateLoan(Loan loan) async {
     await _retry(() async {
-      final response = await http.put(
+      final response = await _put(
         Uri.parse('$_baseUrl/loans'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(loan.toMap()),
