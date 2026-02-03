@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
+import 'dart:io' show Platform;
 import '../l10n/app_localizations.dart';
 import '../providers/library_provider.dart';
 import 'code_management_screen.dart';
@@ -11,6 +13,7 @@ import 'help_center_screen.dart';
 import '../widgets/barcode_scanner_dialog.dart';
 import '../services/update_service.dart';
 import '../services/onboarding_service.dart';
+import '../services/windows_firewall_service.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -126,6 +129,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onTap: () async {
                      final messenger = ScaffoldMessenger.of(context);
                      final savedText = l10n.savedSuccessfully;
+                     final provider = Provider.of<LibraryProvider>(context, listen: false);
                      final code = await showBarcodeScanner(context);
                      if (!mounted) return;
                      if (code != null && code.startsWith('LIB_SYNC:')) {
@@ -133,6 +137,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                        setState(() {
                          _ipController.text = ip;
                        });
+                       await provider.updateSettings(false, ip);
+                       if (!mounted) return;
                        messenger.showSnackBar(
                          SnackBar(content: Text(savedText)),
                        );
@@ -140,6 +146,75 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   },
                 ),
               ),
+
+            if (!_isHost)
+              Card(
+                elevation: 2,
+                child: ListTile(
+                  leading: const Icon(Icons.password, color: Colors.orange),
+                  title: Text(l10n.enterPairingCode),
+                  subtitle: Text(l10n.enterPairingCodeDescription),
+                  onTap: () async {
+                    final provider = Provider.of<LibraryProvider>(context, listen: false);
+                    final messenger = ScaffoldMessenger.of(context);
+
+                    final entered = await showDialog<String>(
+                      context: context,
+                      builder: (dialogContext) {
+                        final controller = TextEditingController();
+                        return AlertDialog(
+                          title: Text(l10n.enterPairingCode),
+                          content: TextField(
+                            controller: controller,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              labelText: l10n.pairingCode,
+                              hintText: '123456',
+                              border: const OutlineInputBorder(),
+                            ),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(dialogContext),
+                              child: Text(l10n.cancel),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(dialogContext, controller.text),
+                              child: Text(l10n.validate),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+
+                    if (!context.mounted) return;
+                    final pairingCode = (entered ?? '').trim();
+                    if (pairingCode.isEmpty) return;
+
+                    messenger.showSnackBar(
+                      SnackBar(content: Text(l10n.pairingSearching)),
+                    );
+
+                    final ip = await provider.discoverHostIpByPairingCode(pairingCode);
+                    if (!context.mounted) return;
+                    if (ip != null) {
+                      setState(() {
+                        _ipController.text = ip;
+                      });
+                      await provider.updateSettings(false, ip);
+                      if (!context.mounted) return;
+                      messenger.showSnackBar(
+                        SnackBar(content: Text(l10n.pairingIpSet)),
+                      );
+                    } else {
+                      messenger.showSnackBar(
+                        SnackBar(content: Text(l10n.pairingHostNotFound)),
+                      );
+                    }
+                  },
+                ),
+              ),
+
             if (_isHost)
               Card(
                 elevation: 2,
@@ -151,9 +226,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                      final provider = Provider.of<LibraryProvider>(context, listen: false);
                      final pairingTitle = l10n.pairingCode;
                      final cancelText = l10n.cancel;
+
+                     final code = await provider.startPairingCode();
                      final ip = await provider.getLocalIp();
                      if (!context.mounted) return;
                      if (ip == null) return;
+
+                     final expiresAt = provider.pairingCodeExpiresAt;
+                     final minutesLeft = expiresAt?.difference(DateTime.now()).inMinutes;
 
                      await showDialog<void>(
                        context: context,
@@ -172,7 +252,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                ),
                              ),
                              const SizedBox(height: 16),
+                             Text(code, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+                             const SizedBox(height: 8),
                              Text('IP: $ip', style: const TextStyle(fontWeight: FontWeight.bold)),
+                             if (minutesLeft != null) ...[
+                               const SizedBox(height: 6),
+                               Text(
+                                 l10n.pairingValidMinutes(minutesLeft <= 0 ? 0 : minutesLeft),
+                                 style: const TextStyle(fontSize: 12, color: Colors.grey),
+                               ),
+                             ],
                            ],
                          ),
                          actions: [
@@ -243,6 +332,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.orange),
               ),
               const SizedBox(height: 10),
+              if (!kIsWeb && Platform.isWindows)
+                Card(
+                  elevation: 2,
+                  child: ListTile(
+                    leading: const Icon(Icons.security, color: Colors.orange),
+                    title: Text(l10n.enableLanAccess),
+                    subtitle: Text(l10n.enableLanAccessDescription),
+                    onTap: () async {
+                      final messenger = ScaffoldMessenger.of(context);
+                      final ok = await WindowsFirewallService.ensureLanFirewallRules();
+                      if (!context.mounted) return;
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: Text(ok ? l10n.lanAccessEnabled : l10n.lanAccessFailed),
+                        ),
+                      );
+                    },
+                  ),
+                ),
               Card(
                 elevation: 2,
                 child: ListTile(

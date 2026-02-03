@@ -133,6 +133,19 @@
   "scanServerCode": "Scan Server Code",
   "scanServerDescription": "Connect automatically by scanning the QR code on the host screen.",
   "pairingCodeDescription": "Allow clients to connect by scanning this code.",
+  "enterPairingCode": "Enter Pairing Code",
+  "enterPairingCodeDescription": "Connect without a camera by typing the 6-digit code from the Host.",
+  "pairingSearching": "Searching for host on the LAN...",
+  "pairingIpSet": "Host found. Connection configured.",
+  "pairingHostNotFound": "No host found. Check the code and that both devices are on the same LAN.",
+  "pairingValidMinutes": "Valid for about {minutes} min",
+  "@pairingValidMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
   "connectedDevices": "Connected Devices",
   "connectedViaLan": "Connected via LAN",
   "scanWithUsbOrType": "Use a USB Scanner or type code",
@@ -201,6 +214,10 @@
   "updateAvailable": "Update Available",
   "noUpdateAvailable": "You are using the latest version.",
   "updateNow": "Update Now",
+  "enableLanAccess": "Enable LAN Access",
+  "enableLanAccessDescription": "Allow other PCs to connect by adding Windows Firewall rules (requires Admin).",
+  "lanAccessEnabled": "LAN access enabled.",
+  "lanAccessFailed": "Failed to add firewall rules. Please approve the Admin prompt.",
   "quickScan": "Quick Scan",
   "appDefinitionTitle": "What is Library Manager?",
   "appDefinitionContent": "Library Manager is a professional desktop solution designed for Algerian libraries and documentation centers. It provides specialized tools for inventory management, LAN-based synchronization, and barcode tracking. The system supports full English, French, and Arabic categorization following national standards.",

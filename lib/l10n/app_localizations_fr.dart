@@ -423,6 +423,28 @@ class AppLocalizationsFr extends AppLocalizations {
       'Permettez aux clients de se connecter en scannant ce code.';
 
   @override
+  String get enterPairingCode => 'Saisir le code d\'appairage';
+
+  @override
+  String get enterPairingCodeDescription =>
+      'Connexion sans caméra : saisissez le code à 6 chiffres affiché sur l\'Hôte.';
+
+  @override
+  String get pairingSearching => 'Recherche de l\'hôte sur le réseau local...';
+
+  @override
+  String get pairingIpSet => 'Hôte trouvé. Connexion configurée.';
+
+  @override
+  String get pairingHostNotFound =>
+      'Aucun hôte trouvé. Vérifiez le code et que les deux appareils sont sur le même réseau.';
+
+  @override
+  String pairingValidMinutes(int minutes) {
+    return 'Valide ~$minutes min';
+  }
+
+  @override
   String get connectedDevices => 'Appareils Connectés';
 
   @override
@@ -632,6 +654,20 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get updateNow => 'Mettre à Jour Maintenant';
+
+  @override
+  String get enableLanAccess => 'Activer l\'accès LAN';
+
+  @override
+  String get enableLanAccessDescription =>
+      'Autoriser la connexion des autres PC en ajoutant des règles Windows Firewall (Admin requis).';
+
+  @override
+  String get lanAccessEnabled => 'Accès LAN activé.';
+
+  @override
+  String get lanAccessFailed =>
+      'Impossible d\'ajouter les règles. Veuillez accepter la demande administrateur.';
 
   @override
   String get quickScan => 'Scan Rapide';

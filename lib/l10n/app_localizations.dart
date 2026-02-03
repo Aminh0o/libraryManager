@@ -904,6 +904,42 @@ abstract class AppLocalizations {
   /// **'Allow clients to connect by scanning this code.'**
   String get pairingCodeDescription;
 
+  /// No description provided for @enterPairingCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter Pairing Code'**
+  String get enterPairingCode;
+
+  /// No description provided for @enterPairingCodeDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect without a camera by typing the 6-digit code from the Host.'**
+  String get enterPairingCodeDescription;
+
+  /// No description provided for @pairingSearching.
+  ///
+  /// In en, this message translates to:
+  /// **'Searching for host on the LAN...'**
+  String get pairingSearching;
+
+  /// No description provided for @pairingIpSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Host found. Connection configured.'**
+  String get pairingIpSet;
+
+  /// No description provided for @pairingHostNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No host found. Check the code and that both devices are on the same LAN.'**
+  String get pairingHostNotFound;
+
+  /// No description provided for @pairingValidMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'Valid for about {minutes} min'**
+  String pairingValidMinutes(int minutes);
+
   /// No description provided for @connectedDevices.
   ///
   /// In en, this message translates to:
@@ -1305,6 +1341,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Update Now'**
   String get updateNow;
+
+  /// No description provided for @enableLanAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable LAN Access'**
+  String get enableLanAccess;
+
+  /// No description provided for @enableLanAccessDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow other PCs to connect by adding Windows Firewall rules (requires Admin).'**
+  String get enableLanAccessDescription;
+
+  /// No description provided for @lanAccessEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'LAN access enabled.'**
+  String get lanAccessEnabled;
+
+  /// No description provided for @lanAccessFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to add firewall rules. Please approve the Admin prompt.'**
+  String get lanAccessFailed;
 
   /// No description provided for @quickScan.
   ///

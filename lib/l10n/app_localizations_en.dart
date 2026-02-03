@@ -419,6 +419,28 @@ class AppLocalizationsEn extends AppLocalizations {
       'Allow clients to connect by scanning this code.';
 
   @override
+  String get enterPairingCode => 'Enter Pairing Code';
+
+  @override
+  String get enterPairingCodeDescription =>
+      'Connect without a camera by typing the 6-digit code from the Host.';
+
+  @override
+  String get pairingSearching => 'Searching for host on the LAN...';
+
+  @override
+  String get pairingIpSet => 'Host found. Connection configured.';
+
+  @override
+  String get pairingHostNotFound =>
+      'No host found. Check the code and that both devices are on the same LAN.';
+
+  @override
+  String pairingValidMinutes(int minutes) {
+    return 'Valid for about $minutes min';
+  }
+
+  @override
   String get connectedDevices => 'Connected Devices';
 
   @override
@@ -627,6 +649,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get updateNow => 'Update Now';
+
+  @override
+  String get enableLanAccess => 'Enable LAN Access';
+
+  @override
+  String get enableLanAccessDescription =>
+      'Allow other PCs to connect by adding Windows Firewall rules (requires Admin).';
+
+  @override
+  String get lanAccessEnabled => 'LAN access enabled.';
+
+  @override
+  String get lanAccessFailed =>
+      'Failed to add firewall rules. Please approve the Admin prompt.';
 
   @override
   String get quickScan => 'Quick Scan';

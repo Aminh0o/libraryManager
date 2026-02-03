@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -40,6 +41,13 @@ class LibraryProvider with ChangeNotifier {
   Timer? _healthTimer;
   Timer? _immediateBackupTimer;
   bool _healthCheckBusy = false;
+
+  // LAN Pairing (no-camera method)
+  static const int _pairingUdpPort = 19001;
+  RawDatagramSocket? _pairingSocket;
+  Timer? _pairingExpiryTimer;
+  String? _pairingCode;
+  DateTime? _pairingCodeExpiresAt;
   
   bool _isConnected = true;
   String _adminPassword = '';
@@ -73,6 +81,8 @@ class LibraryProvider with ChangeNotifier {
   List<Member> get members => _members;
   List<Loan> get loans => _loans;
   List<Loan> get activeLoans => _loans.where((l) => !l.isReturned).toList();
+  String? get pairingCode => _pairingCode;
+  DateTime? get pairingCodeExpiresAt => _pairingCodeExpiresAt;
   
   List<String> get locations => _attributes.where((a) => a.type == 'LOCATION').map((a) => a.value).toList();
   List<String> get statuses => _attributes.where((a) => a.type == 'STATUS').map((a) => a.value).toList();
@@ -168,9 +178,13 @@ class LibraryProvider with ChangeNotifier {
         _server = HttpServerService();
         _server!.startServer(onActivity: updateClientActivity).catchError((e) => debugPrint('Server error: $e'));
       }
+
+      await _ensurePairingSocket();
     } else {
       _repository = ApiService(hostIp: _hostIp);
       _server = null;
+
+      _stopPairingSocket();
     }
     await _loadItems();
     await _loadMembers();
@@ -185,6 +199,185 @@ class LibraryProvider with ChangeNotifier {
       });
     } else {
       _backupTimer?.cancel();
+    }
+  }
+
+  Future<void> _ensurePairingSocket() async {
+    if (_pairingSocket != null) return;
+    try {
+      RawDatagramSocket socket;
+      try {
+        socket = await RawDatagramSocket.bind(
+          InternetAddress.anyIPv4,
+          _pairingUdpPort,
+          reuseAddress: true,
+          reusePort: true,
+        );
+      } catch (_) {
+        socket = await RawDatagramSocket.bind(
+          InternetAddress.anyIPv4,
+          _pairingUdpPort,
+          reuseAddress: true,
+        );
+      }
+      socket.broadcastEnabled = true;
+      _pairingSocket = socket;
+
+      socket.listen((event) async {
+        if (event != RawSocketEvent.read) return;
+        final dg = socket.receive();
+        if (dg == null) return;
+
+        final msg = String.fromCharCodes(dg.data);
+        if (!msg.startsWith('LIB_PAIR_REQ:')) return;
+        final reqCode = msg.substring('LIB_PAIR_REQ:'.length).trim();
+
+        final currentCode = _pairingCode;
+        final expiresAt = _pairingCodeExpiresAt;
+        if (currentCode == null || expiresAt == null) return;
+        if (DateTime.now().isAfter(expiresAt)) return;
+        if (reqCode != currentCode) return;
+
+        final ip = await getLocalIp();
+        if (ip == null) return;
+
+        final expiresEpochMs = expiresAt.millisecondsSinceEpoch;
+        final resp = 'LIB_PAIR_RESP:$currentCode:$ip:8080:$expiresEpochMs';
+        socket.send(resp.codeUnits, dg.address, dg.port);
+      });
+    } catch (e) {
+      debugPrint('Pairing UDP socket error: $e');
+    }
+  }
+
+  void _stopPairingSocket() {
+    _pairingExpiryTimer?.cancel();
+    _pairingExpiryTimer = null;
+    _pairingCode = null;
+    _pairingCodeExpiresAt = null;
+
+    try {
+      _pairingSocket?.close();
+    } catch (_) {}
+    _pairingSocket = null;
+  }
+
+  String _generatePairingCode() {
+    final rnd = Random.secure();
+    return rnd.nextInt(1000000).toString().padLeft(6, '0');
+  }
+
+  Future<String> startPairingCode({Duration validFor = const Duration(minutes: 5)}) async {
+    if (!_isHost) {
+      throw StateError('Pairing code can only be generated on the host');
+    }
+
+    await _ensurePairingSocket();
+    _pairingExpiryTimer?.cancel();
+
+    final code = _generatePairingCode();
+    final expiresAt = DateTime.now().add(validFor);
+
+    _pairingCode = code;
+    _pairingCodeExpiresAt = expiresAt;
+
+    _pairingExpiryTimer = Timer(validFor, () {
+      _pairingCode = null;
+      _pairingCodeExpiresAt = null;
+      notifyListeners();
+    });
+
+    notifyListeners();
+    return code;
+  }
+
+  Future<List<InternetAddress>> _getBroadcastAddresses() async {
+    final result = <InternetAddress>{InternetAddress('255.255.255.255')};
+    try {
+      final interfaces = await NetworkInterface.list(
+        includeLoopback: false,
+        includeLinkLocal: false,
+        type: InternetAddressType.IPv4,
+      );
+      for (final interface in interfaces) {
+        for (final addr in interface.addresses) {
+          final ip = addr.address;
+          if (!_isPrivateIpv4(ip)) continue;
+          final parts = ip.split('.');
+          if (parts.length != 4) continue;
+          result.add(InternetAddress('${parts[0]}.${parts[1]}.${parts[2]}.255'));
+        }
+      }
+    } catch (e) {
+      debugPrint('Error computing broadcast addresses: $e');
+    }
+    return result.toList();
+  }
+
+  Future<String?> discoverHostIpByPairingCode(
+    String code, {
+    Duration timeout = const Duration(seconds: 4),
+  }) async {
+    if (_isHost) return null;
+
+    final cleaned = code.trim();
+    if (cleaned.isEmpty) return null;
+
+    RawDatagramSocket? socket;
+    try {
+      socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
+      socket.broadcastEnabled = true;
+
+      final broadcastTargets = await _getBroadcastAddresses();
+      final msg = 'LIB_PAIR_REQ:$cleaned';
+
+      final completer = Completer<String?>();
+      late StreamSubscription sub;
+
+      sub = socket.listen((event) {
+        if (event != RawSocketEvent.read) return;
+        final dg = socket!.receive();
+        if (dg == null) return;
+
+        final resp = String.fromCharCodes(dg.data);
+        if (!resp.startsWith('LIB_PAIR_RESP:')) return;
+
+        final parts = resp.split(':');
+        if (parts.length < 5) return;
+
+        final respCode = parts[1].trim();
+        final ip = parts[2].trim();
+        final port = parts[3].trim();
+        final expiresEpochMs = int.tryParse(parts[4].trim());
+        if (respCode != cleaned) return;
+        if (port != '8080') return;
+        if (expiresEpochMs == null) return;
+        final expiresAt = DateTime.fromMillisecondsSinceEpoch(expiresEpochMs);
+        if (DateTime.now().isAfter(expiresAt)) return;
+        if (ip.isEmpty) return;
+
+        if (!completer.isCompleted) {
+          completer.complete(ip);
+        }
+      });
+
+      for (var attempt = 0; attempt < 3; attempt++) {
+        for (final addr in broadcastTargets) {
+          socket.send(msg.codeUnits, addr, _pairingUdpPort);
+        }
+        await Future.delayed(const Duration(milliseconds: 250));
+      }
+
+      final found = await completer.future.timeout(timeout, onTimeout: () => null);
+      await sub.cancel();
+      return found;
+    } catch (e) {
+      debugPrint('Pairing discovery error: $e');
+      return null;
+    } finally {
+      try {
+        socket?.close();
+      } catch (_) {}
     }
   }
 
@@ -791,6 +984,7 @@ class LibraryProvider with ChangeNotifier {
     _backupTimer?.cancel();
     _healthTimer?.cancel();
     _immediateBackupTimer?.cancel();
+    _stopPairingSocket();
     _healthCheckBusy = false;
     if (_repository is ApiService) {
       try {

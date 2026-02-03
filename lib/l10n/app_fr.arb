@@ -133,6 +133,19 @@
   "scanServerCode": "Scanner le Code du Serveur",
   "scanServerDescription": "Connectez-vous automatiquement en scannant le QR code sur l'écran de l'hôte.",
   "pairingCodeDescription": "Permettez aux clients de se connecter en scannant ce code.",
+  "enterPairingCode": "Saisir le code d'appairage",
+  "enterPairingCodeDescription": "Connexion sans caméra : saisissez le code à 6 chiffres affiché sur l'Hôte.",
+  "pairingSearching": "Recherche de l'hôte sur le réseau local...",
+  "pairingIpSet": "Hôte trouvé. Connexion configurée.",
+  "pairingHostNotFound": "Aucun hôte trouvé. Vérifiez le code et que les deux appareils sont sur le même réseau.",
+  "pairingValidMinutes": "Valide ~{minutes} min",
+  "@pairingValidMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
   "connectedDevices": "Appareils Connectés",
   "connectedViaLan": "Connecté via LAN",
   "scanWithUsbOrType": "Utilisez un scanner USB ou tapez le code",
@@ -201,6 +214,10 @@
   "updateAvailable": "Mise à Jour Disponible",
   "noUpdateAvailable": "Vous utilisez la dernière version.",
   "updateNow": "Mettre à Jour Maintenant",
+  "enableLanAccess": "Activer l'accès LAN",
+  "enableLanAccessDescription": "Autoriser la connexion des autres PC en ajoutant des règles Windows Firewall (Admin requis).",
+  "lanAccessEnabled": "Accès LAN activé.",
+  "lanAccessFailed": "Impossible d'ajouter les règles. Veuillez accepter la demande administrateur.",
   "quickScan": "Scan Rapide",
   "appDefinitionTitle": "C'est quoi Library Manager ?",
   "appDefinitionContent": "Library Manager est une solution de bureau professionnelle conçue pour les bibliothèques et centres de documentation algériens. Il fournit des outils spécialisés pour la gestion des stocks, la synchronisation via LAN et le suivi par codes-barres. Le système prend en charge la catégorisation complète en anglais, français et arabe selon les normes nationales.",

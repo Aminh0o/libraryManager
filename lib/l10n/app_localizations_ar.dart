@@ -419,6 +419,28 @@ class AppLocalizationsAr extends AppLocalizations {
       'السماح للعملاء بالاتصال عن طريق مسح هذا الرمز.';
 
   @override
+  String get enterPairingCode => 'إدخال رمز الاقتران';
+
+  @override
+  String get enterPairingCodeDescription =>
+      'للاتصال بدون كاميرا: أدخل الرمز المكوّن من 6 أرقام المعروض على المضيف.';
+
+  @override
+  String get pairingSearching => 'جاري البحث عن المضيف على الشبكة المحلية...';
+
+  @override
+  String get pairingIpSet => 'تم العثور على المضيف. تم إعداد الاتصال.';
+
+  @override
+  String get pairingHostNotFound =>
+      'لم يتم العثور على مضيف. تحقق من الرمز وأن الجهازين على نفس الشبكة.';
+
+  @override
+  String pairingValidMinutes(int minutes) {
+    return 'صالح لمدة حوالي $minutes دقيقة';
+  }
+
+  @override
   String get connectedDevices => 'الأجهزة المتصلة';
 
   @override
@@ -624,6 +646,20 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get updateNow => 'تحديث الآن';
+
+  @override
+  String get enableLanAccess => 'تفعيل الوصول عبر الشبكة المحلية';
+
+  @override
+  String get enableLanAccessDescription =>
+      'السماح لأجهزة أخرى بالاتصال عبر إضافة قواعد جدار حماية ويندوز (يتطلب صلاحيات المسؤول).';
+
+  @override
+  String get lanAccessEnabled => 'تم تفعيل الوصول عبر الشبكة المحلية.';
+
+  @override
+  String get lanAccessFailed =>
+      'فشل إضافة قواعد الجدار الناري. الرجاء قبول نافذة صلاحيات المسؤول.';
 
   @override
   String get quickScan => 'مسح سريع';
