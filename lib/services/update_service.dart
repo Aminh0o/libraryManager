@@ -17,14 +17,6 @@ class UpdateService {
 
       // If the API URL is empty, we stay in simulation/manual mode
       if (_updateApiUrl.isEmpty) {
-        // FOR DEMO: Simulates finding an update if version is below 1.1.0
-        await Future.delayed(const Duration(seconds: 1));
-        if (_isNewer('1.1.0', currentVersion)) {
-          return {
-            'version': '1.1.0',
-            'url': 'https://github.com/Aminh0o/libraryManager/releases/latest'
-          };
-        }
         return null;
       }
 

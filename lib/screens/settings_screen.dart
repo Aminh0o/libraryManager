@@ -27,6 +27,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late TextEditingController _ipController;
   late bool _isHost;
   bool _canEditSettings = false;
+  bool _savingSettings = false;
 
   @override
   void initState() {
@@ -42,12 +43,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.dispose();
   }
 
-  void _saveSettings() {
-    Provider.of<LibraryProvider>(context, listen: false).updateSettings(
-      _isHost,
-      _ipController.text,
-    );
-    Navigator.pop(context);
+  Future<void> _saveSettings() async {
+    if (_savingSettings) return;
+    setState(() => _savingSettings = true);
+
+    final provider = Provider.of<LibraryProvider>(context, listen: false);
+    final messenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context)!;
+
+    try {
+      await provider.updateSettings(
+        _isHost,
+        _ipController.text,
+      );
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.savedSuccessfully)),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _savingSettings = false);
+      }
+    }
   }
 
   @override
@@ -227,7 +249,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                      final pairingTitle = l10n.pairingCode;
                      final cancelText = l10n.cancel;
 
-                     final code = await provider.startPairingCode();
+                     final messenger = ScaffoldMessenger.of(context);
+
+                     String code;
+                     try {
+                       code = await provider.startPairingCode();
+                     } catch (e) {
+                       if (!context.mounted) return;
+                       messenger.showSnackBar(SnackBar(content: Text(e.toString())));
+                       return;
+                     }
                      final ip = await provider.getLocalIp();
                      if (!context.mounted) return;
                      if (ip == null) return;
@@ -273,6 +304,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                        ),
                      );
                   },
+                ),
+              ),
+
+            if (_isHost)
+              Card(
+                elevation: 2,
+                child: ListTile(
+                  leading: const Icon(Icons.devices, color: Colors.blue),
+                  title: Text(l10n.connectedDevices),
+                  subtitle: Text('${provider.activeClients.length}'),
                 ),
               ),
             const Divider(),
@@ -548,7 +589,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _saveSettings,
+                onPressed: _savingSettings ? null : _saveSettings,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.orange,
                   foregroundColor: Colors.white,

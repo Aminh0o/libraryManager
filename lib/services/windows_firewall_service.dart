@@ -28,9 +28,10 @@ $ErrorActionPreference = 'Stop'
 
 function Ensure-NetRule([string]$Name, [string]$Protocol, [int]$Port) {
   $rule = Get-NetFirewallRule -DisplayName $Name -ErrorAction SilentlyContinue
-  if (-not $rule) {
-    New-NetFirewallRule -DisplayName $Name -Direction Inbound -Action Allow -Protocol $Protocol -LocalPort $Port -Profile Private | Out-Null
+  if ($rule) {
+    $rule | Remove-NetFirewallRule | Out-Null
   }
+  New-NetFirewallRule -DisplayName $Name -Direction Inbound -Action Allow -Protocol $Protocol -LocalPort $Port -Profile Any -RemoteAddress LocalSubnet | Out-Null
 }
 
 try {
@@ -41,8 +42,8 @@ try {
   else {
     netsh advfirewall firewall delete rule name='$_TCP_RULE' 1>$null 2>$null
     netsh advfirewall firewall delete rule name='$_UDP_RULE' 1>$null 2>$null
-    netsh advfirewall firewall add rule name='$_TCP_RULE' dir=in action=allow protocol=TCP localport=$_HTTP_PORT profile=private 1>$null
-    netsh advfirewall firewall add rule name='$_UDP_RULE' dir=in action=allow protocol=UDP localport=$_UDP_PORT profile=private 1>$null
+    netsh advfirewall firewall add rule name='$_TCP_RULE' dir=in action=allow protocol=TCP localport=$_HTTP_PORT profile=any remoteip=localsubnet 1>$null
+    netsh advfirewall firewall add rule name='$_UDP_RULE' dir=in action=allow protocol=UDP localport=$_UDP_PORT profile=any remoteip=localsubnet 1>$null
   }
   exit 0
 }

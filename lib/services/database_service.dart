@@ -363,6 +363,8 @@ class DatabaseService implements LibraryRepository {
     
     // Optional: Cleanup old history (e.g., keep last 1000)
     await db.execute("DELETE FROM history WHERE id IN (SELECT id FROM history ORDER BY timestamp DESC LIMIT -1 OFFSET 1000)");
+
+    await _updateDbVersion();
   }
 
   @override
@@ -458,6 +460,10 @@ class DatabaseService implements LibraryRepository {
     final db = await database;
     await db.transaction((txn) async {
       await txn.delete('library_items');
+      await txn.delete('members');
+      await txn.delete('loans');
+      await txn.delete('history');
+      await txn.delete('attribute_definitions');
       await txn.delete('code_definitions');
       
       // Seed defaults
@@ -473,7 +479,14 @@ class DatabaseService implements LibraryRepository {
       for (final def in defaults) {
         await txn.insert('code_definitions', def);
       }
+
+      final statuses = ['Disponible', 'Emprunté', 'En Réparation', 'Perdu', 'Archivé'];
+      for (final status in statuses) {
+        await txn.insert('attribute_definitions', {'type': 'STATUS', 'value': status});
+      }
     });
+
+    await _updateDbVersion();
   }
 
   /// Get count of items by code type
@@ -524,6 +537,9 @@ class DatabaseService implements LibraryRepository {
     
     final sourceFile = File(sourcePath);
     await sourceFile.copy(dbPath);
+
+    await database;
+    await _updateDbVersion();
   }
 
   Future<void> createAutoBackup() async {
@@ -564,17 +580,24 @@ class DatabaseService implements LibraryRepository {
   Future<String> generateMemberID() async {
     final db = await database;
     final year = DateTime.now().year.toString().substring(2); // Last 2 digits of year
-    
-    // Get the count of members registered this year
+
     final yearPrefix = year;
     final result = await db.rawQuery(
-      "SELECT COUNT(*) as count FROM members WHERE member_id LIKE ?",
-      ['$yearPrefix%']
+      "SELECT MAX(member_id) as max_id FROM members WHERE member_id LIKE ?",
+      ['$yearPrefix%'],
     );
-    
-    final count = (result.first['count'] as int?) ?? 0;
-    final nextNumber = (count + 1).toString().padLeft(4, '0');
-    
+
+    final maxId = result.isNotEmpty ? (result.first['max_id'] as String?) : null;
+    var next = 1;
+    if (maxId != null && maxId.length >= 6) {
+      final suffix = maxId.substring(2);
+      final parsed = int.tryParse(suffix);
+      if (parsed != null) {
+        next = parsed + 1;
+      }
+    }
+
+    final nextNumber = next.toString().padLeft(4, '0');
     return '$yearPrefix$nextNumber'; // Format: YY0001, YY0002, etc.
   }
 

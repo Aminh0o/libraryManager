@@ -18,7 +18,7 @@ class ApiService implements LibraryRepository {
     required this.hostIp,
     this.port = 8080,
     http.Client? client,
-    Duration timeout = const Duration(seconds: 6),
+    Duration timeout = const Duration(seconds: 3),
   })  : _client = client ?? http.Client(),
         _timeout = timeout;
 
@@ -28,7 +28,7 @@ class ApiService implements LibraryRepository {
     return e is http.ClientException || e is SocketException || e is TimeoutException;
   }
 
-  Future<T> _retry<T>(Future<T> Function() action, {int maxRetries = 2}) async {
+  Future<T> _retry<T>(Future<T> Function() action, {int maxRetries = 1}) async {
     var retries = 0;
     while (true) {
       try {

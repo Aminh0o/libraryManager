@@ -158,29 +158,41 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
                           children: [
                             Expanded(
                               flex: 2,
-                              child: DropdownButtonFormField<String>(
-                                initialValue: _selectedCodeType.isEmpty ? null : _selectedCodeType,
-                                  decoration: InputDecoration(
-                                    labelText: l10n.typeLabel,
-                                    prefixIcon: const Icon(Icons.category),
-                                    border: const OutlineInputBorder(),
-                                  ),
-                                items: provider.codeDefinitions.map((def) {
-                                  return DropdownMenuItem(
-                                    value: def.prefix,
-                                    child: Text(def.label),
-                                  );
-                                }).toList(),
-                                onChanged: isEditing ? null : (value) {
-                                  if (value != null) {
-                                    setState(() {
-                                      _selectedCodeType = value;
-                                    });
-                                    _autoGenerateCode();
-                                  }
-                                },
-                                  validator: (val) => (val == null || val.isEmpty) ? l10n.required : null,
-                                ),
+                              child: provider.codeDefinitions.isNotEmpty
+                                  ? DropdownButtonFormField<String>(
+                                      initialValue: _selectedCodeType.isEmpty ? null : _selectedCodeType,
+                                      decoration: InputDecoration(
+                                        labelText: l10n.typeLabel,
+                                        prefixIcon: const Icon(Icons.category),
+                                        border: const OutlineInputBorder(),
+                                      ),
+                                      items: provider.codeDefinitions.map((def) {
+                                        return DropdownMenuItem(
+                                          value: def.prefix,
+                                          child: Text(def.label),
+                                        );
+                                      }).toList(),
+                                      onChanged: isEditing ? null : (value) {
+                                        if (value != null) {
+                                          setState(() {
+                                            _selectedCodeType = value;
+                                          });
+                                          _autoGenerateCode();
+                                        }
+                                      },
+                                      validator: (val) => (val == null || val.isEmpty) ? l10n.required : null,
+                                    )
+                                  : TextFormField(
+                                      initialValue: _selectedCodeType,
+                                      decoration: InputDecoration(
+                                        labelText: l10n.typeLabel,
+                                        prefixIcon: const Icon(Icons.category),
+                                        border: const OutlineInputBorder(),
+                                      ),
+                                      enabled: !isEditing,
+                                      onChanged: (value) => _selectedCodeType = value,
+                                      validator: (val) => (val == null || val.trim().isEmpty) ? l10n.required : null,
+                                    ),
                             ),
                             const SizedBox(width: 16),
                             Expanded(
@@ -325,27 +337,40 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
                                 ),
                               ),
                         const SizedBox(height: 16),
-                        DropdownButtonFormField<String>(
-                          initialValue: _selectedStatus,
-                          decoration: InputDecoration(
-                            labelText: l10n.status,
-                            prefixIcon: const Icon(Icons.flag),
-                            border: const OutlineInputBorder(),
-                          ),
-                          items: provider.statuses.map((status) {
-                            return DropdownMenuItem(
-                              value: status,
-                              child: Text(status),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            if (value != null) {
-                              setState(() {
-                                _selectedStatus = value;
-                              });
-                            }
-                          },
-                        ),
+                        provider.statuses.isNotEmpty
+                            ? DropdownButtonFormField<String>(
+                                initialValue: provider.statuses.contains(_selectedStatus)
+                                    ? _selectedStatus
+                                    : provider.statuses.first,
+                                decoration: InputDecoration(
+                                  labelText: l10n.status,
+                                  prefixIcon: const Icon(Icons.flag),
+                                  border: const OutlineInputBorder(),
+                                ),
+                                items: provider.statuses.map((status) {
+                                  return DropdownMenuItem(
+                                    value: status,
+                                    child: Text(status),
+                                  );
+                                }).toList(),
+                                onChanged: (value) {
+                                  if (value != null) {
+                                    setState(() {
+                                      _selectedStatus = value;
+                                    });
+                                  }
+                                },
+                              )
+                            : TextFormField(
+                                initialValue: _selectedStatus,
+                                decoration: InputDecoration(
+                                  labelText: l10n.status,
+                                  prefixIcon: const Icon(Icons.flag),
+                                  border: const OutlineInputBorder(),
+                                ),
+                                onChanged: (value) => _selectedStatus = value,
+                                validator: (val) => (val == null || val.trim().isEmpty) ? l10n.required : null,
+                              ),
                       ],
                     ),
                   ),

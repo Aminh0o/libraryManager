@@ -34,13 +34,15 @@ class LibraryProvider with ChangeNotifier {
   
   // LAN Sync Settings
   bool _isHost = true;
-  String _hostIp = '192.168.1.100';
+  String _hostIp = '';
   LibraryRepository? _repository;
   HttpServerService? _server;
   Timer? _backupTimer;
   Timer? _healthTimer;
   Timer? _immediateBackupTimer;
   bool _healthCheckBusy = false;
+  int _healthFailures = 0;
+  DateTime? _lastHealthSuccessAt;
 
   // LAN Pairing (no-camera method)
   static const int _pairingUdpPort = 19001;
@@ -48,6 +50,7 @@ class LibraryProvider with ChangeNotifier {
   Timer? _pairingExpiryTimer;
   String? _pairingCode;
   DateTime? _pairingCodeExpiresAt;
+  String? _pairingAdvertisedIp;
   
   bool _isConnected = true;
   String _adminPassword = '';
@@ -102,7 +105,7 @@ class LibraryProvider with ChangeNotifier {
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     _isHost = prefs.getBool('isHost') ?? true;
-    _hostIp = prefs.getString('hostIp') ?? '192.168.1.100';
+    _hostIp = prefs.getString('hostIp') ?? '';
     
     // Load saved locale
     final savedLocale = prefs.getString('locale') ?? 'fr';
@@ -180,15 +183,36 @@ class LibraryProvider with ChangeNotifier {
       }
 
       await _ensurePairingSocket();
+      _isConnected = true;
+      _healthFailures = 0;
     } else {
-      _repository = ApiService(hostIp: _hostIp);
+      if (_hostIp.trim().isEmpty) {
+        _repository = null;
+        _isConnected = false;
+        _healthFailures = 0;
+      } else {
+        _repository = ApiService(hostIp: _hostIp);
+        _isConnected = false;
+        _healthFailures = 0;
+      }
       _server = null;
 
       _stopPairingSocket();
     }
-    await _loadItems();
-    await _loadMembers();
-    await _loadLoans();
+    if (_isHost) {
+      await _loadItems();
+      await _loadMembers();
+      await _loadLoans();
+    } else {
+      _items = [];
+      _filteredItems = [];
+      _members = [];
+      _loans = [];
+      _stats = {};
+      _errorMessage = null;
+      _isLoading = false;
+      notifyListeners();
+    }
     _startHealthCheck();
     
     // Start periodic backup if host
@@ -206,19 +230,27 @@ class LibraryProvider with ChangeNotifier {
     if (_pairingSocket != null) return;
     try {
       RawDatagramSocket socket;
-      try {
-        socket = await RawDatagramSocket.bind(
-          InternetAddress.anyIPv4,
-          _pairingUdpPort,
-          reuseAddress: true,
-          reusePort: true,
-        );
-      } catch (_) {
+      if (Platform.isWindows) {
         socket = await RawDatagramSocket.bind(
           InternetAddress.anyIPv4,
           _pairingUdpPort,
           reuseAddress: true,
         );
+      } else {
+        try {
+          socket = await RawDatagramSocket.bind(
+            InternetAddress.anyIPv4,
+            _pairingUdpPort,
+            reuseAddress: true,
+            reusePort: true,
+          );
+        } catch (_) {
+          socket = await RawDatagramSocket.bind(
+            InternetAddress.anyIPv4,
+            _pairingUdpPort,
+            reuseAddress: true,
+          );
+        }
       }
       socket.broadcastEnabled = true;
       _pairingSocket = socket;
@@ -230,20 +262,33 @@ class LibraryProvider with ChangeNotifier {
 
         final msg = String.fromCharCodes(dg.data);
         if (!msg.startsWith('LIB_PAIR_REQ:')) return;
-        final reqCode = msg.substring('LIB_PAIR_REQ:'.length).trim();
+        final rawReq = msg.substring('LIB_PAIR_REQ:'.length).trim();
+        final digits = rawReq.replaceAll(RegExp(r'\D'), '');
+        final reqCode = digits.isEmpty
+            ? rawReq
+            : (digits.length <= 6 ? digits.padLeft(6, '0') : digits);
+
+        assert(() {
+          debugPrint('Pairing: received req from ${dg.address.address}:${dg.port} code=$reqCode');
+          return true;
+        }());
 
         final currentCode = _pairingCode;
         final expiresAt = _pairingCodeExpiresAt;
+        final advertisedIp = _pairingAdvertisedIp;
         if (currentCode == null || expiresAt == null) return;
         if (DateTime.now().isAfter(expiresAt)) return;
         if (reqCode != currentCode) return;
-
-        final ip = await getLocalIp();
-        if (ip == null) return;
+        if (advertisedIp == null || advertisedIp.isEmpty) return;
 
         final expiresEpochMs = expiresAt.millisecondsSinceEpoch;
-        final resp = 'LIB_PAIR_RESP:$currentCode:$ip:8080:$expiresEpochMs';
+        final resp = 'LIB_PAIR_RESP:$currentCode:$advertisedIp:8080:$expiresEpochMs';
         socket.send(resp.codeUnits, dg.address, dg.port);
+
+        assert(() {
+          debugPrint('Pairing: sent resp to ${dg.address.address}:${dg.port} ip=$advertisedIp');
+          return true;
+        }());
       });
     } catch (e) {
       debugPrint('Pairing UDP socket error: $e');
@@ -255,6 +300,7 @@ class LibraryProvider with ChangeNotifier {
     _pairingExpiryTimer = null;
     _pairingCode = null;
     _pairingCodeExpiresAt = null;
+    _pairingAdvertisedIp = null;
 
     try {
       _pairingSocket?.close();
@@ -273,17 +319,27 @@ class LibraryProvider with ChangeNotifier {
     }
 
     await _ensurePairingSocket();
+    if (_pairingSocket == null) {
+      throw StateError('Failed to start pairing service (UDP port $_pairingUdpPort)');
+    }
     _pairingExpiryTimer?.cancel();
+
+    final ip = await getLocalIp();
+    if (ip == null || ip.isEmpty) {
+      throw StateError('No LAN IPv4 address found for pairing');
+    }
 
     final code = _generatePairingCode();
     final expiresAt = DateTime.now().add(validFor);
 
     _pairingCode = code;
     _pairingCodeExpiresAt = expiresAt;
+    _pairingAdvertisedIp = ip;
 
     _pairingExpiryTimer = Timer(validFor, () {
       _pairingCode = null;
       _pairingCodeExpiresAt = null;
+      _pairingAdvertisedIp = null;
       notifyListeners();
     });
 
@@ -320,16 +376,55 @@ class LibraryProvider with ChangeNotifier {
   }) async {
     if (_isHost) return null;
 
-    final cleaned = code.trim();
+    final cleanedRaw = code.trim();
+    final cleanedDigits = cleanedRaw.replaceAll(RegExp(r'\D'), '');
+    final cleaned = cleanedDigits.isEmpty
+        ? cleanedRaw
+        : (cleanedDigits.length <= 6 ? cleanedDigits.padLeft(6, '0') : cleanedDigits);
     if (cleaned.isEmpty) return null;
 
     RawDatagramSocket? socket;
     try {
-      socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
+      if (Platform.isWindows) {
+        try {
+          socket = await RawDatagramSocket.bind(
+            InternetAddress.anyIPv4,
+            _pairingUdpPort,
+            reuseAddress: true,
+          );
+        } catch (_) {
+          socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
+        }
+      } else {
+        try {
+          socket = await RawDatagramSocket.bind(
+            InternetAddress.anyIPv4,
+            _pairingUdpPort,
+            reuseAddress: true,
+            reusePort: true,
+          );
+        } catch (_) {
+          try {
+            socket = await RawDatagramSocket.bind(
+              InternetAddress.anyIPv4,
+              _pairingUdpPort,
+              reuseAddress: true,
+            );
+          } catch (_) {
+            socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
+          }
+        }
+      }
       socket.broadcastEnabled = true;
 
       final broadcastTargets = await _getBroadcastAddresses();
       final msg = 'LIB_PAIR_REQ:$cleaned';
+
+      assert(() {
+        debugPrint('Pairing discovery: code=$cleaned udpPort=$_pairingUdpPort');
+        debugPrint('Pairing discovery: broadcastTargets=${broadcastTargets.map((e) => e.address).toList()}');
+        return true;
+      }());
 
       final completer = Completer<String?>();
       late StreamSubscription sub;
@@ -341,6 +436,11 @@ class LibraryProvider with ChangeNotifier {
 
         final resp = String.fromCharCodes(dg.data);
         if (!resp.startsWith('LIB_PAIR_RESP:')) return;
+
+        assert(() {
+          debugPrint('Pairing discovery: got resp from ${dg.address.address}:${dg.port}');
+          return true;
+        }());
 
         final parts = resp.split(':');
         if (parts.length < 5) return;
@@ -366,6 +466,28 @@ class LibraryProvider with ChangeNotifier {
           socket.send(msg.codeUnits, addr, _pairingUdpPort);
         }
         await Future.delayed(const Duration(milliseconds: 250));
+      }
+
+      if (!completer.isCompleted) {
+        final localIp = await getLocalIp();
+        final parts = localIp?.split('.') ?? const <String>[];
+        final canScan = localIp != null && _isPrivateIpv4(localIp) && parts.length == 4;
+        if (canScan) {
+          final prefix = '${parts[0]}.${parts[1]}.${parts[2]}';
+          assert(() {
+            debugPrint('Pairing discovery: fallback unicast scan prefix=$prefix');
+            return true;
+          }());
+          for (var i = 1; i <= 254; i++) {
+            if (completer.isCompleted) break;
+            final candidate = '$prefix.$i';
+            if (candidate == localIp) continue;
+            socket.send(msg.codeUnits, InternetAddress(candidate), _pairingUdpPort);
+            if (i % 32 == 0) {
+              await Future<void>.delayed(Duration.zero);
+            }
+          }
+        }
       }
 
       final found = await completer.future.timeout(timeout, onTimeout: () => null);
@@ -427,37 +549,71 @@ class LibraryProvider with ChangeNotifier {
   // Connectivity Health Check
   void _startHealthCheck() {
     _healthTimer?.cancel();
-    _healthTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
+    final interval = _isHost ? const Duration(seconds: 1) : const Duration(seconds: 2);
+    _healthTimer = Timer.periodic(interval, (timer) async {
       if (_healthCheckBusy) return;
       _healthCheckBusy = true;
       try {
-      if (_isHost) {
-        // Host is always "connected" to itself
-        if (!_isConnected) {
-          _isConnected = true;
-          notifyListeners();
-        }
-      } else {
-        try {
-          final api = _repository as ApiService;
-          final version = await api.getDbVersion().timeout(const Duration(seconds: 3));
-          
+        if (_isHost) {
+          // Host is always LAN-local. Also watch for DB changes caused by clients.
           if (!_isConnected) {
             _isConnected = true;
-            _lastDbVersion = version;
-            await _reloadAll();
             notifyListeners();
-          } else if (version != _lastDbVersion) {
-            _lastDbVersion = version;
-            await _reloadAll();
           }
-        } catch (_) {
-          if (_isConnected) {
-            _isConnected = false;
-            notifyListeners();
+
+          try {
+            final repo = _repository;
+            if (repo is DatabaseService) {
+              final version = await repo.getDbVersion();
+              if (_lastDbVersion != version) {
+                _lastDbVersion = version;
+                await _reloadAll();
+              }
+            }
+          } catch (e) {
+            debugPrint('Host db_version watch error: $e');
+          }
+        } else {
+          try {
+            final repo = _repository;
+            if (repo is! ApiService) {
+              _healthFailures++;
+              if (_isConnected) {
+                final lastOk = _lastHealthSuccessAt;
+                final tooOld = lastOk == null || DateTime.now().difference(lastOk) > const Duration(seconds: 12);
+                if (_healthFailures >= 3 && tooOld) {
+                  _isConnected = false;
+                  notifyListeners();
+                }
+              }
+              return;
+            }
+            final api = repo;
+            final version = await api.getDbVersion().timeout(const Duration(seconds: 3));
+            _healthFailures = 0;
+            _lastHealthSuccessAt = DateTime.now();
+
+            if (!_isConnected) {
+              _isConnected = true;
+              _lastDbVersion = version;
+              await _reloadAll();
+              notifyListeners();
+            } else if (version != _lastDbVersion) {
+              _lastDbVersion = version;
+              await _reloadAll();
+            }
+          } catch (_) {
+            _healthFailures++;
+            if (_isConnected) {
+              final lastOk = _lastHealthSuccessAt;
+              final tooOld = lastOk == null || DateTime.now().difference(lastOk) > const Duration(seconds: 12);
+              if (_healthFailures >= 3 && tooOld) {
+                _isConnected = false;
+                notifyListeners();
+              }
+            }
           }
         }
-      }
       } finally {
         _healthCheckBusy = false;
       }

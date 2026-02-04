@@ -230,7 +230,7 @@ class DashboardScreen extends StatelessWidget {
             ),
           ],
           
-          if (provider.isHost && provider.activeClients.isNotEmpty) ...[
+          if (provider.isHost) ...[
             const SizedBox(height: 32),
             Row(
               children: [
@@ -252,25 +252,26 @@ class DashboardScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: provider.activeClients.length,
-                separatorBuilder: (context, index) => const Divider(height: 1),
-                itemBuilder: (context, index) {
-                  final clientIp = provider.activeClients[index];
-                  return ListTile(
-                    leading: const CircleAvatar(child: Icon(Icons.phone_android, size: 20)),
-                    title: Text(clientIp),
-                    subtitle: Text(l10n.connectedViaLan),
-                    trailing: const Icon(Icons.circle, color: Colors.green, size: 12),
-                  );
-                },
+            if (provider.activeClients.isNotEmpty)
+              Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: provider.activeClients.length,
+                  separatorBuilder: (context, index) => const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final clientIp = provider.activeClients[index];
+                    return ListTile(
+                      leading: const CircleAvatar(child: Icon(Icons.phone_android, size: 20)),
+                      title: Text(clientIp),
+                      subtitle: Text(l10n.connectedViaLan),
+                      trailing: const Icon(Icons.circle, color: Colors.green, size: 12),
+                    );
+                  },
+                ),
               ),
-            ),
           ],
           
           if (provider.errorMessage != null) ...[

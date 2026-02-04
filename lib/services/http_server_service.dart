@@ -189,16 +189,33 @@ class HttpServerService {
       final payload = await request.readAsString();
       final map = jsonDecode(payload);
       final member = Member.fromMap(map);
-      await _db.addMember(member);
+      Member finalMember = member;
+      final memberId = member.memberId.trim();
+      if (memberId.isEmpty || memberId == 'AUTO') {
+        final generated = await _db.generateMemberID();
+        finalMember = Member(
+          id: member.id,
+          firstName: member.firstName,
+          lastName: member.lastName,
+          email: member.email,
+          phone: member.phone,
+          memberId: generated,
+          registeredAt: member.registeredAt,
+        );
+      }
+      await _db.addMember(finalMember);
       
       await _db.addHistoryEntry({
         'timestamp': DateTime.now().toIso8601String(),
         'operation': 'ADD_MEMBER',
-        'details': 'Member added: ${member.fullName}',
+        'details': 'Member added: ${finalMember.fullName}',
         'user': request.context['shelf.io.connection_info']?.toString() ?? 'Client',
       });
       
-      return Response.ok('Member added');
+      return Response.ok(
+        jsonEncode(finalMember.toMap()),
+        headers: {'content-type': 'application/json'},
+      );
     });
 
     router.put('/members', (Request request) async {
