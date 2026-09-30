@@ -91,7 +91,7 @@ jobs:
         run: flutter build windows --release
 
       - name: Upload bundle artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: windows-release-bundle
           path: build/windows/x64/runner/Release/
