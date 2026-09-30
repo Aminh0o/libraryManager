@@ -4,7 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../l10n/app_localizations.dart';
+import '../ui/app_tokens.dart';
+import '../widgets/app_states.dart';
 
+/// Barcode scanner dialog (Phase L: tokenized).
+///
+/// The camera overlay chrome deliberately stays white-on-scrim: it renders ON
+/// TOP of the live video feed, where theme surfaces do not apply. Everything
+/// that sits on the app's own surfaces (the desktop keyboard-pane card, the
+/// error/permission states, fields, buttons) consumes the design system.
 class BarcodeScannerDialog extends StatefulWidget {
   const BarcodeScannerDialog({super.key});
 
@@ -22,7 +30,7 @@ class _BarcodeScannerDialogState extends State<BarcodeScannerDialog> {
   int _currentCameraIndex = 0;
   int _selectedCameraIndex = 0;
   bool _useDesktopCamera = false;
-  
+
   final TextEditingController _desktopController = TextEditingController();
   final FocusNode _desktopFocus = FocusNode();
 
@@ -76,7 +84,7 @@ class _BarcodeScannerDialogState extends State<BarcodeScannerDialog> {
       debugPrint('Permission error: $e');
       if (mounted) {
         setState(() {
-          _hasPermission = true; 
+          _hasPermission = true;
           _checkingPermission = false;
         });
       }
@@ -116,7 +124,8 @@ class _BarcodeScannerDialogState extends State<BarcodeScannerDialog> {
       controller!.switchCamera();
       if (_availableCamerasCount > 0) {
         setState(() {
-          _currentCameraIndex = (_currentCameraIndex + 1) % _availableCamerasCount;
+          _currentCameraIndex =
+              (_currentCameraIndex + 1) % _availableCamerasCount;
           _selectedCameraIndex = _currentCameraIndex;
         });
       }
@@ -173,19 +182,23 @@ class _BarcodeScannerDialogState extends State<BarcodeScannerDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    
+    final scheme = Theme.of(context).colorScheme;
+    final txt = Theme.of(context).textTheme;
+
     if (_isDesktop) {
       if (_useDesktopCamera) {
         _ensureController();
         return AlertDialog(
           title: Text(l10n.scanBarcode),
           contentPadding: EdgeInsets.zero,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: const RoundedRectangleBorder(borderRadius: AppRadius.dialog),
           content: SizedBox(
             width: double.maxFinite,
             height: 420,
             child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+              borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(AppRadius.xl),
+              ),
               child: Stack(
                 children: [
                   MobileScanner(
@@ -204,18 +217,22 @@ class _BarcodeScannerDialogState extends State<BarcodeScannerDialog> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.error, color: Colors.red, size: 32),
-                            const SizedBox(height: 8),
-                            Text('Scanner Error: ${error.errorCode}'),
+                            Icon(
+                              Icons.error_outline,
+                              color: scheme.error,
+                              size: AppIcon.xl,
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
+                            Text(l10n.scannerError('${error.errorCode}')),
                           ],
                         ),
                       );
                     },
                   ),
                   Positioned(
-                    top: 12,
-                    left: 12,
-                    right: 12,
+                    top: AppSpacing.lg,
+                    left: AppSpacing.lg,
+                    right: AppSpacing.lg,
                     child: Row(
                       children: [
                         Expanded(
@@ -224,13 +241,18 @@ class _BarcodeScannerDialogState extends State<BarcodeScannerDialog> {
                             builder: (context, state, child) {
                               final isInitialized = state.isInitialized;
                               final count = state.availableCameras ?? 0;
-                              if (isInitialized && (!_isControllerInitialized || count != _availableCamerasCount)) {
-                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                              if (isInitialized &&
+                                  (!_isControllerInitialized ||
+                                      count != _availableCamerasCount)) {
+                                WidgetsBinding.instance.addPostFrameCallback((
+                                  _,
+                                ) {
                                   if (!mounted) return;
                                   setState(() {
                                     _availableCamerasCount = count;
                                     _isControllerInitialized = true;
-                                    if (_selectedCameraIndex >= count && count > 0) {
+                                    if (_selectedCameraIndex >= count &&
+                                        count > 0) {
                                       _selectedCameraIndex = 0;
                                       _currentCameraIndex = 0;
                                     }
@@ -238,21 +260,27 @@ class _BarcodeScannerDialogState extends State<BarcodeScannerDialog> {
                                 });
                               }
 
-                              if (!isInitialized || count <= 1) return const SizedBox.shrink();
+                              if (!isInitialized || count <= 1) {
+                                return const SizedBox.shrink();
+                              }
 
                               return DecoratedBox(
                                 decoration: BoxDecoration(
                                   color: Colors.black54,
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: AppRadius.field,
                                 ),
                                 child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: AppSpacing.sm,
+                                  ),
                                   child: DropdownButtonHideUnderline(
                                     child: DropdownButton<int>(
                                       value: _selectedCameraIndex,
                                       dropdownColor: Colors.black87,
                                       iconEnabledColor: Colors.white,
-                                      style: const TextStyle(color: Colors.white),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                      ),
                                       items: List.generate(count, (i) {
                                         return DropdownMenuItem(
                                           value: i,
@@ -270,7 +298,7 @@ class _BarcodeScannerDialogState extends State<BarcodeScannerDialog> {
                             },
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: AppSpacing.sm),
                         IconButton(
                           onPressed: () {
                             setState(() => _useDesktopCamera = false);
@@ -278,16 +306,21 @@ class _BarcodeScannerDialogState extends State<BarcodeScannerDialog> {
                               _desktopFocus.requestFocus();
                             });
                           },
-                          icon: const Icon(Icons.keyboard, color: Colors.white),
-                          style: IconButton.styleFrom(backgroundColor: Colors.black45),
+                          icon: const Icon(
+                            Icons.keyboard_outlined,
+                            color: Colors.white,
+                          ),
+                          style: IconButton.styleFrom(
+                            backgroundColor: Colors.black45,
+                          ),
                         ),
                       ],
                     ),
                   ),
                   Positioned(
-                    bottom: 12,
-                    left: 12,
-                    right: 12,
+                    bottom: AppSpacing.lg,
+                    left: AppSpacing.lg,
+                    right: AppSpacing.lg,
                     child: Column(
                       children: [
                         ValueListenableBuilder(
@@ -297,12 +330,12 @@ class _BarcodeScannerDialogState extends State<BarcodeScannerDialog> {
                             return Slider(
                               value: _zoomFactor,
                               onChanged: isInitialized ? _handleZoom : null,
-                              activeColor: Colors.orange,
+                              activeColor: Colors.white,
                               inactiveColor: Colors.white24,
                             );
                           },
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppSpacing.sm),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
@@ -316,7 +349,9 @@ class _BarcodeScannerDialogState extends State<BarcodeScannerDialog> {
                               icon: Icons.switch_camera,
                               onPressed: _switchCamera,
                               label: l10n.switchCamera,
-                              enabled: _isControllerInitialized && _availableCamerasCount > 1,
+                              enabled:
+                                  _isControllerInitialized &&
+                                  _availableCamerasCount > 1,
                             ),
                           ],
                         ),
@@ -344,31 +379,41 @@ class _BarcodeScannerDialogState extends State<BarcodeScannerDialog> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: AppSpacing.allLg,
                 decoration: BoxDecoration(
-                  color: Colors.orange.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                  color: scheme.primary.withValues(alpha: 0.1),
+                  borderRadius: AppRadius.card,
+                  border: Border.all(
+                    color: scheme.primary.withValues(alpha: 0.3),
+                  ),
                 ),
                 child: Column(
                   children: [
-                    const Icon(Icons.usb, size: 48, color: Colors.orange),
-                    const SizedBox(height: 8),
-                    Text(
-                      l10n.scanWithUsbOrType, 
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    Icon(
+                      Icons.usb_outlined,
+                      size: AppIcon.empty,
+                      color: scheme.primary,
                     ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      "USB Scanners act as keyboards. Just scan!",
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      l10n.scanWithUsbOrType,
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                      style: txt.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      l10n.usbScannerNote,
+                      textAlign: TextAlign.center,
+                      style: txt.bodySmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.xxl),
               TextField(
                 controller: _desktopController,
                 focusNode: _desktopFocus,
@@ -376,8 +421,7 @@ class _BarcodeScannerDialogState extends State<BarcodeScannerDialog> {
                 decoration: InputDecoration(
                   labelText: l10n.barcode,
                   hintText: l10n.scanOrTypeHint,
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.qr_code),
+                  prefixIcon: const Icon(Icons.qr_code_2),
                   suffixIcon: IconButton(
                     icon: const Icon(Icons.send),
                     onPressed: () => _onDesktopSubmit(_desktopController.text),
@@ -410,189 +454,194 @@ class _BarcodeScannerDialogState extends State<BarcodeScannerDialog> {
     return AlertDialog(
       title: Text(l10n.scanBarcode),
       contentPadding: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: const RoundedRectangleBorder(borderRadius: AppRadius.dialog),
       content: SizedBox(
         width: double.maxFinite,
         height: 400,
         child: _checkingPermission
-            ? const Center(child: CircularProgressIndicator())
+            ? const AppLoadingState()
             : !_hasPermission
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.camera_alt, color: Colors.grey, size: 48),
-                          const SizedBox(height: 16),
-                          Text(
-                            l10n.cameraPermissionRequired,
-                            textAlign: TextAlign.center,
+            ? AppEmptyState(
+                icon: Icons.camera_alt_outlined,
+                title: l10n.cameraPermissionRequired,
+                action: FilledButton(
+                  onPressed: _checkPermission,
+                  child: Text(l10n.retry),
+                ),
+              )
+            : ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  bottom: Radius.circular(AppRadius.xl),
+                ),
+                child: Stack(
+                  children: [
+                    MobileScanner(
+                      controller: controller!,
+                      onDetect: (capture) {
+                        final List<Barcode> barcodes = capture.barcodes;
+                        if (barcodes.isNotEmpty) {
+                          final String? code = barcodes.first.rawValue;
+                          if (code != null && mounted) {
+                            Navigator.pop(context, code);
+                          }
+                        }
+                      },
+                      errorBuilder: (context, error, child) {
+                        return Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.error_outline,
+                                color: scheme.error,
+                                size: AppIcon.xl,
+                              ),
+                              const SizedBox(height: AppSpacing.sm),
+                              Text(l10n.scannerError('${error.errorCode}')),
+                            ],
                           ),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: _checkPermission,
-                            child: const Text('Retry'),
-                          ),
-                        ],
+                        );
+                      },
+                    ),
+                    Positioned(
+                      top: AppSpacing.lg,
+                      right: AppSpacing.lg,
+                      child: ValueListenableBuilder(
+                        valueListenable: controller!,
+                        builder: (context, state, child) {
+                          final isInitialized = state.isInitialized;
+                          final count = state.availableCameras ?? 0;
+
+                          if (isInitialized &&
+                              (!_isControllerInitialized ||
+                                  count != _availableCamerasCount)) {
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              if (!mounted) return;
+                              setState(() {
+                                _availableCamerasCount = count;
+                                _isControllerInitialized = true;
+                                if (_selectedCameraIndex >= count &&
+                                    count > 0) {
+                                  _selectedCameraIndex = 0;
+                                  _currentCameraIndex = 0;
+                                }
+                              });
+                            });
+                          }
+
+                          if (!isInitialized || count <= 1) {
+                            return const SizedBox.shrink();
+                          }
+
+                          return DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: Colors.black54,
+                              borderRadius: AppRadius.field,
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.sm,
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<int>(
+                                  value: _selectedCameraIndex,
+                                  dropdownColor: Colors.black87,
+                                  iconEnabledColor: Colors.white,
+                                  style: const TextStyle(color: Colors.white),
+                                  items: List.generate(count, (i) {
+                                    return DropdownMenuItem(
+                                      value: i,
+                                      child: Text(_cameraLabel(l10n, i)),
+                                    );
+                                  }),
+                                  onChanged: (value) {
+                                    if (value == null) return;
+                                    _setCameraIndex(value);
+                                  },
+                                ),
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
-                  )
-                : ClipRRect(
-                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
-                  child: Stack(
-                      children: [
-                        MobileScanner(
-                          controller: controller!,
-                          onDetect: (capture) {
-                            final List<Barcode> barcodes = capture.barcodes;
-                            if (barcodes.isNotEmpty) {
-                              final String? code = barcodes.first.rawValue;
-                              if (code != null && mounted) {
-                                Navigator.pop(context, code);
-                              }
-                            }
-                          },
-                          errorBuilder: (context, error, child) {
-                            return Center(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(Icons.error, color: Colors.red, size: 32),
-                                  const SizedBox(height: 8),
-                                  Text('Scanner Error: ${error.errorCode}'),
-                                ],
-                              ),
-                            );
-                          },
+                    // Scanner Overlay
+                    IgnorePointer(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.5),
                         ),
-                        Positioned(
-                          top: 12,
-                          right: 12,
-                          child: ValueListenableBuilder(
-                            valueListenable: controller!,
-                            builder: (context, state, child) {
-                              final isInitialized = state.isInitialized;
-                              final count = state.availableCameras ?? 0;
-
-                              if (isInitialized && (!_isControllerInitialized || count != _availableCamerasCount)) {
-                                WidgetsBinding.instance.addPostFrameCallback((_) {
-                                  if (!mounted) return;
-                                  setState(() {
-                                    _availableCamerasCount = count;
-                                    _isControllerInitialized = true;
-                                    if (_selectedCameraIndex >= count && count > 0) {
-                                      _selectedCameraIndex = 0;
-                                      _currentCameraIndex = 0;
-                                    }
-                                  });
-                                });
-                              }
-
-                              if (!isInitialized || count <= 1) return const SizedBox.shrink();
-
-                              return DecoratedBox(
-                                decoration: BoxDecoration(
-                                  color: Colors.black54,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                                  child: DropdownButtonHideUnderline(
-                                    child: DropdownButton<int>(
-                                      value: _selectedCameraIndex,
-                                      dropdownColor: Colors.black87,
-                                      iconEnabledColor: Colors.white,
-                                      style: const TextStyle(color: Colors.white),
-                                      items: List.generate(count, (i) {
-                                        return DropdownMenuItem(
-                                          value: i,
-                                          child: Text(_cameraLabel(l10n, i)),
-                                        );
-                                      }),
-                                      onChanged: (value) {
-                                        if (value == null) return;
-                                        _setCameraIndex(value);
-                                      },
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                        // Scanner Overlay
-                        IgnorePointer(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.5),
-                            ),
-                            child: Center(
-                              child: Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  Container(
-                                    width: 250,
-                                    height: 250,
-                                    decoration: BoxDecoration(
-                                      border: Border.all(color: Colors.white, width: 2),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                  Container(
-                                    width: 250,
-                                    height: 2,
-                                    color: Colors.red.withValues(alpha: 0.8),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        // Controls
-                        Positioned(
-                          bottom: 16,
-                          left: 16,
-                          right: 16,
-                          child: Column(
+                        child: Center(
+                          child: Stack(
+                            alignment: Alignment.center,
                             children: [
-                              ValueListenableBuilder(
-                                valueListenable: controller!,
-                                builder: (context, state, child) {
-                                  final isInitialized = state.isInitialized;
-
-                                  return Slider(
-                                    value: _zoomFactor,
-                                    onChanged: isInitialized ? _handleZoom : null,
-                                    activeColor: Colors.orange,
-                                    inactiveColor: Colors.white24,
-                                  );
-                                },
+                              Container(
+                                width: 250,
+                                height: 250,
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 2,
+                                  ),
+                                  borderRadius: AppRadius.card,
+                                ),
                               ),
-                              const SizedBox(height: 8),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                children: [
-                                  _ControlButton(
-                                    icon: Icons.flash_on,
-                                    onPressed: _toggleTorch,
-                                    label: l10n.flash,
-                                    enabled: _isControllerInitialized,
-                                  ),
-                                  _ControlButton(
-                                    icon: Icons.switch_camera,
-                                    onPressed: _switchCamera,
-                                    label: l10n.switchCamera,
-                                    enabled: _isControllerInitialized && _availableCamerasCount > 1,
-                                  ),
-                                ],
+                              Container(
+                                width: 250,
+                                height: 2,
+                                color: Colors.red.withValues(alpha: 0.8),
                               ),
                             ],
                           ),
                         ),
-                      ],
+                      ),
                     ),
+                    // Controls
+                    Positioned(
+                      bottom: AppSpacing.lg,
+                      left: AppSpacing.lg,
+                      right: AppSpacing.lg,
+                      child: Column(
+                        children: [
+                          ValueListenableBuilder(
+                            valueListenable: controller!,
+                            builder: (context, state, child) {
+                              final isInitialized = state.isInitialized;
+
+                              return Slider(
+                                value: _zoomFactor,
+                                onChanged: isInitialized ? _handleZoom : null,
+                                activeColor: Colors.white,
+                                inactiveColor: Colors.white24,
+                              );
+                            },
+                          ),
+                          const SizedBox(height: AppSpacing.sm),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              _ControlButton(
+                                icon: Icons.flash_on,
+                                onPressed: _toggleTorch,
+                                label: l10n.flash,
+                                enabled: _isControllerInitialized,
+                              ),
+                              _ControlButton(
+                                icon: Icons.switch_camera,
+                                onPressed: _switchCamera,
+                                label: l10n.switchCamera,
+                                enabled:
+                                    _isControllerInitialized &&
+                                    _availableCamerasCount > 1,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
+              ),
       ),
       actions: [
         TextButton(
@@ -629,10 +678,10 @@ class _ControlButton extends StatelessWidget {
           disabledColor: Colors.white24,
           style: IconButton.styleFrom(
             backgroundColor: Colors.black45,
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(AppSpacing.md),
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: AppSpacing.xs),
         Text(
           label,
           style: TextStyle(

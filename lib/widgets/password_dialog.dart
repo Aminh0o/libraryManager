@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/library_provider.dart';
+import '../ui/app_tokens.dart';
 
 class PasswordDialog extends StatefulWidget {
   final String title;
@@ -32,7 +33,7 @@ class _PasswordDialogState extends State<PasswordDialog> {
         autofocus: true,
         decoration: InputDecoration(
           labelText: l10n.adminPassword,
-          border: const OutlineInputBorder(),
+          prefixIcon: const Icon(Icons.lock_outline, size: AppIcon.md),
         ),
         onSubmitted: (_) => _submit(),
       ),
@@ -41,31 +42,40 @@ class _PasswordDialogState extends State<PasswordDialog> {
           onPressed: () => Navigator.pop(context, false),
           child: Text(l10n.cancel),
         ),
-        ElevatedButton(
-          onPressed: _submit,
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
-          child: Text(l10n.validate),
-        ),
+        FilledButton(onPressed: _submit, child: Text(l10n.validate)),
       ],
     );
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     final provider = Provider.of<LibraryProvider>(context, listen: false);
     final l10n = AppLocalizations.of(context)!;
-    if (provider.checkPassword(_controller.text)) {
+    final messenger = ScaffoldMessenger.of(context);
+    final errorColor = Theme.of(context).colorScheme.error;
+    // FE2-11: authoritative server-side verification on the host, not the
+    // local empty-password check that any operator could pass.
+    final ok = await provider.verifyAdminPassword(_controller.text);
+    if (!mounted) return;
+    if (ok) {
       Navigator.pop(context, true);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.wrongPassword), backgroundColor: Colors.red),
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(l10n.wrongPassword),
+          backgroundColor: errorColor,
+        ),
       );
     }
   }
 }
 
-Future<bool> showPasswordPrompt(BuildContext context, {required String title}) async {
+Future<bool> showPasswordPrompt(
+  BuildContext context, {
+  required String title,
+}) async {
   return await showDialog<bool>(
-    context: context,
-    builder: (context) => PasswordDialog(title: title),
-  ) ?? false;
+        context: context,
+        builder: (context) => PasswordDialog(title: title),
+      ) ??
+      false;
 }

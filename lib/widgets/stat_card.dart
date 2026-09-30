@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 
-class StatCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final IconData icon;
-  final Color color;
+import '../ui/app_tokens.dart';
 
+/// A single operational metric (dashboard "at a glance" row).
+///
+/// Phase D (frontend reconstruction): the old tile painted a diagonal
+/// gradient, a 20px radius and `Colors.black87` text -- decoration that broke
+/// dark mode and made every metric shout the same volume. The replacement is a
+/// quiet bordered surface (shaped by the global Card theme) with ONE
+/// restrained signal: a tonal icon chip in the metric's semantic colour. The
+/// number carries the hierarchy via the type scale, not via saturation.
+class StatCard extends StatelessWidget {
   const StatCard({
     super.key,
     required this.title,
@@ -14,33 +19,32 @@ class StatCard extends StatelessWidget {
     required this.color,
   });
 
+  final String title;
+  final String value;
+  final IconData icon;
+
+  /// Semantic hue for the icon chip only (from [AppStatus]); the text always
+  /// uses theme colors so the tile stays legible in dark mode.
+  final Color color;
+
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final txt = Theme.of(context).textTheme;
     return Card(
-      elevation: 4,
-      shadowColor: color.withValues(alpha: 0.2),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          gradient: LinearGradient(
-            colors: [color.withValues(alpha: 0.1), Colors.white],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(16),
+                color: color.withValues(alpha: 0.14),
+                borderRadius: AppRadius.tile,
               ),
-              child: Icon(icon, color: color, size: 28),
+              child: Icon(icon, color: color, size: AppIcon.xl),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: AppSpacing.lg),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -51,22 +55,20 @@ class StatCard extends StatelessWidget {
                     title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 12,
+                    style: txt.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppSpacing.xs),
                   Flexible(
                     child: Text(
                       value,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                      style: txt.headlineSmall?.copyWith(
+                        color: scheme.onSurface,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
