@@ -1,9 +1,4 @@
-<p align="center">
-  <strong>Library Manager</strong><br/>
-  <sub>A professional Windows desktop library management system.</sub>
-</p>
-
-<h1 align="center">Library Manager</h1>
+<h1 align="center">📚 Library Manager</h1>
 
 <p align="center">
   A professional Windows desktop library management system —<br/>
@@ -13,7 +8,7 @@
 
 <p align="center">
   <a href="#-download-and-install"><img alt="Download" src="https://img.shields.io/badge/download-windows%20x64-2f6feb?style=flat-square&logo=windows&logoColor=white"/></a>
-  <a href="https://github.com/Aminh0o/library_manager/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/Aminh0o/library_manager/ci.yml?style=flat-square&label=tests"/></a>
+  <a href="https://github.com/Aminh0o/libraryManager/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/Aminh0o/libraryManager/ci.yml?style=flat-square&label=tests"/></a>
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-4b2e83?style=flat-square"/></a>
   <a href="#-feature-tour"><img alt="Screens" src="https://img.shields.io/badge/screens-14-0d8a6a?style=flat-square"/></a>
   <a href="SECURITY.md"><img alt="Security" src="https://img.shields.io/badge/security-PBKDF2--HMAC--SHA256-b6236a?style=flat-square"/></a>
@@ -80,7 +75,7 @@ machine as the LAN host.
 
 ```powershell
 git clone https://github.com/Aminh0o/libraryManager.git
-cd library_manager
+cd libraryManager
 
 flutter --version          # require Flutter 3.32+ / Dart 3.10+
 flutter pub get
@@ -117,17 +112,21 @@ to it. No network exposure.
 
 ### Host + clients on a LAN
 
-1. On the machine that will hold the data: **Settings → Network → Enable
-   host mode**. The app opens a listening socket on port `8931` and shows a
-   pairing QR code.
-2. On each client: **Settings → Network → Pair with host**, scan the QR (or
-   type `http://<host-ip>:8931`), pick a role for that workstation.
-3. The firewall rule for the port is created on first enable; the app asks
-   for elevation exactly once and stores the outcome so future launches are
-   silent.
+1. On the machine that will hold the data: **Settings → LAN → Host**. The app
+   binds the HTTP API on TCP `8080` and the pairing-discovery socket on UDP
+   `19001`, then shows a pairing QR code.
+2. On each client: **Settings → LAN → Client**, scan the QR (or enter the
+   pairing code, or type the host address `http://<host-ip>:8080`), then pick a
+   role for that workstation.
+3. On the first host start the app offers to open the Windows Firewall for
+   those two ports — a single UAC prompt whose outcome is remembered, so later
+   launches are silent. If a client still cannot find the host, **Settings →
+   Data Protection → Pairing diagnostic** reports exactly which prerequisite
+   (port listening, firewall rule, or a blocking rule) is missing.
 
-Clients read and write through the host — there is **no shared file lock** and
-no risk of two machines clobbering the same record.
+Clients read and write through the host over Bearer-authenticated HTTP — there
+is **no shared file lock** and no risk of two machines clobbering the same
+record.
 
 ### Roles
 
@@ -158,7 +157,7 @@ Repository seam (abstract LibraryRepository)
 DatabaseService    ApiService
 (SQLite/FFI)        (HTTP client)
    │                    ▲
-   │                    │  HTTPS/Bearer over LAN
+   │                    │  HTTP + Bearer over LAN
    ▼                    │
 AuthService (PBKDF2,   shelf Router (host)
 roles, CAS, last-admin) ─── Idempotency-Key middleware

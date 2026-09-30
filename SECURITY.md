@@ -13,8 +13,9 @@ and which security controls are already in place.
 If you believe you have found a security issue in this project, please
 **do not open a public GitHub issue**. Instead:
 
-1. Email **security@<your-domain-here>** (replace with the maintainer's
-   address configured on the repo landing page) with:
+1. Open a **private vulnerability report** through GitHub's built-in flow:
+   [Report a vulnerability](https://github.com/Aminh0o/libraryManager/security/advisories/new),
+   including:
    - A short summary of the issue.
    - Steps to reproduce — a minimal scenario is enough; a proof-of-concept
      patch is even better.
@@ -179,14 +180,13 @@ the corresponding file so it stays fixed forever.
   the deployment model, and adding TLS would require either bundling a
   CA (bad trust story) or shipping a per-install self-signed cert (users
   get unsafe-everywhere warnings). If you need TLS, put the host behind
-  a reverse proxy that terminates TLS and forwards to `localhost:8931`.
+  a reverse proxy that terminates TLS and forwards to `localhost:8080`.
 
 ---
 
 ## Contact
 
-Replace `security@<your-domain-here>` above with your reporting address and
-optionally add a PGP fingerprint here before publishing this file. If you
-prefer GitHub's built-in *Report a vulnerability* private-disclosure flow,
-enable it in **Settings → Security → Code security and analysis** and this
-section can point at that instead.
+Please use the GitHub **Report a vulnerability** private-disclosure flow
+linked above — it reaches the maintainer directly and keeps the report private
+until a fix ships. Do not open a public issue for an unpatched security
+problem.
