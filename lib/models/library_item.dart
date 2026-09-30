@@ -9,6 +9,11 @@ class LibraryItem {
   final double taux; // Price in DZD
   final String emplacementStock;
   final String status;
+  /// Per-row optimistic-concurrency token (TX-06). Advanced by the server on
+  /// every successful update; surfaced on reads so a client can send it back as
+  /// `X-Expected-Version` and have a stale whole-row write REJECTED (409) rather
+  /// than silently clobber another client's edit. Defaults to 0 for a new item.
+  final int rowVersion;
 
   LibraryItem({
     required this.code,
@@ -20,6 +25,7 @@ class LibraryItem {
     required this.taux,
     required this.emplacementStock,
     this.status = 'Disponible',
+    this.rowVersion = 0,
   });
 
   Map<String, dynamic> toMap() {
@@ -33,6 +39,7 @@ class LibraryItem {
       'taux': taux,
       'emplacement_stock': emplacementStock,
       'status': status,
+      'row_version': rowVersion,
     };
   }
 
@@ -47,6 +54,7 @@ class LibraryItem {
       taux: map['taux']?.toDouble() ?? 0.0,
       emplacementStock: map['emplacement_stock'] ?? '',
       status: map['status'] ?? 'Disponible',
+      rowVersion: map['row_version']?.toInt() ?? 0,
     );
   }
 
