@@ -6,6 +6,52 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.1.1] — 2026-09-30
+
+Codename *post-release hardening*. Two follow-ups on top of 1.1.0 that close
+the last two "not quite 10/10" items in the production-readiness audit, plus a
+format baseline that keeps CI green for every future contributor.
+
+### Fixed
+
+- **Circulation - French error sentences leaking into the audit trail**.
+  Two provider-level refusals (`item not available`, `no active loan for
+  scan`) were thrown as raw `Exception('Cet article ...')` / `Exception('Aucun
+  emprunt ...')` strings. On an English or Arabic session the operator saw the
+  French sentence because `describeError` fell through to the generic
+  fallback, and the same sentence ended up in `debugPrint`. They now throw
+  typed `ItemNotAvailableException` / `NoActiveLoanException` values that
+  `describeError` maps to the existing `l10n.itemNotAvailable` and
+  `l10n.noActiveLoan` strings, so every locale reads correctly.
+
+### Added
+
+- **Global error boundary** in `lib/main.dart`. `FlutterError.onError` and
+  `runZonedGuarded` are now installed at startup so a widget build failure, a
+  listener that throws during `notifyListeners`, or any uncaught async error
+  is captured to the rotating diagnostic log (`appLog.error('flutter', ...)`
+  and `appLog.error('unzone', ...)`) rather than appearing as an unreadable
+  red box or a silent crash. Errors that arrive before the logger is wired
+  are buffered in memory and flushed once `initAppLogging` completes.
+
+### Changed
+
+- **`dart format` baseline**. The CI workflow that shipped in 1.1.0 gates on
+  `dart format --set-exit-if-changed`. The codebase had never been run through
+  the formatter with those gates in place, so every PR failed with a wall of
+  "Changed <file>" lines. A one-shot `dart format .` reflowed 150 files with
+  zero semantic change; four pre-existing
+  `curly_braces_in_flow_control_structures` infos surfaced afterwards and were
+  fixed in the same pass.
+
+### Migration notes
+
+No schema change. Clients on 1.1.0 continue to interoperate; the LAN wire
+protocol is identical. Upgrading from 1.1.0 to 1.1.1 is a straight swap of
+the bundle.
+
+---
+
 ## [1.1.0] — 2026-09-30
 
 Codename *production-hardened*. This release closes every defect uncovered
