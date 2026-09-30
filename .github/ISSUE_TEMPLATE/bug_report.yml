@@ -1,0 +1,96 @@
+name: Bug report
+description: Report a reproducible defect.
+title: "[bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file this. Please read
+        [`CONTRIBUTING.md`](../blob/main/CONTRIBUTING.md) first — a good
+        report has a **minimal, reproducible** scenario.
+  - type: input
+    id: version
+    attributes:
+      label: App version
+      description: The version shown in Settings → About (e.g. `1.1.0+4`).
+      placeholder: "1.1.0+4"
+    validations:
+      required: true
+  - type: dropdown
+    id: role
+    attributes:
+      label: Signed-in role
+      options: [viewer, staff, admin, not-signed-in]
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Network mode
+      options: [standalone, host, client]
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Windows build
+      description: `winver` output (e.g. `22631.4317`).
+      placeholder: "22631.4317"
+    validations:
+      required: true
+  - type: dropdown
+    id: language
+    attributes:
+      label: UI language
+      options: [English, Français, العربية]
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: A clear, one-paragraph description of the defect.
+      placeholder: Clicking Confirm Return with an empty field shows no error and the loan stays checked-out.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Numbered, minimal, deterministic.
+      value: |
+        1. Go to ...
+        2. Click ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+      description: What should have happened instead, and why that is correct.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log lines
+      description: |
+        Paste the last 20–40 lines from
+        `%LOCALAPPDATA%\library_manager\logs\`. **Redact any patron names,
+        emails, item codes or IP addresses.** Do not attach the raw log file.
+      render: text
+  - type: checkboxes
+    id: search
+    attributes:
+      label: Pre-submission checks
+      options:
+        - label: I searched open and closed issues and this is not a duplicate.
+          required: true
+        - label: I reproduced this on the current release, not an older build.
+          required: true
+        - label: This report contains no patron PII, credentials or tokens.
+          required: true
+        - label: If this is a **security** issue I emailed the private-disclosure address in `SECURITY.md` instead.
+          required: true

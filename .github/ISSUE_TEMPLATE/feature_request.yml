@@ -1,0 +1,89 @@
+name: Feature request
+description: Propose a new capability or an improvement.
+title: "[feat]: "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Feature requests are welcome, but the maintainers' time is finite.
+        Before you file, please:
+        1. Read the **Roadmap** section of the README.
+        2. Search open and closed issues.
+        3. Sketch the smallest version of the idea that still solves the
+           real problem. Large, vaguely-scoped "add everything" requests
+           are usually closed.
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: |
+        What are you trying to do today, and how does the app fall short?
+        Write this as a user story, not as a solution.
+      placeholder: >
+        As a circulation desk operator I need to check out 30 books from
+        a class visit in under two minutes, but the current flow forces
+        me to select the member for every single scan.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: The smallest change that would solve it
+      description: Concrete, scoped. Mockups, screen names and field names welcome.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you have considered
+      description: Anything you tried, other products you compared, workarounds you rejected.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which surface does this touch?
+      multiple: true
+      options:
+        - Catalogue
+        - Circulation
+        - Members
+        - Reservations
+        - Fines
+        - Reports
+        - LAN / pairing
+        - Users & roles
+        - Chat
+        - Settings
+        - Localisation / RTL
+        - Accessibility
+        - Diagnostics / backup
+        - Build / tooling
+    validations:
+      required: true
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Who benefits?
+      options:
+        - A single operator (this install)
+        - All staff on a LAN
+        - Library patrons
+        - Downstream developers
+        - Compliance / audit
+    validations:
+      required: true
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks and open questions
+      description: |
+        Migration? Performance? Interaction with an existing feature?
+        Anything you would want a reviewer to think about before merging.
+  - type: checkboxes
+    id: willing
+    attributes:
+      label: Willingness to help
+      options:
+        - label: I am willing to open a draft PR if the maintainers agree on the scope.
+        - label: I can test a pre-release build with this feature on my install.
+        - label: I can supply real-world sample data (redacted) for a scenario.

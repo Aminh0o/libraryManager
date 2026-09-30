@@ -1,0 +1,99 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Never run two CI jobs for the same ref — the second one cancels the first.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Static analysis
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Show Flutter version
+        run: flutter --version
+
+      - name: Restore dependencies
+        run: flutter pub get
+
+      - name: Regenerate localisations
+        run: flutter gen-l10n
+
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Analyze
+        run: flutter analyze --no-pub
+
+  test:
+    name: Test suite
+    needs: analyze
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Restore dependencies
+        run: flutter pub get
+
+      - name: Regenerate localisations
+        run: flutter gen-l10n
+
+      - name: Run tests
+        run: flutter test --no-pub --reporter expanded
+
+  build:
+    name: Windows release build
+    needs: test
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Restore dependencies
+        run: flutter pub get
+
+      - name: Regenerate localisations
+        run: flutter gen-l10n
+
+      - name: Build release
+        run: flutter build windows --release
+
+      - name: Upload bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release-bundle
+          path: build/windows/x64/runner/Release/
+          if-no-files-found: error
+          retention-days: 7

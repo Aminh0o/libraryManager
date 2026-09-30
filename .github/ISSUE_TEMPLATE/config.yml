@@ -1,0 +1,10 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or discussion
+    url: https://github.com/Aminh0o/libraryManager/discussions
+    about: Ask "how do I..." questions on Discussions, not Issues.
+  - name: Security vulnerability
+    url: https://github.com/Aminh0o/libraryManager/security/policy
+    about: |
+      Do NOT open a public issue for a security problem. Read SECURITY.md and
+      use the private-disclosure channel described there.
