@@ -1,5 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kReleaseMode;
+import 'package:flutter/foundation.dart' show kDebugMode, kReleaseMode;
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -13,40 +15,94 @@ import 'services/onboarding_service.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/home_screen.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+void main() {
+  // Global error boundary. Everything the framework throws — a widget build
+  // blowing up, an uncaught Future, a listener that throws during notify —
+  // lands in the rotating log file rather than a red box the operator cannot
+  // read or a silent crash they cannot report.
+  //
+  // The whole body runs inside a guarded zone so that async errors thrown
+  // after `runApp` (which the framework cannot reach via FlutterError.onError)
+  // still surface here. Logging failures during startup are swallowed: a
+  // broken diagnostic sink must not stop the app from booting.
+  Object? startupError;
+  StackTrace? startupStack;
 
-  // Initialize FFI for Windows
-  sqfliteFfiInit();
-  databaseFactory = databaseFactoryFfi;
+  runZonedGuarded<Future<void>>(
+    () async {
+      WidgetsFlutterBinding.ensureInitialized();
 
-  // Persist diagnostics to a rotating log file so release builds stay
-  // diagnosable (REL/logging). Best-effort: a logging failure must never stop
-  // the app from starting.
-  try {
-    final docs = await getApplicationDocumentsDirectory();
-    initAppLogging(docsDir: docs);
-    appLog.info(
-      'app',
-      'Library Manager starting (release=${kReleaseMode ? "yes" : "no"})',
-    );
-  } catch (e) {
-    debugPrint('logging init skipped: $e');
-  }
+      FlutterError.onError = (details) {
+        // In debug, still print the framework's formatted report so the
+        // developer console keeps its familiar output.
+        if (kDebugMode) FlutterError.presentError(details);
+        try {
+          appLog.error(
+            'flutter',
+            'Framework error: ${details.library} / ${details.context}',
+            details.exception,
+            details.stack,
+          );
+        } catch (_) {
+          // Logger not yet wired — capture the very first failure so the
+          // post-init flush below can retry it.
+          startupError ??= details.exception;
+          startupStack ??= details.stack;
+        }
+      };
 
-  final bool setupComplete = await OnboardingService.isSetupComplete();
+      // Initialize FFI for Windows
+      sqfliteFfiInit();
+      databaseFactory = databaseFactoryFfi;
 
-  // Phase 14/17: per-device appearance + feature flags, resolved once before
-  // the first frame so the very first paint already uses the saved theme.
-  final appearance = await AppearanceController.load();
-  final flags = await FeatureFlags.load();
+      // Persist diagnostics to a rotating log file so release builds stay
+      // diagnosable (REL/logging). Best-effort: a logging failure must never
+      // stop the app from starting.
+      try {
+        final docs = await getApplicationDocumentsDirectory();
+        initAppLogging(docsDir: docs);
+        appLog.info(
+          'app',
+          'Library Manager starting (release=${kReleaseMode ? "yes" : "no"})',
+        );
+        if (startupError != null) {
+          appLog.error(
+            'flutter',
+            'Framework error before logging was ready',
+            startupError,
+            startupStack,
+          );
+          startupError = null;
+          startupStack = null;
+        }
+      } catch (e) {
+        debugPrint('logging init skipped: $e');
+      }
 
-  runApp(
-    MyApp(
-      initialRoute: setupComplete ? '/' : '/onboarding',
-      appearance: appearance,
-      flags: flags,
-    ),
+      final bool setupComplete = await OnboardingService.isSetupComplete();
+
+      // Phase 14/17: per-device appearance + feature flags, resolved once
+      // before the first frame so the very first paint already uses the saved
+      // theme.
+      final appearance = await AppearanceController.load();
+      final flags = await FeatureFlags.load();
+
+      runApp(
+        MyApp(
+          initialRoute: setupComplete ? '/' : '/onboarding',
+          appearance: appearance,
+          flags: flags,
+        ),
+      );
+    },
+    (error, stack) {
+      // Async errors that escape the framework's own handler still reach here.
+      try {
+        appLog.error('unzone', 'Unhandled async error', error, stack);
+      } catch (_) {
+        debugPrint('Unhandled async error: $error\n$stack');
+      }
+    },
   );
 }
 
