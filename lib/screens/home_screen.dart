@@ -10,6 +10,7 @@ import '../providers/library_provider.dart';
 import '../providers/appearance_controller.dart';
 import '../services/feature_flags.dart';
 import '../services/error_messages.dart';
+import '../services/windows_firewall_service.dart';
 import '../widgets/barcode_scanner_dialog.dart';
 import '../widgets/app_states.dart';
 import '../widgets/item_status_cell.dart';
@@ -45,6 +46,54 @@ class _HomeScreenState extends State<HomeScreen> {
   // icons-only (§12). The user's toggle is authoritative, but a narrow window
   // always forces a collapse (§38) so the work area is never starved.
   bool _railPinnedExtended = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // One-time firewall prompt for first-time host-mode users on Windows.
+    // Deferred to a post-frame callback so the dialog has a valid context.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybePromptFirewall());
+  }
+
+  Future<void> _maybePromptFirewall() async {
+    if (!mounted) return;
+    final provider = Provider.of<LibraryProvider>(context, listen: false);
+    final l10n = AppLocalizations.of(context)!;
+    if (!await provider.shouldPromptFirewall()) return;
+    if (!mounted) return;
+
+    final shouldEnable = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        title: Text(l10n.firewallPromptTitle),
+        content: Text(l10n.firewallPromptBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.firewallPromptDeny),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l10n.firewallPromptAllow),
+          ),
+        ],
+      ),
+    );
+
+    await provider.markFirewallPromptShown();
+
+    if (shouldEnable == true && mounted) {
+      final messenger = ScaffoldMessenger.of(context);
+      final ok = await WindowsFirewallService.ensureLanFirewallRules();
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(ok ? l10n.lanAccessEnabled : l10n.lanAccessFailed),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

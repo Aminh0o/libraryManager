@@ -842,6 +842,63 @@ class AppLocalizationsFr extends AppLocalizations {
       'Impossible d\'ajouter les règles. Veuillez accepter la demande administrateur.';
 
   @override
+  String get firewallPromptTitle => 'Autoriser l\'accès LAN ?';
+
+  @override
+  String get firewallPromptBody =>
+      'Library Manager doit ouvrir les ports UDP 19001 (découverte par appairage) et TCP 8080 (API HTTP) pour que les autres machines de votre réseau local puissent trouver et se connecter à cet hôte. Une invite de sécurité Windows s\'affichera. Si vous refusez, les autres machines ne pourront pas s\'appairer avec cet hôte.';
+
+  @override
+  String get firewallPromptAllow => 'Autoriser';
+
+  @override
+  String get firewallPromptDeny => 'Pas maintenant';
+
+  @override
+  String get pairingDiagnosticTitle => 'Diagnostic d\'appairage';
+
+  @override
+  String get pairingDiagnosticRun => 'Lancer le diagnostic';
+
+  @override
+  String get pairingDiagnosticRunning => 'En cours...';
+
+  @override
+  String get pairingDiagnosticUdpOk =>
+      'Le port UDP 19001 est en écoute sur cette machine.';
+
+  @override
+  String get pairingDiagnosticUdpFail =>
+      'Le port UDP 19001 n\'est PAS en écoute. L\'application hôte n\'est pas lancée, ou est en mode Client au lieu du mode Hôte.';
+
+  @override
+  String get pairingDiagnosticFwOk =>
+      'Les règles Windows Firewall pour Library Manager sont installées.';
+
+  @override
+  String get pairingDiagnosticFwFail =>
+      'Les règles Windows Firewall sont MANQUANTES. Cliquez sur \'Activer l\'accès LAN\' dans Paramètres -> Protection des données.';
+
+  @override
+  String get pairingDiagnosticBlockFound =>
+      'Une règle de blocage intercepte UDP 19001 (probablement ajoutée par un antivirus).';
+
+  @override
+  String get pairingDiagnosticNoBlock =>
+      'Aucune règle de blocage trouvée pour UDP 19001.';
+
+  @override
+  String get pairingDiagnosticNotWindows =>
+      'Le diagnostic n\'est disponible que sur Windows.';
+
+  @override
+  String get pairingDiagnosticClose => 'Fermer';
+
+  @override
+  String get pairingHostNotFoundDetailed =>
+      'Aucun hôte trouvé. Causes courantes :\n\n1. Windows Firewall sur l\'hôte bloque UDP 19001. Sur l\'hôte, ouvrez Paramètres -> Protection des données -> Activer l\'accès LAN et acceptez l\'invite Admin.\n2. La machine hôte n\'est pas en mode Hôte. Sur l\'hôte, vérifiez Paramètres -> LAN et assurez-vous que \'Hôte\' est sélectionné.\n3. Le code d\'appairage a expiré (fenêtre de 5 minutes). Générez un nouveau code sur l\'hôte et réessayez.\n4. L\'isolation AP / isolation client sur le routeur bloque le trafic entre appareils. Essayez un switch câblé ou un réseau Wi-Fi non invité.\n5. L\'hôte et le client sont sur des sous-réseaux différents (ex. 192.168.1.x vs 192.168.2.x). Le broadcast dirigé ne traverse pas les sous-réseaux.\n6. Le filtre réseau de l\'antivirus (Kaspersky, Bitdefender, Norton, ESET) bloque UDP 19001. Désactivez-le temporairement et réessayez.';
+
+  @override
   String get quickScan => 'Scan Rapide';
 
   @override

@@ -30,8 +30,9 @@ void main() {
     test('no bare port-default literal survives outside the config source', () {
       // Walk every production Dart file; a numeric 8080/19001 token is allowed
       // only inside comments, inside the firewall display-name label constants,
-      // or in network_config.dart itself (the single source). Any other hit is a
-      // re-scattered magic number.
+      // inside generated localisation files (human-readable diagnostic text,
+      // never a port used for binding), or in network_config.dart itself (the
+      // single source). Any other hit is a re-scattered magic number.
       final lib = Directory('lib');
       expect(
         lib.existsSync(),
@@ -45,6 +46,9 @@ void main() {
         final isConfig = entity.uri.pathSegments.contains(
           'network_config.dart',
         );
+        // Generated app_localizations*.dart files are compiled from the ARB
+        // catalogues and only ever hold display strings.
+        final isGeneratedL10n = entity.uri.pathSegments.contains('l10n');
         final lines = entity.readAsLinesSync();
         for (var i = 0; i < lines.length; i++) {
           final line = lines[i];
@@ -55,7 +59,7 @@ void main() {
           // Stable firewall rule DISPLAY names legitimately embed the default
           // port as a label; the real port the rule opens comes from config.
           final isRuleLabel = t.contains('Library Manager LAN');
-          if (isConfig || isComment || isRuleLabel) continue;
+          if (isConfig || isGeneratedL10n || isComment || isRuleLabel) continue;
           offenders.add('${entity.path}:${i + 1}: $t');
         }
       }

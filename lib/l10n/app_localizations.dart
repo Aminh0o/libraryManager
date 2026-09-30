@@ -1678,6 +1678,102 @@ abstract class AppLocalizations {
   /// **'Failed to add firewall rules. Please approve the Admin prompt.'**
   String get lanAccessFailed;
 
+  /// No description provided for @firewallPromptTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow LAN access?'**
+  String get firewallPromptTitle;
+
+  /// No description provided for @firewallPromptBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Library Manager needs to open UDP 19001 (pairing discovery) and TCP 8080 (HTTP API) so other machines on your local network can find and connect to this host. You will see a Windows security prompt. If you decline, other machines will not be able to pair with this host.'**
+  String get firewallPromptBody;
+
+  /// No description provided for @firewallPromptAllow.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow'**
+  String get firewallPromptAllow;
+
+  /// No description provided for @firewallPromptDeny.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get firewallPromptDeny;
+
+  /// No description provided for @pairingDiagnosticTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pairing diagnostic'**
+  String get pairingDiagnosticTitle;
+
+  /// No description provided for @pairingDiagnosticRun.
+  ///
+  /// In en, this message translates to:
+  /// **'Run diagnostic'**
+  String get pairingDiagnosticRun;
+
+  /// No description provided for @pairingDiagnosticRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Running...'**
+  String get pairingDiagnosticRunning;
+
+  /// No description provided for @pairingDiagnosticUdpOk.
+  ///
+  /// In en, this message translates to:
+  /// **'UDP 19001 is listening on this machine.'**
+  String get pairingDiagnosticUdpOk;
+
+  /// No description provided for @pairingDiagnosticUdpFail.
+  ///
+  /// In en, this message translates to:
+  /// **'UDP 19001 is NOT listening. The host app is either not running, or is in Client mode instead of Host mode.'**
+  String get pairingDiagnosticUdpFail;
+
+  /// No description provided for @pairingDiagnosticFwOk.
+  ///
+  /// In en, this message translates to:
+  /// **'Windows Firewall rules for Library Manager are installed.'**
+  String get pairingDiagnosticFwOk;
+
+  /// No description provided for @pairingDiagnosticFwFail.
+  ///
+  /// In en, this message translates to:
+  /// **'Windows Firewall rules are MISSING. Click \'Enable LAN Access\' in Settings -> Data Protection.'**
+  String get pairingDiagnosticFwFail;
+
+  /// No description provided for @pairingDiagnosticBlockFound.
+  ///
+  /// In en, this message translates to:
+  /// **'A Block rule is intercepting UDP 19001 (likely added by antivirus software).'**
+  String get pairingDiagnosticBlockFound;
+
+  /// No description provided for @pairingDiagnosticNoBlock.
+  ///
+  /// In en, this message translates to:
+  /// **'No blocking rules found for UDP 19001.'**
+  String get pairingDiagnosticNoBlock;
+
+  /// No description provided for @pairingDiagnosticNotWindows.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnostic is only available on Windows.'**
+  String get pairingDiagnosticNotWindows;
+
+  /// No description provided for @pairingDiagnosticClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get pairingDiagnosticClose;
+
+  /// No description provided for @pairingHostNotFoundDetailed.
+  ///
+  /// In en, this message translates to:
+  /// **'No host found. Common causes:\n\n1. Windows Firewall on the host is blocking UDP 19001. On the host, open Settings -> Data Protection -> Enable LAN Access and accept the Admin prompt.\n2. The host machine is not in Host mode. On the host, check Settings -> LAN and make sure \'Host\' is selected.\n3. The pairing code expired (5-minute window). Generate a new code on the host and try again.\n4. AP isolation / client isolation on the router blocks device-to-device traffic. Try a wired switch or a non-guest Wi-Fi network.\n5. Host and client are on different subnets (e.g. 192.168.1.x vs 192.168.2.x). Directed broadcast does not cross subnets.\n6. Antivirus network filter (Kaspersky, Bitdefender, Norton, ESET) is blocking UDP 19001. Temporarily disable it and retry.'**
+  String get pairingHostNotFoundDetailed;
+
   /// No description provided for @quickScan.
   ///
   /// In en, this message translates to:

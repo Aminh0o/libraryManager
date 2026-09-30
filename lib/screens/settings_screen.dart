@@ -676,7 +676,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             messenger.showSnackBar(SnackBar(content: Text(l10n.pairingIpSet)));
           } else {
             messenger.showSnackBar(
-              SnackBar(content: Text(l10n.pairingHostNotFound)),
+              SnackBar(
+                content: Text(l10n.pairingHostNotFoundDetailed),
+                duration: const Duration(seconds: 12),
+              ),
             );
           }
         },
@@ -974,6 +977,65 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     content: Text(
                       ok ? l10n.lanAccessEnabled : l10n.lanAccessFailed,
                     ),
+                  ),
+                );
+              },
+            ),
+          ),
+        if (!kIsWeb && Platform.isWindows)
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.troubleshoot, size: AppIcon.lg),
+              title: Text(l10n.pairingDiagnosticTitle),
+              subtitle: Text(l10n.pairingDiagnosticRun),
+              onTap: () async {
+                final result =
+                    await WindowsFirewallService.runPairingDiagnostic();
+                if (!mounted) return;
+                final lines = <String>[];
+                if (!result.isWindows) {
+                  lines.add(l10n.pairingDiagnosticNotWindows);
+                } else {
+                  lines.add(
+                    result.udpListening
+                        ? '✓ ${l10n.pairingDiagnosticUdpOk}'
+                        : '✗ ${l10n.pairingDiagnosticUdpFail}',
+                  );
+                  lines.add(
+                    result.firewallRulesInstalled
+                        ? '✓ ${l10n.pairingDiagnosticFwOk}'
+                        : '✗ ${l10n.pairingDiagnosticFwFail}',
+                  );
+                  lines.add(
+                    result.blockRuleFound
+                        ? '✗ ${l10n.pairingDiagnosticBlockFound}'
+                        : '✓ ${l10n.pairingDiagnosticNoBlock}',
+                  );
+                }
+                showDialog<void>(
+                  context: context,
+                  builder: (dialogContext) => AlertDialog(
+                    title: Text(l10n.pairingDiagnosticTitle),
+                    content: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: lines
+                            .map(
+                              (line) => Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: Text(line),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(dialogContext),
+                        child: Text(l10n.pairingDiagnosticClose),
+                      ),
+                    ],
                   ),
                 );
               },

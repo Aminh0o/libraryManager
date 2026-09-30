@@ -1437,6 +1437,25 @@ class LibraryProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Returns true if the firewall prompt should be shown to the user.
+  /// Only prompts once per install (persisted flag), and only when the machine
+  /// is in host mode on Windows.
+  Future<bool> shouldPromptFirewall() async {
+    if (!_isHost || !Platform.isWindows) return false;
+    // The prompt exists to trigger a real UAC elevation that opens the Windows
+    // Firewall. The widget-test harness has neither a firewall nor UAC, so the
+    // modal would be meaningless there (and would obscure unrelated tests).
+    if (Platform.environment.containsKey('FLUTTER_TEST')) return false;
+    final prefs = await SharedPreferences.getInstance();
+    return !(prefs.getBool('firewall_prompt_shown') ?? false);
+  }
+
+  /// Marks the firewall prompt as shown so it does not appear again.
+  Future<void> markFirewallPromptShown() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('firewall_prompt_shown', true);
+  }
+
   void setLocale(Locale locale) async {
     _locale = locale;
     final prefs = await SharedPreferences.getInstance();

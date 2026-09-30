@@ -832,6 +832,61 @@ class AppLocalizationsAr extends AppLocalizations {
       'فشل إضافة قواعد الجدار الناري. الرجاء قبول نافذة صلاحيات المسؤول.';
 
   @override
+  String get firewallPromptTitle => 'السماح بالوصول عبر الشبكة المحلية؟';
+
+  @override
+  String get firewallPromptBody =>
+      'يحتاج مدير المكتبة إلى فتح المنفذ UDP 19001 (اكتشاف الاقتران) والمنفذ TCP 8080 (واجهة HTTP) حتى تتمكن الأجهزة الأخرى على شبكتك المحلية من العثور على هذا المضيف والاتصال به. ستظهر لك نافذة أمان ويندوز. إذا رفضت، لن تتمكن الأجهزة الأخرى من الاقتران مع هذا المضيف.';
+
+  @override
+  String get firewallPromptAllow => 'سماح';
+
+  @override
+  String get firewallPromptDeny => 'ليس الآن';
+
+  @override
+  String get pairingDiagnosticTitle => 'تشخيص الاقتران';
+
+  @override
+  String get pairingDiagnosticRun => 'تشغيل التشخيص';
+
+  @override
+  String get pairingDiagnosticRunning => 'جارٍ التشغيل...';
+
+  @override
+  String get pairingDiagnosticUdpOk => 'المنفذ UDP 19001 يستمع على هذا الجهاز.';
+
+  @override
+  String get pairingDiagnosticUdpFail =>
+      'المنفذ UDP 19001 لا يستمع. تطبيق المضيف إما غير مشغل، أو في وضع العميل بدلاً من وضع المضيف.';
+
+  @override
+  String get pairingDiagnosticFwOk =>
+      'قواعد جدار حماية ويندوز لمدير المكتبة مثبتة.';
+
+  @override
+  String get pairingDiagnosticFwFail =>
+      'قواعد جدار حماية ويندوز مفقودة. انقر على \'تفعيل الوصول عبر الشبكة المحلية\' في الإعدادات -> حماية البيانات.';
+
+  @override
+  String get pairingDiagnosticBlockFound =>
+      'قاعدة حظر تعترض UDP 19001 (على الأرجح مضافة من برنامج مكافحة الفيروسات).';
+
+  @override
+  String get pairingDiagnosticNoBlock =>
+      'لم يتم العثور على قواعد حظر لـ UDP 19001.';
+
+  @override
+  String get pairingDiagnosticNotWindows => 'التشخيص متاح فقط على ويندوز.';
+
+  @override
+  String get pairingDiagnosticClose => 'إغلاق';
+
+  @override
+  String get pairingHostNotFoundDetailed =>
+      'لم يتم العثور على مضيف. الأسباب الشائعة:\n\n1. جدار حماية ويندوز على المضيف يحظر UDP 19001. على المضيف، افتح الإعدادات -> حماية البيانات -> تفعيل الوصول عبر الشبكة المحلية واقبل نافذة المسؤول.\n2. جهاز المضيف ليس في وضع المضيف. على المضيف، تحقق من الإعدادات -> LAN وتأكد من تحديد \'مضيف\'.\n3. انتهت صلاحية رمز الاقتران (نافذة 5 دقائق). أنشئ رمزًا جديدًا على المضيف وحاول مرة أخرى.\n4. عزل نقطة الوصول / عزل العميل على جهاز التوجيه يحظر حركة المرور بين الأجهزة. جرب مفتاح سلكي أو شبكة Wi-Fi غير مخصصة للضيوف.\n5. المضيف والعميل على شبكات فرعية مختلفة (مثل 192.168.1.x مقابل 192.168.2.x). البث الموجه لا يعبر الشبكات الفرعية.\n6. مرشح شبكة مكافحة الفيروسات (Kaspersky، Bitdefender، Norton، ESET) يحظر UDP 19001. قم بتعطيله مؤقتًا وحاول مرة أخرى.';
+
+  @override
   String get quickScan => 'مسح سريع';
 
   @override

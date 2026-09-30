@@ -4,6 +4,24 @@ import 'dart:typed_data';
 
 import '../config/network_config.dart';
 
+/// Result of a pairing diagnostic run. Each field is a human-readable line
+/// that the UI can display directly (already localized by the caller).
+class PairingDiagnosticResult {
+  final bool isWindows;
+  final bool udpListening;
+  final bool firewallRulesInstalled;
+  final bool blockRuleFound;
+  final String? rawOutput;
+
+  const PairingDiagnosticResult({
+    required this.isWindows,
+    required this.udpListening,
+    required this.firewallRulesInstalled,
+    required this.blockRuleFound,
+    this.rawOutput,
+  });
+}
+
 class WindowsFirewallService {
   static const String _tcpRuleName = 'Library Manager LAN TCP 8080';
   static const String _udpRuleName = 'Library Manager LAN UDP 19001';
@@ -75,6 +93,69 @@ catch {
       return result.exitCode == 0;
     } catch (_) {
       return false;
+    }
+  }
+
+  /// Runs a non-elevated diagnostic to check whether the pairing prerequisites
+  /// are met on this machine. Returns a structured result the UI can render as
+  /// a checklist. Does NOT require admin rights.
+  static Future<PairingDiagnosticResult> runPairingDiagnostic({
+    int pairingUdpPort = NetworkConfig.defaultPairingUdpPort,
+  }) async {
+    if (!Platform.isWindows) {
+      return const PairingDiagnosticResult(
+        isWindows: false,
+        udpListening: false,
+        firewallRulesInstalled: false,
+        blockRuleFound: false,
+      );
+    }
+
+    final script =
+        '''
+\$ErrorActionPreference = 'SilentlyContinue'
+\$udp = Get-NetUDPEndpoint -LocalPort $pairingUdpPort -ErrorAction SilentlyContinue
+\$udpOk = if (\$udp) { 'true' } else { 'false' }
+\$fwRules = Get-NetFirewallRule -DisplayName 'Library Manager LAN *' -ErrorAction SilentlyContinue
+\$fwOk = if (\$fwRules -and (\$fwRules | Where-Object { \$_.Enabled -eq 'True' }).Count -ge 2) { 'true' } else { 'false' }
+\$blockRules = Get-NetFirewallRule -Direction Inbound -Action Block -Enabled True -ErrorAction SilentlyContinue | Where-Object {
+  (\$_ | Get-NetFirewallPortFilter).LocalPort -eq '$pairingUdpPort'
+}
+\$blockOk = if (\$blockRules) { 'true' } else { 'false' }
+Write-Output "UDP=\$udpOk"
+Write-Output "FW=\$fwOk"
+Write-Output "BLOCK=\$blockOk"
+''';
+
+    try {
+      final result = await Process.run('powershell', [
+        '-NoProfile',
+        '-ExecutionPolicy',
+        'Bypass',
+        '-Command',
+        script,
+      ], runInShell: true);
+
+      final output = result.stdout.toString();
+      final udpListening = output.contains('UDP=true');
+      final firewallRulesInstalled = output.contains('FW=true');
+      final blockRuleFound = output.contains('BLOCK=true');
+
+      return PairingDiagnosticResult(
+        isWindows: true,
+        udpListening: udpListening,
+        firewallRulesInstalled: firewallRulesInstalled,
+        blockRuleFound: blockRuleFound,
+        rawOutput: output.trim(),
+      );
+    } catch (e) {
+      return PairingDiagnosticResult(
+        isWindows: true,
+        udpListening: false,
+        firewallRulesInstalled: false,
+        blockRuleFound: false,
+        rawOutput: 'Diagnostic failed: $e',
+      );
     }
   }
 }

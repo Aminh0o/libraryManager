@@ -834,6 +834,63 @@ class AppLocalizationsEn extends AppLocalizations {
       'Failed to add firewall rules. Please approve the Admin prompt.';
 
   @override
+  String get firewallPromptTitle => 'Allow LAN access?';
+
+  @override
+  String get firewallPromptBody =>
+      'Library Manager needs to open UDP 19001 (pairing discovery) and TCP 8080 (HTTP API) so other machines on your local network can find and connect to this host. You will see a Windows security prompt. If you decline, other machines will not be able to pair with this host.';
+
+  @override
+  String get firewallPromptAllow => 'Allow';
+
+  @override
+  String get firewallPromptDeny => 'Not now';
+
+  @override
+  String get pairingDiagnosticTitle => 'Pairing diagnostic';
+
+  @override
+  String get pairingDiagnosticRun => 'Run diagnostic';
+
+  @override
+  String get pairingDiagnosticRunning => 'Running...';
+
+  @override
+  String get pairingDiagnosticUdpOk =>
+      'UDP 19001 is listening on this machine.';
+
+  @override
+  String get pairingDiagnosticUdpFail =>
+      'UDP 19001 is NOT listening. The host app is either not running, or is in Client mode instead of Host mode.';
+
+  @override
+  String get pairingDiagnosticFwOk =>
+      'Windows Firewall rules for Library Manager are installed.';
+
+  @override
+  String get pairingDiagnosticFwFail =>
+      'Windows Firewall rules are MISSING. Click \'Enable LAN Access\' in Settings -> Data Protection.';
+
+  @override
+  String get pairingDiagnosticBlockFound =>
+      'A Block rule is intercepting UDP 19001 (likely added by antivirus software).';
+
+  @override
+  String get pairingDiagnosticNoBlock =>
+      'No blocking rules found for UDP 19001.';
+
+  @override
+  String get pairingDiagnosticNotWindows =>
+      'Diagnostic is only available on Windows.';
+
+  @override
+  String get pairingDiagnosticClose => 'Close';
+
+  @override
+  String get pairingHostNotFoundDetailed =>
+      'No host found. Common causes:\n\n1. Windows Firewall on the host is blocking UDP 19001. On the host, open Settings -> Data Protection -> Enable LAN Access and accept the Admin prompt.\n2. The host machine is not in Host mode. On the host, check Settings -> LAN and make sure \'Host\' is selected.\n3. The pairing code expired (5-minute window). Generate a new code on the host and try again.\n4. AP isolation / client isolation on the router blocks device-to-device traffic. Try a wired switch or a non-guest Wi-Fi network.\n5. Host and client are on different subnets (e.g. 192.168.1.x vs 192.168.2.x). Directed broadcast does not cross subnets.\n6. Antivirus network filter (Kaspersky, Bitdefender, Norton, ESET) is blocking UDP 19001. Temporarily disable it and retry.';
+
+  @override
   String get quickScan => 'Quick Scan';
 
   @override
