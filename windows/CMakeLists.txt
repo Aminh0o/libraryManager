@@ -32,6 +32,13 @@ set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_RELEASE}")
 # Use Unicode for all projects.
 add_definitions(-DUNICODE -D_UNICODE)
 
+# Toolchain compatibility (NOT an app-code issue): the `permission_handler_windows`
+# plugin includes <experimental/coroutine>, which the MSVC 14.5x STL has turned
+# into a hard static_assert error (C2338 / STL1011). This is the suppressant
+# Microsoft's own error text prescribes; directory-scoped so it propagates to the
+# generated plugin targets included below, and it does not touch any project code.
+add_definitions(-D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)
+
 # Compilation settings that should be applied to most targets.
 #
 # Be cautious about adding new options here, as plugins use this function by
