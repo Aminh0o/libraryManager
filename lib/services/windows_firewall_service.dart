@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import '../config/network_config.dart';
+
 class WindowsFirewallService {
   static const String _tcpRuleName = 'Library Manager LAN TCP 8080';
   static const String _udpRuleName = 'Library Manager LAN UDP 19001';
@@ -18,8 +20,8 @@ class WindowsFirewallService {
   }
 
   static Future<bool> ensureLanFirewallRules({
-    int httpPort = 8080,
-    int pairingUdpPort = 19001,
+    int httpPort = NetworkConfig.defaultHttpPort,
+    int pairingUdpPort = NetworkConfig.defaultPairingUdpPort,
   }) async {
     if (!Platform.isWindows) return false;
 
