@@ -1,45 +1,131 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
-.DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
+# ─── Flutter / Dart ──────────────────────────────────────────────────────────
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+coverage/
+doc/api/
+**/ios/Flutter/.last_build_id
 
-# IntelliJ related
+# Compilation output
+*.g.dart
+*.freezed.dart
+# Exception: generated localisations ARE committed so downstream users
+# can `flutter pub get` without first running `flutter gen-l10n`.
+!lib/l10n/app_localizations*.dart
+
+# ─── Windows native build artifacts ──────────────────────────────────────────
+windows/out/
+windows/flutter/ephemeral/
+windows/**/x64/
+windows/**/Win32/
+windows/**/Debug/
+windows/**/Release/
+!windows/runner/resources/**
+
+# CMake / MSVC intermediates
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+*.obj
+*.ilk
+*.pdb
+*.exp
+*.lib
+*.exe
+*.dll
+
+# ─── Package / dependency lock ───────────────────────────────────────────────
+# pubspec.lock is intentionally TRACKED for a desktop application: a released
+# build must be reproducible byte-for-byte from a given tag.
+
+# ─── IDE / editor ────────────────────────────────────────────────────────────
+.idea/
 *.iml
 *.ipr
 *.iws
-.idea/
+.vs/
+.vscode/
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+.history/
+.migrate_working_dir/
+CppProperties.json
+launch.vs.json
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+# ─── OS noise ────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+$RECYCLE.BIN/
+.Spotlight-V100
+.AppleDouble
+.LSOverride
 
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
-.dart_tool/
-.flutter-plugins-dependencies
-.pub-cache/
-.pub/
-/build/
-/coverage/
+# ─── Local / private ─────────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+id_rsa*
+local.properties
+secrets.json
+credentials.json
+service-account*.json
 
-# Symbolication related
+# ─── Databases, exports and user data (never belong in a source repo) ───────
+*.db
+*.db-journal
+*.db-wal
+*.sqlite
+*.sqlite3
+*.xlsx
+*.pdf
+/exports/
+/backups/
+
+# ─── Local working notes, scratch, screenshots from ad-hoc audits ───────────
+*.log
+*.swp
+*.tmp
+tmp/
+scratch/
+notes/
+AUDIT_REPORT.md
+verify_screenshots/
+final_audit_shots/
+seed_test.py
+_*.ps1
+_*.py
+
+# ─── Build / release bundles produced locally ────────────────────────────────
+dist/
+release_bundle/
+*.zip
+*.7z
+*.rar
+
+# ─── Symbolication / obfuscation artifacts ───────────────────────────────────
 app.*.symbols
-
-# Obfuscation related
 app.*.map.json
+*.js_
+*.js.deps
+*.js.map
 
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
+# ─── Android-related (unused in this desktop app; kept for cross-platform
+#     safety if the codebase is ever ported) ──────────────────────────────────
+android/app/debug
+android/app/profile
+android/app/release
+android/.gradle
+android/local.properties
