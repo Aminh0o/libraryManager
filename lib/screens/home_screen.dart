@@ -188,9 +188,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 // An extended rail always shows its labels; the rail asserts
                 // labelType == none whenever extended. Collapsed mode labels
                 // only the selected destination.
-                labelType: extended
-                    ? null
-                    : NavigationRailLabelType.selected,
+                labelType: extended ? null : NavigationRailLabelType.selected,
                 groupAlignment: extended ? -1 : 0,
                 leading: Padding(
                   padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
@@ -237,9 +235,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 icon: const Icon(
                                   Icons.keyboard_double_arrow_left,
                                 ),
-                                onPressed: () => setState(
-                                  () => _railPinnedExtended = false,
-                                ),
+                                onPressed: () =>
+                                    setState(() => _railPinnedExtended = false),
                               ),
                             ],
                           )
@@ -262,9 +259,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 icon: const Icon(
                                   Icons.keyboard_double_arrow_right,
                                 ),
-                                onPressed: () => setState(
-                                  () => _railPinnedExtended = true,
-                                ),
+                                onPressed: () =>
+                                    setState(() => _railPinnedExtended = true),
                               ),
                             ],
                           ),
@@ -299,7 +295,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(items[index].label, style: txt.headlineSmall),
+                              Text(
+                                items[index].label,
+                                style: txt.headlineSmall,
+                              ),
                               Row(
                                 children: [
                                   Container(
@@ -351,7 +350,13 @@ class _HomeScreenState extends State<HomeScreen> {
                               tooltip: l10n.commandPalette,
                               icon: const Icon(Icons.search),
                               onPressed: () => _openPalette(
-                                  context, l10n, provider, appearance, items, flags),
+                                context,
+                                l10n,
+                                provider,
+                                appearance,
+                                items,
+                                flags,
+                              ),
                             ),
                           PopupMenuButton<Locale>(
                             onSelected: (Locale locale) =>
@@ -536,39 +541,45 @@ class _HomeScreenState extends State<HomeScreen> {
           final out = <PaletteEntry>[];
           final items = await provider.itemMatches(q, limit: 6);
           for (final item in items) {
-            out.add(PaletteEntry(
-              label: item.designation,
-              icon: Icons.auto_stories_outlined,
-              keywords: '${item.code} ${item.designation}',
-              section: l10n.inventory,
-              onSelect: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ItemDetailsScreen(itemCode: item.code),
+            out.add(
+              PaletteEntry(
+                label: item.designation,
+                icon: Icons.auto_stories_outlined,
+                keywords: '${item.code} ${item.designation}',
+                section: l10n.inventory,
+                onSelect: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ItemDetailsScreen(itemCode: item.code),
+                  ),
                 ),
               ),
-            ));
+            );
           }
           final needle = q.toLowerCase();
           final members = provider.members
-              .where((m) =>
-                  m.fullName.toLowerCase().contains(needle) ||
-                  m.memberId.toLowerCase().contains(needle))
+              .where(
+                (m) =>
+                    m.fullName.toLowerCase().contains(needle) ||
+                    m.memberId.toLowerCase().contains(needle),
+              )
               .take(6)
               .toList();
           for (final m in members) {
-            out.add(PaletteEntry(
-              label: m.fullName,
-              icon: Icons.person_outline,
-              keywords: m.memberId,
-              section: l10n.members,
-              onSelect: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => MemberDetailScreen(memberId: m.memberId),
+            out.add(
+              PaletteEntry(
+                label: m.fullName,
+                icon: Icons.person_outline,
+                keywords: m.memberId,
+                section: l10n.members,
+                onSelect: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => MemberDetailScreen(memberId: m.memberId),
+                  ),
                 ),
               ),
-            ));
+            );
           }
           return out;
         },
@@ -732,7 +743,9 @@ class _InventoryViewState extends State<_InventoryView> {
               Expanded(
                 flex: 2,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                  ),
                   decoration: BoxDecoration(
                     color: scheme.surfaceContainerLow,
                     borderRadius: AppRadius.field,
@@ -768,7 +781,9 @@ class _InventoryViewState extends State<_InventoryView> {
               Expanded(
                 flex: 2,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                  ),
                   decoration: BoxDecoration(
                     color: scheme.surfaceContainerLow,
                     borderRadius: AppRadius.field,
@@ -818,23 +833,23 @@ class _InventoryViewState extends State<_InventoryView> {
               // query) without leaving the table.
               if (provider.canWrite)
                 IconButton(
-                  onPressed: provider.isLoading ? null : () async {
-                    final messenger = ScaffoldMessenger.of(context);
-                    try {
-                      final path = await provider.exportToCsv();
-                      if (path != null) {
-                        messenger.showSnackBar(
-                          SnackBar(content: Text(l10n.exportSuccess)),
-                        );
-                      }
-                    } catch (e) {
-                      messenger.showSnackBar(
-                        SnackBar(
-                          content: Text(describeError(l10n, e)),
-                        ),
-                      );
-                    }
-                  },
+                  onPressed: provider.isLoading
+                      ? null
+                      : () async {
+                          final messenger = ScaffoldMessenger.of(context);
+                          try {
+                            final path = await provider.exportToCsv();
+                            if (path != null) {
+                              messenger.showSnackBar(
+                                SnackBar(content: Text(l10n.exportSuccess)),
+                              );
+                            }
+                          } catch (e) {
+                            messenger.showSnackBar(
+                              SnackBar(content: Text(describeError(l10n, e))),
+                            );
+                          }
+                        },
                   icon: const Icon(Icons.download),
                   tooltip: l10n.exportCsv,
                 ),
@@ -870,19 +885,13 @@ class _InventoryViewState extends State<_InventoryView> {
                       sortAscending: provider.sortAscending,
                       columns: [
                         DataColumn2(
-                          label: Text(
-                            l10n.code,
-                            style: headingStyle,
-                          ),
+                          label: Text(l10n.code, style: headingStyle),
                           size: ColumnSize.S,
                           onSort: (i, asc) =>
                               provider.setSort('code', ascending: asc),
                         ),
                         DataColumn2(
-                          label: Text(
-                            l10n.designation,
-                            style: headingStyle,
-                          ),
+                          label: Text(l10n.designation, style: headingStyle),
                           size: ColumnSize.L,
                           onSort: (i, asc) =>
                               provider.setSort('designation', ascending: asc),
@@ -898,10 +907,7 @@ class _InventoryViewState extends State<_InventoryView> {
                               provider.setSort('quantity', ascending: asc),
                         ),
                         DataColumn2(
-                          label: Text(
-                            l10n.location,
-                            style: headingStyle,
-                          ),
+                          label: Text(l10n.location, style: headingStyle),
                           size: ColumnSize.M,
                         ),
                         if (provider.isHost)
@@ -913,27 +919,18 @@ class _InventoryViewState extends State<_InventoryView> {
                             size: ColumnSize.S,
                           ),
                         DataColumn2(
-                          label: Text(
-                            l10n.stockLocation,
-                            style: headingStyle,
-                          ),
+                          label: Text(l10n.stockLocation, style: headingStyle),
                           size: ColumnSize.M,
                         ),
                         DataColumn2(
-                          label: Text(
-                            l10n.status,
-                            style: headingStyle,
-                          ),
+                          label: Text(l10n.status, style: headingStyle),
                           size: ColumnSize.S,
                           onSort: (i, asc) =>
                               provider.setSort('status', ascending: asc),
                         ),
                         if (provider.isHost)
                           DataColumn2(
-                            label: Text(
-                              l10n.actions,
-                              style: headingStyle,
-                            ),
+                            label: Text(l10n.actions, style: headingStyle),
                             size: ColumnSize.S,
                           ),
                       ],
@@ -943,17 +940,15 @@ class _InventoryViewState extends State<_InventoryView> {
                           // -- hover/press tint from the surface scale, tap
                           // opens the item (the cells' edit/delete buttons stay
                           // as explicit secondary actions).
-                          color: WidgetStateProperty.resolveWith(
-                            (states) {
-                              if (states.contains(WidgetState.hovered)) {
-                                return scheme.surfaceContainerLow;
-                              }
-                              if (states.contains(WidgetState.pressed)) {
-                                return scheme.surfaceContainer;
-                              }
-                              return Colors.transparent;
-                            },
-                          ),
+                          color: WidgetStateProperty.resolveWith((states) {
+                            if (states.contains(WidgetState.hovered)) {
+                              return scheme.surfaceContainerLow;
+                            }
+                            if (states.contains(WidgetState.pressed)) {
+                              return scheme.surfaceContainer;
+                            }
+                            return Colors.transparent;
+                          }),
                           onTap: () {
                             Navigator.push(
                               context,
@@ -967,7 +962,9 @@ class _InventoryViewState extends State<_InventoryView> {
                             DataCell(Text(item.fullCode)),
                             DataCell(
                               ConstrainedBox(
-                                constraints: const BoxConstraints(maxWidth: 420),
+                                constraints: const BoxConstraints(
+                                  maxWidth: 420,
+                                ),
                                 child: Tooltip(
                                   message: item.designation,
                                   child: Text(
@@ -981,9 +978,7 @@ class _InventoryViewState extends State<_InventoryView> {
                             DataCell(_num(item.quantite.toString())),
                             DataCell(Text(item.emplacement)),
                             if (provider.isHost)
-                              DataCell(
-                                _num(item.taux.toStringAsFixed(2)),
-                              ),
+                              DataCell(_num(item.taux.toStringAsFixed(2))),
                             DataCell(Text(item.emplacementStock)),
                             DataCell(
                               ItemStatusCell(
@@ -1031,7 +1026,9 @@ class _InventoryViewState extends State<_InventoryView> {
                   ),
                   if (provider.hasMoreInventory)
                     Padding(
-                      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppSpacing.sm,
+                      ),
                       child: TextButton.icon(
                         onPressed: provider.isLoading
                             ? null
@@ -1069,8 +1066,9 @@ class _InventoryViewState extends State<_InventoryView> {
                             provider.items.length,
                             provider.inventoryTotal,
                           ),
-                          style: txt.bodySmall
-                              ?.copyWith(color: scheme.onSurfaceVariant),
+                          style: txt.bodySmall?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
                         ),
                       ),
                     ),
@@ -1441,10 +1439,8 @@ class _NotificationsButtonState extends State<_NotificationsButton> {
         setState(() => _acknowledged = true);
         await showDialog<void>(
           context: context,
-          builder: (_) => _NotificationsDialog(
-            items: widget.items,
-            onOpen: widget.onOpen,
-          ),
+          builder: (_) =>
+              _NotificationsDialog(items: widget.items, onOpen: widget.onOpen),
         );
       },
       icon: Badge(
@@ -1534,9 +1530,7 @@ class _NotificationsDialogState extends State<_NotificationsDialog> {
             icon: Icons.bookmark_added,
             label: l10n.notifHoldsReady(ready.length),
             onOpen: () => widget.onOpen(
-              widget.items.indexWhere(
-                (e) => e.screen is ReservationsScreen,
-              ),
+              widget.items.indexWhere((e) => e.screen is ReservationsScreen),
             ),
           ),
         );
@@ -1603,31 +1597,31 @@ class _NotificationsDialogState extends State<_NotificationsDialog> {
                 ),
               )
             : _notifications!.isEmpty
-                ? Padding(
-                    padding: AppSpacing.allXxl,
-                    child: Text(
-                      l10n.notifNone,
-                      textAlign: TextAlign.center,
-                      style: txt.bodyMedium?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                      ),
-                    ),
-                  )
-                : ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 340),
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: _notifications!.length,
-                      itemBuilder: (context, i) {
-                        final n = _notifications![i];
-                        return ListTile(
-                          leading: Icon(n.icon, color: scheme.primary),
-                          title: Text(n.label),
-                          onTap: () => _open(n),
-                        );
-                      },
-                    ),
+            ? Padding(
+                padding: AppSpacing.allXxl,
+                child: Text(
+                  l10n.notifNone,
+                  textAlign: TextAlign.center,
+                  style: txt.bodyMedium?.copyWith(
+                    color: scheme.onSurfaceVariant,
                   ),
+                ),
+              )
+            : ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 340),
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: _notifications!.length,
+                  itemBuilder: (context, i) {
+                    final n = _notifications![i];
+                    return ListTile(
+                      leading: Icon(n.icon, color: scheme.primary),
+                      title: Text(n.label),
+                      onTap: () => _open(n),
+                    );
+                  },
+                ),
+              ),
       ),
     );
   }

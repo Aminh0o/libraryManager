@@ -16,10 +16,12 @@ import '../models/report.dart';
 /// string cell data a server-authored report carries, so the isolate renders the
 /// identical report and the on-screen table and exported file still cannot
 /// disagree. Falls back to nothing here: the caller awaits the byte list.
-Future<List<int>> buildReportPdfOffIsolate(Map<String, dynamic> reportMap,
-        {Map<String, String>? labels}) =>
-    Isolate.run(
-        () => ReportExport.toPdfBytes(Report.fromMap(reportMap), labels: labels));
+Future<List<int>> buildReportPdfOffIsolate(
+  Map<String, dynamic> reportMap, {
+  Map<String, String>? labels,
+}) => Isolate.run(
+  () => ReportExport.toPdfBytes(Report.fromMap(reportMap), labels: labels),
+);
 
 /// Pure, side-effect-free rendering of a computed [Report] to an exportable
 /// document (Phase 10.4b). These are deliberately free of file/IO and of
@@ -47,8 +49,10 @@ class ReportExport {
     'noRecords': 'No records for this report.',
   };
 
-  static Map<String, String> _labels(Map<String, String>? overrides) =>
-      {...defaultLabels, ...?overrides};
+  static Map<String, String> _labels(Map<String, String>? overrides) => {
+    ...defaultLabels,
+    ...?overrides,
+  };
 
   /// RFC-4180 CSV via `package:csv`. A short metadata block (title / window /
   /// generated) precedes the summary, then the header + data rows -- every line
@@ -78,13 +82,12 @@ class ReportExport {
   /// A landscape A4 PDF: a title, the effective window + generation stamp, the
   /// summary figures, then the report table. Returns raw bytes so the caller
   /// decides where to write them (keeps this pure and testable).
-  static Future<List<int>> toPdfBytes(Report r,
-      {Map<String, String>? labels}) async {
+  static Future<List<int>> toPdfBytes(
+    Report r, {
+    Map<String, String>? labels,
+  }) async {
     final L = _labels(labels);
-    final doc = pw.Document(
-      title: r.title,
-      creator: 'Library Manager',
-    );
+    final doc = pw.Document(title: r.title, creator: 'Library Manager');
     final window = r.from == null && r.to == null
         ? null
         : '${r.from ?? '-'}  to  ${r.to ?? '-'}';
@@ -95,15 +98,23 @@ class ReportExport {
         build: (ctx) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            pw.Text(r.title,
-                style: pw.TextStyle(
-                    fontSize: 20, fontWeight: pw.FontWeight.bold)),
+            pw.Text(
+              r.title,
+              style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold),
+            ),
             pw.SizedBox(height: 4),
-            pw.Text('${L['generated']}: ${r.generatedAt}',
-                style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+            pw.Text(
+              '${L['generated']}: ${r.generatedAt}',
+              style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+            ),
             if (window != null)
-              pw.Text('${L['period']}: $window',
-                  style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+              pw.Text(
+                '${L['period']}: $window',
+                style: const pw.TextStyle(
+                  fontSize: 10,
+                  color: PdfColors.grey700,
+                ),
+              ),
             pw.SizedBox(height: 12),
             if (r.summary.isNotEmpty)
               pw.Wrap(
@@ -113,26 +124,32 @@ class ReportExport {
                   for (final e in r.summary.entries)
                     pw.Container(
                       padding: const pw.EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: pw.BoxDecoration(
                         border: pw.Border.all(color: PdfColors.blueGrey),
                         borderRadius: pw.BorderRadius.circular(6),
                       ),
-                      child: pw.Text('${e.key}: ${e.value}',
-                          style: const pw.TextStyle(fontSize: 10)),
+                      child: pw.Text(
+                        '${e.key}: ${e.value}',
+                        style: const pw.TextStyle(fontSize: 10),
+                      ),
                     ),
                 ],
               ),
             pw.SizedBox(height: 16),
             if (r.rows.isEmpty)
-              pw.Text(L['noRecords']!,
-                  style: const pw.TextStyle(fontSize: 11))
+              pw.Text(L['noRecords']!, style: const pw.TextStyle(fontSize: 11))
             else
               pw.TableHelper.fromTextArray(
                 headerDecoration: const pw.BoxDecoration(
-                    color: PdfColors.blueGrey50),
+                  color: PdfColors.blueGrey50,
+                ),
                 headerStyle: pw.TextStyle(
-                    fontSize: 11, fontWeight: pw.FontWeight.bold),
+                  fontSize: 11,
+                  fontWeight: pw.FontWeight.bold,
+                ),
                 cellStyle: const pw.TextStyle(fontSize: 10),
                 headers: r.columns,
                 data: r.rows,

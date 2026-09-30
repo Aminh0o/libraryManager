@@ -150,8 +150,9 @@ class _HoldRepo implements LibraryRepository {
     Map<String, dynamic>? audit,
   }) async {
     placeAttempts++;
-    final liveForItem =
-        holds.where((h) => h.itemCode == itemCode && h.isLive).toList();
+    final liveForItem = holds
+        .where((h) => h.itemCode == itemCode && h.isLive)
+        .toList();
     if (liveForItem.length >= settings.queueMaxPerItem) {
       throw StateError(
         'The hold queue for this item is full (max ${settings.queueMaxPerItem}).',
@@ -415,7 +416,8 @@ void main() {
     expect(find.byKey(const Key('holdPolicyButton')), findsOneWidget);
   });
 
-  testWidgets('Place hold writes through the queue and reloads from the server',
+  testWidgets(
+    'Place hold writes through the queue and reloads from the server',
     (tester) async {
       final repo = _HoldRepo(
         items: [_item('ALG1', 'Intro to Algorithms')],
@@ -444,19 +446,18 @@ void main() {
       expect(repo.holds, hasLength(1));
       expect(find.text('Hold placed'), findsOneWidget);
       expect(find.byKey(Key('hold-${repo.holds.single.id}')), findsOneWidget);
-    });
+    },
+  );
 
-  testWidgets('a server refusal is surfaced verbatim and never pretended applied',
+  testWidgets(
+    'a server refusal is surfaced verbatim and never pretended applied',
     (tester) async {
       // Queue cap of 1 with one live hold: a fresh place is refused at the
       // source; the dialog must show the reason and add nothing.
       final repo = _HoldRepo(
         settings: const HoldSettings(pickupDays: 7, queueMaxPerItem: 1),
         items: [_item('ALG1', 'Intro to Algorithms')],
-        members: [
-          _member('M-1', 'Amina', 'B'),
-          _member('M-2', 'Samir', 'K'),
-        ],
+        members: [_member('M-1', 'Amina', 'B'), _member('M-2', 'Samir', 'K')],
         holds: [_queued(21, 'ALG1', 'M-1')],
       );
       await _pump(tester, repo, loadCatalogue: true);
@@ -483,7 +484,8 @@ void main() {
       expect(find.byKey(const Key('holdPlaceSave')), findsOneWidget);
       expect(repo.holds, hasLength(1));
       expect(find.text('Hold placed'), findsNothing);
-    });
+    },
+  );
 
   testWidgets('Cancel confirms once, closes the hold at the source, reloads', (
     tester,
@@ -512,7 +514,8 @@ void main() {
     expect(find.byKey(const Key('hold-cancel-31')), findsNothing);
   });
 
-  testWidgets('the admin policy editor persists the window+cap and cancels clean',
+  testWidgets(
+    'the admin policy editor persists the window+cap and cancels clean',
     (tester) async {
       final repo = _HoldRepo(items: [], members: []);
       await _pump(tester, repo);
@@ -534,26 +537,28 @@ void main() {
       expect(repo.settings.pickupDays, 3);
       expect(repo.settings.queueMaxPerItem, 5);
       expect(find.text('Hold policy updated'), findsOneWidget);
-    });
+    },
+  );
 
-  testWidgets('a garbage policy value is refused client-side before any write', (
-    tester,
-  ) async {
-    final repo = _HoldRepo();
-    await _pump(tester, repo);
+  testWidgets(
+    'a garbage policy value is refused client-side before any write',
+    (tester) async {
+      final repo = _HoldRepo();
+      await _pump(tester, repo);
 
-    await tester.tap(find.byKey(const Key('holdPolicyButton')));
-    await tester.pumpAndSettle();
-    // digitsOnly strips the letters, leaving empty -> the validator refuses.
-    await tester.enterText(find.byKey(const Key('holdPickupField')), 'abc');
-    await tester.tap(find.byKey(const Key('holdPolicySave')));
-    await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('holdPolicyButton')));
+      await tester.pumpAndSettle();
+      // digitsOnly strips the letters, leaving empty -> the validator refuses.
+      await tester.enterText(find.byKey(const Key('holdPickupField')), 'abc');
+      await tester.tap(find.byKey(const Key('holdPolicySave')));
+      await tester.pumpAndSettle();
 
-    // The dialog stays open and the policy is untouched at the source.
-    expect(find.byKey(const Key('holdPolicySave')), findsOneWidget);
-    expect(repo.settings.pickupDays, HoldSettings.defaultPickupDays);
-    expect(repo.settings.queueMaxPerItem, HoldSettings.defaultQueueMax);
-  });
+      // The dialog stays open and the policy is untouched at the source.
+      expect(find.byKey(const Key('holdPolicySave')), findsOneWidget);
+      expect(repo.settings.pickupDays, HoldSettings.defaultPickupDays);
+      expect(repo.settings.queueMaxPerItem, HoldSettings.defaultQueueMax);
+    },
+  );
 
   testWidgets('the scope filter re-queries the queue server-side', (
     tester,

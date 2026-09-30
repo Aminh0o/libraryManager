@@ -23,7 +23,7 @@ class MembersScreen extends StatefulWidget {
 
 class _MembersScreenState extends State<MembersScreen> {
   final TextEditingController _searchController = TextEditingController();
-  
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -44,15 +44,24 @@ class _MembersScreenState extends State<MembersScreen> {
     final scheme = Theme.of(context).colorScheme;
     final txt = Theme.of(context).textTheme;
     final members = provider.members;
-    
+
     // Simple client-side search for members
     final filteredMembers = _searchController.text.isEmpty
         ? members
-        : members.where((m) => 
-            m.firstName.toLowerCase().contains(_searchController.text.toLowerCase()) || 
-            m.lastName.toLowerCase().contains(_searchController.text.toLowerCase()) ||
-            m.memberId.toLowerCase().contains(_searchController.text.toLowerCase())
-          ).toList();
+        : members
+              .where(
+                (m) =>
+                    m.firstName.toLowerCase().contains(
+                      _searchController.text.toLowerCase(),
+                    ) ||
+                    m.lastName.toLowerCase().contains(
+                      _searchController.text.toLowerCase(),
+                    ) ||
+                    m.memberId.toLowerCase().contains(
+                      _searchController.text.toLowerCase(),
+                    ),
+              )
+              .toList();
 
     return Scaffold(
       body: Column(
@@ -102,18 +111,15 @@ class _MembersScreenState extends State<MembersScreen> {
                           onTap: () => Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => MemberDetailScreen(
-                                  memberId: member.memberId),
+                              builder: (_) =>
+                                  MemberDetailScreen(memberId: member.memberId),
                             ),
                           ),
                           leading: CircleAvatar(
                             backgroundColor: scheme.primaryContainer,
                             foregroundColor: scheme.onPrimaryContainer,
                             child: member.avatarInitial.isEmpty
-                                ? const Icon(
-                                    Icons.person,
-                                    size: AppIcon.md,
-                                  )
+                                ? const Icon(Icons.person, size: AppIcon.md)
                                 : Text(
                                     member.avatarInitial,
                                     style: txt.titleMedium,
@@ -178,21 +184,25 @@ class _MembersScreenState extends State<MembersScreen> {
 
                                   if (confirm == true) {
                                     try {
-                                      await provider
-                                          .deleteMember(member.memberId);
+                                      await provider.deleteMember(
+                                        member.memberId,
+                                      );
                                     } catch (e) {
                                       // FE2-01 parity: a refused delete must
                                       // say so, not vanish silently.
                                       if (context.mounted) {
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                              SnackBar(
-                                                content: Text(describeError(
-                                                  AppLocalizations.of(context)!,
-                                                  e,
-                                                )),
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              describeError(
+                                                AppLocalizations.of(context)!,
+                                                e,
                                               ),
-                                            );
+                                            ),
+                                          ),
+                                        );
                                       }
                                     }
                                   }
@@ -249,7 +259,7 @@ class _MemberDialogState extends State<_MemberDialog> {
     _emailCtrl = TextEditingController(text: widget.member?.email);
     _expectedVersion = widget.member?.rowVersion ?? 0;
   }
-  
+
   @override
   void dispose() {
     _firstNameCtrl.dispose();
@@ -263,12 +273,14 @@ class _MemberDialogState extends State<_MemberDialog> {
   Future<void> _save() async {
     if (_formKey.currentState!.validate()) {
       final provider = Provider.of<LibraryProvider>(context, listen: false);
-      
+
       final member = Member(
         id: widget.member?.id,
         firstName: _firstNameCtrl.text,
         lastName: _lastNameCtrl.text,
-        memberId: widget.member == null ? 'AUTO' : _idCtrl.text, // Auto-generate for new members
+        memberId: widget.member == null
+            ? 'AUTO'
+            : _idCtrl.text, // Auto-generate for new members
         phone: _phoneCtrl.text.isEmpty ? null : _phoneCtrl.text,
         email: _emailCtrl.text.isEmpty ? null : _emailCtrl.text,
         registeredAt: widget.member?.registeredAt ?? DateTime.now(),
@@ -280,7 +292,10 @@ class _MemberDialogState extends State<_MemberDialog> {
         } else {
           // TX-06: send the version this dialog read. A stale whole-row edit is
           // refused (409) instead of silently overwriting a newer row.
-          await provider.updateMember(member, expectedVersion: _expectedVersion);
+          await provider.updateMember(
+            member,
+            expectedVersion: _expectedVersion,
+          );
         }
         if (mounted) Navigator.pop(context);
       } catch (e) {
@@ -290,7 +305,13 @@ class _MemberDialogState extends State<_MemberDialog> {
         if (widget.member != null) {
           await _reconcileVersion(provider);
         }
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(describeError(AppLocalizations.of(context)!, e))));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(describeError(AppLocalizations.of(context)!, e)),
+            ),
+          );
+        }
       }
     }
   }
@@ -309,8 +330,9 @@ class _MemberDialogState extends State<_MemberDialog> {
     if (!mounted) return;
     final id = widget.member!.id;
     final cardId = widget.member!.memberId;
-    final fresh = provider.members.where((m) =>
-        (id != null && m.id == id) || (id == null && m.memberId == cardId));
+    final fresh = provider.members.where(
+      (m) => (id != null && m.id == id) || (id == null && m.memberId == cardId),
+    );
     if (fresh.isNotEmpty) {
       setState(() => _expectedVersion = fresh.first.rowVersion);
     }
@@ -335,8 +357,11 @@ class _MemberDialogState extends State<_MemberDialog> {
                       ? l10n.memberIdAuto
                       : l10n.memberIdCode,
                   suffixIcon: widget.member == null
-                      ? Icon(Icons.auto_awesome,
-                          size: AppIcon.md, color: scheme.primary)
+                      ? Icon(
+                          Icons.auto_awesome,
+                          size: AppIcon.md,
+                          color: scheme.primary,
+                        )
                       : null,
                 ),
                 readOnly: widget.member == null, // Read-only for new members
@@ -348,18 +373,20 @@ class _MemberDialogState extends State<_MemberDialog> {
                   Expanded(
                     child: TextFormField(
                       controller: _firstNameCtrl,
-                      decoration: InputDecoration(labelText: '${l10n.firstName}*'),
-                      validator: (v) =>
-                          v!.isEmpty ? l10n.requiredField : null,
+                      decoration: InputDecoration(
+                        labelText: '${l10n.firstName}*',
+                      ),
+                      validator: (v) => v!.isEmpty ? l10n.requiredField : null,
                     ),
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: TextFormField(
                       controller: _lastNameCtrl,
-                      decoration: InputDecoration(labelText: '${l10n.lastName}*'),
-                      validator: (v) =>
-                          v!.isEmpty ? l10n.requiredField : null,
+                      decoration: InputDecoration(
+                        labelText: '${l10n.lastName}*',
+                      ),
+                      validator: (v) => v!.isEmpty ? l10n.requiredField : null,
                     ),
                   ),
                 ],
@@ -382,7 +409,9 @@ class _MemberDialogState extends State<_MemberDialog> {
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(context), child: Text(l10n.cancel)),
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.cancel),
+        ),
         FilledButton(onPressed: _save, child: Text(l10n.save)),
       ],
     );

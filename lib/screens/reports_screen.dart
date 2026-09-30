@@ -53,8 +53,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
-        backgroundColor:
-            error ? Theme.of(context).colorScheme.error : null,
+        backgroundColor: error ? Theme.of(context).colorScheme.error : null,
       ),
     );
   }
@@ -89,10 +88,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
       setState(() => _report = report);
     } catch (e) {
       if (mounted) {
-        _showSnack(
-          _reportMessage(l10n, e, l10n.reportFailed),
-          error: true,
-        );
+        _showSnack(_reportMessage(l10n, e, l10n.reportFailed), error: true);
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -127,8 +123,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
       if (path != null && mounted) _showSnack(l10n.reportSaved(path));
     } catch (e) {
       if (mounted) {
-        _showSnack(_reportMessage(l10n, e, l10n.reportExportFailed),
-            error: true);
+        _showSnack(
+          _reportMessage(l10n, e, l10n.reportExportFailed),
+          error: true,
+        );
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -185,12 +183,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 child: DropdownButtonFormField<ReportKind>(
                   key: const Key('reportKindField'),
                   initialValue: _kind,
-                  decoration: InputDecoration(
-                    labelText: l10n.reportSelectKind,
-                  ),
+                  decoration: InputDecoration(labelText: l10n.reportSelectKind),
                   items: [
                     for (final k in ReportKind.values)
-                      DropdownMenuItem(value: k, child: Text(_kindLabel(l10n, k))),
+                      DropdownMenuItem(
+                        value: k,
+                        child: Text(_kindLabel(l10n, k)),
+                      ),
                   ],
                   onChanged: _busy
                       ? null
@@ -227,12 +226,17 @@ class _ReportsScreenState extends State<ReportsScreen> {
             Row(
               children: [
                 Expanded(
-                  child: _dateField(l10n, _from, 'reportFromField',
-                      l10n.reportFrom),
+                  child: _dateField(
+                    l10n,
+                    _from,
+                    'reportFromField',
+                    l10n.reportFrom,
+                  ),
                 ),
                 const SizedBox(width: AppSpacing.md),
-                Expanded(child: _dateField(l10n, _to, 'reportToField',
-                    l10n.reportTo)),
+                Expanded(
+                  child: _dateField(l10n, _to, 'reportToField', l10n.reportTo),
+                ),
               ],
             ),
             Align(
@@ -328,9 +332,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       ? AppDate.dateTime(report.generatedAt)
                       : report.generatedAt,
                 ),
-                style: txt.bodySmall?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                ),
+                style: txt.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
               ),
               const SizedBox(width: AppSpacing.sm),
               OutlinedButton.icon(
@@ -353,9 +355,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               padding: const EdgeInsetsDirectional.only(top: AppSpacing.xs),
               child: Text(
                 period,
-                style: txt.bodySmall?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                ),
+                style: txt.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
               ),
             ),
           if (report.summary.isNotEmpty) ...[
@@ -396,9 +396,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: DataTable(
-            headingRowColor: WidgetStateProperty.all(
-              scheme.surfaceContainer,
-            ),
+            headingRowColor: WidgetStateProperty.all(scheme.surfaceContainer),
             columns: [
               for (final c in report.columns)
                 DataColumn(
@@ -413,11 +411,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             ],
             rows: [
               for (final row in report.rows)
-                DataRow(
-                  cells: [
-                    for (final cell in row) DataCell(Text(cell)),
-                  ],
-                ),
+                DataRow(cells: [for (final cell in row) DataCell(Text(cell))]),
             ],
           ),
         ),

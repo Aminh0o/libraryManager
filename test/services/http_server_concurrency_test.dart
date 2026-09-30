@@ -79,14 +79,16 @@ void main() {
       repo.seedItem(_item('RACE0001', status: ItemStatus.emprunte));
       repo.loanPreWriteDelay = const Duration(milliseconds: 60);
 
-      final responses = await Future.wait(List.generate(
-        12,
-        (i) => client.post(
-          Uri.parse('$base/loans'),
-          headers: _authJson(token),
-          body: jsonEncode(_loanBody(itemCode: 'RACE0001', member: 'M$i')),
+      final responses = await Future.wait(
+        List.generate(
+          12,
+          (i) => client.post(
+            Uri.parse('$base/loans'),
+            headers: _authJson(token),
+            body: jsonEncode(_loanBody(itemCode: 'RACE0001', member: 'M$i')),
+          ),
         ),
-      ));
+      );
 
       final created = responses.where((r) => r.statusCode == 200).toList();
       final conflicts = responses.where((r) => r.statusCode == 409).toList();
@@ -97,51 +99,72 @@ void main() {
       expect(conflicts, hasLength(11));
       // No client was left holding an ambiguous 5xx -- the outcome each loser
       // sees is a refusal they can render, not a transport mystery.
-      expect(responses.map((r) => r.statusCode),
-          everyElement(anyOf(200, 409)));
+      expect(responses.map((r) => r.statusCode), everyElement(anyOf(200, 409)));
       expect(jsonDecode(conflicts.first.body)['error'], 'conflict');
       expect(await repo.activeLoansFor('RACE0001'), hasLength(1));
       repo.loanPreWriteDelay = Duration.zero;
     });
 
-    test('10 distinct concurrent checkouts all land, each with a unique id',
-        () async {
-      for (int i = 0; i < 10; i++) {
-        repo.seedItem(_item('OPEN${i.toString().padLeft(4, '0')}',
-            status: ItemStatus.emprunte));
-      }
+    test(
+      '10 distinct concurrent checkouts all land, each with a unique id',
+      () async {
+        for (int i = 0; i < 10; i++) {
+          repo.seedItem(
+            _item(
+              'OPEN${i.toString().padLeft(4, '0')}',
+              status: ItemStatus.emprunte,
+            ),
+          );
+        }
 
-      final responses = await Future.wait(List.generate(
-        10,
-        (i) => client.post(
-          Uri.parse('$base/loans'),
-          headers: _authJson(token),
-          body: jsonEncode(_loanBody(
-              itemCode: 'OPEN${i.toString().padLeft(4, '0')}', member: 'M$i')),
-        ),
-      ));
-      expect(responses.map((r) => r.statusCode), everyElement(200));
+        final responses = await Future.wait(
+          List.generate(
+            10,
+            (i) => client.post(
+              Uri.parse('$base/loans'),
+              headers: _authJson(token),
+              body: jsonEncode(
+                _loanBody(
+                  itemCode: 'OPEN${i.toString().padLeft(4, '0')}',
+                  member: 'M$i',
+                ),
+              ),
+            ),
+          ),
+        );
+        expect(responses.map((r) => r.statusCode), everyElement(200));
 
-      final loans = await repo.allLoans();
-      expect(loans, hasLength(10));
-      expect(loans.map((l) => l.id).toSet(), hasLength(10),
-          reason: 'a shared sequence under load must never repeat an id');
-    });
+        final loans = await repo.allLoans();
+        expect(loans, hasLength(10));
+        expect(
+          loans.map((l) => l.id).toSet(),
+          hasLength(10),
+          reason: 'a shared sequence under load must never repeat an id',
+        );
+      },
+    );
 
-    test('concurrent adds of the same code: one lands, the rest conflict',
-        () async {
-      final body = jsonEncode(_itemMap('SAME0001'));
-      final responses = await Future.wait(List.generate(
-        6,
-        (_) => client.post(Uri.parse('$base/items'),
-            headers: _authJson(token), body: body),
-      ));
+    test(
+      'concurrent adds of the same code: one lands, the rest conflict',
+      () async {
+        final body = jsonEncode(_itemMap('SAME0001'));
+        final responses = await Future.wait(
+          List.generate(
+            6,
+            (_) => client.post(
+              Uri.parse('$base/items'),
+              headers: _authJson(token),
+              body: body,
+            ),
+          ),
+        );
 
-      expect(responses.where((r) => r.statusCode == 200), hasLength(1));
-      final conflicts = responses.where((r) => r.statusCode == 409).toList();
-      expect(conflicts, hasLength(5));
-      expect(jsonDecode(conflicts.first.body)['error'], 'conflict');
-    });
+        expect(responses.where((r) => r.statusCode == 200), hasLength(1));
+        final conflicts = responses.where((r) => r.statusCode == 409).toList();
+        expect(conflicts, hasLength(5));
+        expect(jsonDecode(conflicts.first.body)['error'], 'conflict');
+      },
+    );
   });
 
   group('#15/#16 -- timeout, retry and the phantom record', () {
@@ -163,22 +186,28 @@ void main() {
       addTearDown(slow.stopServer);
 
       Future<http.Response> send() => client.post(
-            Uri.parse('$slowBase/loans'),
-            headers: {..._authJson(token), 'Idempotency-Key': 'one-logical-send'},
-            body: jsonEncode(_loanBody(itemCode: 'SLOW0001', member: 'M1')),
-          );
+        Uri.parse('$slowBase/loans'),
+        headers: {..._authJson(token), 'Idempotency-Key': 'one-logical-send'},
+        body: jsonEncode(_loanBody(itemCode: 'SLOW0001', member: 'M1')),
+      );
 
       final first = await send();
-      expect(first.statusCode, 504,
-          reason: 'a timeout must never be reported as success');
+      expect(
+        first.statusCode,
+        504,
+        reason: 'a timeout must never be reported as success',
+      );
 
       // Honest statement of what the stack guarantees: the idempotency cache
       // DELIBERATELY does not cover a 5xx, so this retry really does re-execute.
       // What protects the ledger is the server-side invariant, not the replay
       // cache -- and the client (ApiService) will in fact retry here.
       final retry = await send();
-      expect(retry.statusCode, 409,
-          reason: 'the second send must be refused, not silently applied');
+      expect(
+        retry.statusCode,
+        409,
+        reason: 'the second send must be refused, not silently applied',
+      );
 
       // The timed-out first request is still in flight on the server; let its
       // slow commit land before reading the ledger (that late commit IS the
@@ -187,8 +216,7 @@ void main() {
       final landed = (await repo.allLoans())
           .where((l) => l.itemCode == 'SLOW0001')
           .toList();
-      expect(landed, hasLength(1),
-          reason: 'one logical borrow, one loan row');
+      expect(landed, hasLength(1), reason: 'one logical borrow, one loan row');
       repo.loanPreWriteDelay = Duration.zero;
     });
 
@@ -197,109 +225,161 @@ void main() {
       final headers = {..._authJson(token), 'Idempotency-Key': 'send-once'};
       final body = jsonEncode(_loanBody(itemCode: 'IDEM0001', member: 'M1'));
 
-      expect((await client.post(Uri.parse('$base/loans'),
-              headers: headers, body: body))
-          .statusCode, 200);
-      final second = await client.post(Uri.parse('$base/loans'),
-          headers: headers, body: body);
+      expect(
+        (await client.post(
+          Uri.parse('$base/loans'),
+          headers: headers,
+          body: body,
+        )).statusCode,
+        200,
+      );
+      final second = await client.post(
+        Uri.parse('$base/loans'),
+        headers: headers,
+        body: body,
+      );
       expect(second.statusCode, 200);
-      expect(repo.addLoanExecutions, 1,
-          reason: 'the router must not run twice for one key');
+      expect(
+        repo.addLoanExecutions,
+        1,
+        reason: 'the router must not run twice for one key',
+      );
       expect(await repo.activeLoansFor('IDEM0001'), hasLength(1));
     });
   });
 
   group('#18 -- two clients editing one record', () {
-    test('the stale writer is refused 409 and the row holds exactly one edit',
-        () async {
-      repo.seedItem(_item('EDIT0001', designation: 'Shared record', rowVersion: 7));
-      // Both clients read version 7 and then write; without the guard the
-      // second silently clobbers the first (the audit-era TX-06 finding). The
-      // delay widens the window so the interleaving is forced, not lucky.
-      repo.updatePreWriteDelay = const Duration(milliseconds: 150);
+    test(
+      'the stale writer is refused 409 and the row holds exactly one edit',
+      () async {
+        repo.seedItem(
+          _item('EDIT0001', designation: 'Shared record', rowVersion: 7),
+        );
+        // Both clients read version 7 and then write; without the guard the
+        // second silently clobbers the first (the audit-era TX-06 finding). The
+        // delay widens the window so the interleaving is forced, not lucky.
+        repo.updatePreWriteDelay = const Duration(milliseconds: 150);
 
-      final edits = ['Edit A', 'Edit B'];
-      final writes = await Future.wait([
-        for (final designation in edits)
-          client.put(
-            Uri.parse('$base/items'),
-            headers: {..._authJson(token), 'x-expected-version': '7'},
-            body: jsonEncode(_itemMap('EDIT0001', designation: designation)),
-          ),
-      ]);
-      repo.updatePreWriteDelay = Duration.zero;
+        final edits = ['Edit A', 'Edit B'];
+        final writes = await Future.wait([
+          for (final designation in edits)
+            client.put(
+              Uri.parse('$base/items'),
+              headers: {..._authJson(token), 'x-expected-version': '7'},
+              body: jsonEncode(_itemMap('EDIT0001', designation: designation)),
+            ),
+        ]);
+        repo.updatePreWriteDelay = Duration.zero;
 
-      expect(writes.map((r) => r.statusCode).toList()..sort(), equals([200, 409]),
-          reason: 'exactly one writer may land');
-      final current = repo.items['EDIT0001']!;
-      expect(current.rowVersion, 8, reason: 'the survivor advanced the version');
-      // The row reflects ONE coherent edit: the survivor's text, and the loser's
-      // is nowhere in the stored row (a part-merge would be the real damage).
-      final winnerDesignation = edits[
-          writes.indexWhere((r) => r.statusCode == 200)];
-      expect(current.designation, winnerDesignation);
-      expect(current.designation, isNot(edits.firstWhere(
-          (e) => e != winnerDesignation)));
-    });
+        expect(
+          writes.map((r) => r.statusCode).toList()..sort(),
+          equals([200, 409]),
+          reason: 'exactly one writer may land',
+        );
+        final current = repo.items['EDIT0001']!;
+        expect(
+          current.rowVersion,
+          8,
+          reason: 'the survivor advanced the version',
+        );
+        // The row reflects ONE coherent edit: the survivor's text, and the loser's
+        // is nowhere in the stored row (a part-merge would be the real damage).
+        final winnerDesignation =
+            edits[writes.indexWhere((r) => r.statusCode == 200)];
+        expect(current.designation, winnerDesignation);
+        expect(
+          current.designation,
+          isNot(edits.firstWhere((e) => e != winnerDesignation)),
+        );
+      },
+    );
 
-    test('a caller that sends no version keeps the legacy unconditional write',
-        () async {
-      repo.seedItem(_item('NOVER001'));
-      final res = await client.put(
-        Uri.parse('$base/items'),
-        headers: _authJson(token),
-        body: jsonEncode(_itemMap('NOVER001', designation: 'Overwritten')),
-      );
-      expect(res.statusCode, 200);
-      expect(repo.items['NOVER001']!.designation, 'Overwritten');
-    });
+    test(
+      'a caller that sends no version keeps the legacy unconditional write',
+      () async {
+        repo.seedItem(_item('NOVER001'));
+        final res = await client.put(
+          Uri.parse('$base/items'),
+          headers: _authJson(token),
+          body: jsonEncode(_itemMap('NOVER001', designation: 'Overwritten')),
+        );
+        expect(res.statusCode, 200);
+        expect(repo.items['NOVER001']!.designation, 'Overwritten');
+      },
+    );
   });
 
   group('catalogue scale -- a big table read by many clients at once', () {
-    test('2000 rows paginate with no loss and no duplicate for 40 concurrent readers',
-        () async {
-      for (int i = 1; i <= 2000; i++) {
-        repo.seedItem(_item('CAT${i.toString().padLeft(5, '0')}',
-            designation: 'Volume $i'));
-      }
+    test(
+      '2000 rows paginate with no loss and no duplicate for 40 concurrent readers',
+      () async {
+        for (int i = 1; i <= 2000; i++) {
+          repo.seedItem(
+            _item(
+              'CAT${i.toString().padLeft(5, '0')}',
+              designation: 'Volume $i',
+            ),
+          );
+        }
 
-      final countRes = await client.get(Uri.parse('$base/items/count'),
-          headers: {'Authorization': 'Bearer $token'});
-      expect(jsonDecode(countRes.body)['count'], 2000,
-          reason: 'the count is what drives correct pagination');
-
-      const pageSize = 50;
-      final bodies = await Future.wait(List.generate(
-        2000 ~/ pageSize,
-        (p) => client.get(
-          Uri.parse('$base/items?limit=$pageSize&offset=${p * pageSize}'),
+        final countRes = await client.get(
+          Uri.parse('$base/items/count'),
           headers: {'Authorization': 'Bearer $token'},
-        ),
-      ));
+        );
+        expect(
+          jsonDecode(countRes.body)['count'],
+          2000,
+          reason: 'the count is what drives correct pagination',
+        );
 
-      final codes = <String>[];
-      for (final b in bodies) {
-        expect(b.statusCode, 200);
-        codes.addAll((jsonDecode(b.body) as List)
-            .map((e) => (e as Map)['code'] as String));
-      }
-      expect(codes, hasLength(2000));
-      expect(codes.toSet(), hasLength(2000),
-          reason: 'under concurrent reads a page may neither repeat nor drop');
-    });
+        const pageSize = 50;
+        final bodies = await Future.wait(
+          List.generate(
+            2000 ~/ pageSize,
+            (p) => client.get(
+              Uri.parse('$base/items?limit=$pageSize&offset=${p * pageSize}'),
+              headers: {'Authorization': 'Bearer $token'},
+            ),
+          ),
+        );
+
+        final codes = <String>[];
+        for (final b in bodies) {
+          expect(b.statusCode, 200);
+          codes.addAll(
+            (jsonDecode(b.body) as List).map(
+              (e) => (e as Map)['code'] as String,
+            ),
+          );
+        }
+        expect(codes, hasLength(2000));
+        expect(
+          codes.toSet(),
+          hasLength(2000),
+          reason: 'under concurrent reads a page may neither repeat nor drop',
+        );
+      },
+    );
 
     test('a read storm does not disturb a concurrent write', () async {
       repo.seedItem(_item('SCALE001', status: ItemStatus.emprunte));
       for (int i = 0; i < 500; i++) {
-        repo.seedItem(_item('STORM${i.toString().padLeft(4, '0')}',
-            designation: 'Noise $i'));
+        repo.seedItem(
+          _item(
+            'STORM${i.toString().padLeft(4, '0')}',
+            designation: 'Noise $i',
+          ),
+        );
       }
 
       final results = await Future.wait([
         ...List.generate(
-            40,
-            (_) => client.get(Uri.parse('$base/items?limit=25'),
-                headers: {'Authorization': 'Bearer $token'})),
+          40,
+          (_) => client.get(
+            Uri.parse('$base/items?limit=25'),
+            headers: {'Authorization': 'Bearer $token'},
+          ),
+        ),
         client.post(
           Uri.parse('$base/loans'),
           headers: _authJson(token),
@@ -309,8 +389,11 @@ void main() {
 
       expect(results.take(40).every((r) => r.statusCode == 200), isTrue);
       expect(results.last.statusCode, 200);
-      expect(await repo.activeLoansFor('SCALE001'), hasLength(1),
-          reason: 'readers must not corrupt or swallow the write');
+      expect(
+        await repo.activeLoansFor('SCALE001'),
+        hasLength(1),
+        reason: 'readers must not corrupt or swallow the write',
+      );
     });
   });
 
@@ -333,8 +416,10 @@ void main() {
         boundPort = server.port;
       }
       base = 'http://127.0.0.1:$boundPort';
-      final live = await client.get(Uri.parse('$base/items?limit=1'),
-          headers: {'Authorization': 'Bearer $token'});
+      final live = await client.get(
+        Uri.parse('$base/items?limit=1'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
       expect(live.statusCode, 200);
 
       await server.stopServer();
@@ -342,34 +427,46 @@ void main() {
       final failures = <int>[];
       for (int i = 0; i < 3; i++) {
         try {
-          await client.get(Uri.parse('$base/items?limit=1'),
-              headers: {'Authorization': 'Bearer $token'});
+          await client.get(
+            Uri.parse('$base/items?limit=1'),
+            headers: {'Authorization': 'Bearer $token'},
+          );
           failures.add(200); // must not happen while nothing is listening
         } on http.ClientException {
           failures.add(-1); // a clean, immediate transport failure
         }
       }
       sw.stop();
-      expect(failures, everyElement(-1),
-          reason: 'a dead host must never look like a success');
+      expect(
+        failures,
+        everyElement(-1),
+        reason: 'a dead host must never look like a success',
+      );
       // The audit's freeze complaint: an outage must be reported, not sat on.
       // Windows refuses synchronously here, so a multi-second total would mean
       // the client is hanging rather than failing.
-      expect(sw.elapsed, lessThan(const Duration(seconds: 5)),
-          reason: 'an unreachable host must fail fast, not hang the UI');
+      expect(
+        sw.elapsed,
+        lessThan(const Duration(seconds: 5)),
+        reason: 'an unreachable host must fail fast, not hang the UI',
+      );
 
       await server.startServer(host: '127.0.0.1', port: boundPort);
       addTearDown(server.stopServer);
-      final recovered = await client.get(Uri.parse('$base/items?limit=1'),
-          headers: {'Authorization': 'Bearer $token'});
-      expect(recovered.statusCode, 200,
-          reason: 'the session must survive a host bounce');
+      final recovered = await client.get(
+        Uri.parse('$base/items?limit=1'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      expect(
+        recovered.statusCode,
+        200,
+        reason: 'the session must survive a host bounce',
+      );
     });
   });
 
   group('#20 -- abusive traffic against a shared database', () {
-    test('a mixed flood never yields a 500 and never corrupts the server',
-        () async {
+    test('a mixed flood never yields a 500 and never corrupts the server', () async {
       // One oversized body, matching the server's own configured cap, plus a
       // stream of malformed / half-valid / good requests interleaved: the audit
       // asked whether a hostile client can take the service down for everyone.
@@ -378,23 +475,47 @@ void main() {
       for (int i = 0; i < 25; i++) {
         switch (i % 5) {
           case 0:
-            requests.add(client.post(Uri.parse('$base/items'),
-                headers: _authJson(token), body: '{"not json'));
+            requests.add(
+              client.post(
+                Uri.parse('$base/items'),
+                headers: _authJson(token),
+                body: '{"not json',
+              ),
+            );
           case 1:
-            requests.add(client.post(Uri.parse('$base/items'),
+            requests.add(
+              client.post(
+                Uri.parse('$base/items'),
                 headers: _authJson(token),
-                body: jsonEncode({'code': 'MISSING$i'})));
+                body: jsonEncode({'code': 'MISSING$i'}),
+              ),
+            );
           case 2:
-            requests.add(client.post(Uri.parse('$base/items'),
+            requests.add(
+              client.post(
+                Uri.parse('$base/items'),
                 headers: _authJson(token),
-                body: jsonEncode(_itemMap('BADTYPE$i', quantite: 'many'))));
+                body: jsonEncode(_itemMap('BADTYPE$i', quantite: 'many')),
+              ),
+            );
           case 3:
-            requests.add(client.post(Uri.parse('$base/items'),
+            requests.add(
+              client.post(
+                Uri.parse('$base/items'),
                 headers: _authJson(token),
-                body: jsonEncode(_itemMap('GOOD${i.toString().padLeft(3, '0')}'))));
+                body: jsonEncode(
+                  _itemMap('GOOD${i.toString().padLeft(3, '0')}'),
+                ),
+              ),
+            );
           default:
-            requests.add(client.post(Uri.parse('$base/items'),
-                headers: _authJson(token), body: oversized));
+            requests.add(
+              client.post(
+                Uri.parse('$base/items'),
+                headers: _authJson(token),
+                body: oversized,
+              ),
+            );
         }
       }
       final responses = await Future.wait(requests);
@@ -402,100 +523,124 @@ void main() {
       expect(
         responses.map((r) => r.statusCode),
         everyElement(inInclusiveRange(200, 499)),
-        reason: 'client error must never surface as a server fault for everyone',
+        reason:
+            'client error must never surface as a server fault for everyone',
       );
-      expect(responses.where((r) => r.statusCode == 413), isNotEmpty,
-          reason: 'the oversized body must be cut off');
+      expect(
+        responses.where((r) => r.statusCode == 413),
+        isNotEmpty,
+        reason: 'the oversized body must be cut off',
+      );
       expect(responses.where((r) => r.statusCode == 200), isNotEmpty);
 
       // Still healthy afterwards: a good request works and the garbage rows did
       // not land.
-      final after = await client.post(Uri.parse('$base/items'),
-          headers: _authJson(token),
-          body: jsonEncode(_itemMap('AFTERFLOOD')));
+      final after = await client.post(
+        Uri.parse('$base/items'),
+        headers: _authJson(token),
+        body: jsonEncode(_itemMap('AFTERFLOOD')),
+      );
       expect(after.statusCode, 200);
       expect(repo.items.containsKey('MISSING1'), isFalse);
       expect(repo.items.containsKey('BADTYPE2'), isFalse);
     });
 
-    test('a write flood is throttled with 429 + Retry-After, and reads stay open',
-        () async {
-      // A dedicated server with a tiny bucket, so the throttle is the subject
-      // rather than an incidental side effect of load.
-      final tightAuth = AuthService(
-        hasher: PasswordHasher(iterations: 1000),
-        store: InMemoryAuthStore(),
-      );
-      await tightAuth.setPassword('root-pw');
-      final tight = HttpServerService(
-        repository: repo,
-        auth: tightAuth,
-        rateLimiter: RateLimiter(capacity: 5, refillPerMinute: 600),
-      );
-      await tight.startServer(host: '127.0.0.1', port: 0);
-      final tightBase = 'http://127.0.0.1:${tight.port}';
-      addTearDown(tight.stopServer);
-      final tightToken = await _staffToken(client, tightBase, tightAuth);
+    test(
+      'a write flood is throttled with 429 + Retry-After, and reads stay open',
+      () async {
+        // A dedicated server with a tiny bucket, so the throttle is the subject
+        // rather than an incidental side effect of load.
+        final tightAuth = AuthService(
+          hasher: PasswordHasher(iterations: 1000),
+          store: InMemoryAuthStore(),
+        );
+        await tightAuth.setPassword('root-pw');
+        final tight = HttpServerService(
+          repository: repo,
+          auth: tightAuth,
+          rateLimiter: RateLimiter(capacity: 5, refillPerMinute: 600),
+        );
+        await tight.startServer(host: '127.0.0.1', port: 0);
+        final tightBase = 'http://127.0.0.1:${tight.port}';
+        addTearDown(tight.stopServer);
+        final tightToken = await _staffToken(client, tightBase, tightAuth);
 
-      final writes = await Future.wait(List.generate(
-        20,
-        (i) => client.post(
-          Uri.parse('$tightBase/items'),
-          headers: _authJson(tightToken),
-          body: jsonEncode(_itemMap(
-              'FLOOD${i.toString().padLeft(3, '0')}', designation: 'Flood $i')),
-        ),
-      ));
-      final throttled =
-          writes.where((r) => r.statusCode == 429).toList();
-      expect(throttled, isNotEmpty,
-          reason: 'writes must be capped before they reach the shared db');
-      expect(throttled.first.body, contains('retry_after_seconds'),
-          reason: 'a refusal must tell the client how long to wait');
+        final writes = await Future.wait(
+          List.generate(
+            20,
+            (i) => client.post(
+              Uri.parse('$tightBase/items'),
+              headers: _authJson(tightToken),
+              body: jsonEncode(
+                _itemMap(
+                  'FLOOD${i.toString().padLeft(3, '0')}',
+                  designation: 'Flood $i',
+                ),
+              ),
+            ),
+          ),
+        );
+        final throttled = writes.where((r) => r.statusCode == 429).toList();
+        expect(
+          throttled,
+          isNotEmpty,
+          reason: 'writes must be capped before they reach the shared db',
+        );
+        expect(
+          throttled.first.body,
+          contains('retry_after_seconds'),
+          reason: 'a refusal must tell the client how long to wait',
+        );
 
-      // The audit's operational worry: a throttled client must not be locked out
-      // of reading, and the sync poll must keep working.
-      final read = await client.get(Uri.parse('$tightBase/items?limit=5'),
-          headers: {'Authorization': 'Bearer $tightToken'});
-      expect(read.statusCode, 200);
-      final version = await client.get(Uri.parse('$tightBase/db-version'),
-          headers: {'Authorization': 'Bearer $tightToken'});
-      expect(version.statusCode, 200);
-    });
+        // The audit's operational worry: a throttled client must not be locked out
+        // of reading, and the sync poll must keep working.
+        final read = await client.get(
+          Uri.parse('$tightBase/items?limit=5'),
+          headers: {'Authorization': 'Bearer $tightToken'},
+        );
+        expect(read.statusCode, 200);
+        final version = await client.get(
+          Uri.parse('$tightBase/db-version'),
+          headers: {'Authorization': 'Bearer $tightToken'},
+        );
+        expect(version.statusCode, 200);
+      },
+    );
   });
 }
 
 Map<String, String> _authJson(String token) => {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer $token',
-    };
+  'Content-Type': 'application/json',
+  'Authorization': 'Bearer $token',
+};
 
-Map<String, dynamic> _loanBody({required String itemCode, required String member}) =>
-    {
-      'item_code': itemCode,
-      'member_id': member,
-      'member_name': member,
-      'item_title': 'Title $itemCode',
-      'loan_date': '2026-09-23T10:00:00',
-      'due_date': '2026-10-07T10:00:00',
-      'status': LoanStatus.active.storage,
-    };
+Map<String, dynamic> _loanBody({
+  required String itemCode,
+  required String member,
+}) => {
+  'item_code': itemCode,
+  'member_id': member,
+  'member_name': member,
+  'item_title': 'Title $itemCode',
+  'loan_date': '2026-09-23T10:00:00',
+  'due_date': '2026-10-07T10:00:00',
+  'status': LoanStatus.active.storage,
+};
 
 Map<String, dynamic> _itemMap(
   String code, {
   String? designation,
   Object? quantite = 1,
-}) =>
-    {
-      'code': code,
-      'code_type': 'LIV',
-      'designation': designation ?? 'Item $code',
-      'quantite': quantite,
-      'emplacement': 'A',
-      'taux': 10,
-      'emplacement_stock': 'S',
-      'status': ItemStatus.disponible,
-    };
+}) => {
+  'code': code,
+  'code_type': 'LIV',
+  'designation': designation ?? 'Item $code',
+  'quantite': quantite,
+  'emplacement': 'A',
+  'taux': 10,
+  'emplacement_stock': 'S',
+  'status': ItemStatus.disponible,
+};
 
 LibraryItem _item(
   String code, {
@@ -503,25 +648,32 @@ LibraryItem _item(
   int quantite = 1,
   String status = ItemStatus.disponible,
   int rowVersion = 0,
-}) =>
-    LibraryItem(
-      code: code,
-      codeType: 'LIV',
-      designation: designation ?? 'Item $code',
-      quantite: quantite,
-      emplacement: 'A',
-      taux: 10,
-      emplacementStock: 'S',
-      status: status,
-      rowVersion: rowVersion,
-    );
+}) => LibraryItem(
+  code: code,
+  codeType: 'LIV',
+  designation: designation ?? 'Item $code',
+  quantite: quantite,
+  emplacement: 'A',
+  taux: 10,
+  emplacementStock: 'S',
+  status: status,
+  rowVersion: rowVersion,
+);
 
-Future<String> _login(http.Client c, String base, AuthService auth,
-    {String username = 'probe', String password = 'probe-pw-123'}) async {
+Future<String> _login(
+  http.Client c,
+  String base,
+  AuthService auth, {
+  String username = 'probe',
+  String password = 'probe-pw-123',
+}) async {
   final admin = await _adminLogin(c, base, auth);
   final created = await c.post(
     Uri.parse('$base/users'),
-    headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $admin'},
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $admin',
+    },
     body: jsonEncode({
       'username': username,
       'password': password,
@@ -538,8 +690,7 @@ Future<String> _login(http.Client c, String base, AuthService auth,
   return jsonDecode(res.body)['token'] as String;
 }
 
-Future<String> _adminLogin(
-    http.Client c, String base, AuthService auth) async {
+Future<String> _adminLogin(http.Client c, String base, AuthService auth) async {
   final res = await c.post(
     Uri.parse('$base/auth/login'),
     headers: {'Content-Type': 'application/json'},
@@ -549,8 +700,7 @@ Future<String> _adminLogin(
   return jsonDecode(res.body)['token'] as String;
 }
 
-Future<String> _staffToken(
-        http.Client c, String base, AuthService auth) =>
+Future<String> _staffToken(http.Client c, String base, AuthService auth) =>
     _login(c, base, auth, username: 'staff1', password: 'staff-pw-123');
 
 /// A concurrency oracle: it holds the same invariants the real database holds,
@@ -616,15 +766,20 @@ class _ScaleRepo implements LibraryRepository {
   }
 
   @override
-  Future<int> countItems(
-      {String? search, String? status, String? codeType,
+  Future<int> countItems({
+    String? search,
+    String? status,
+    String? codeType,
     String? sort,
     bool ascending = true,
   }) async {
     await Future<void>.delayed(Duration.zero);
     return (await getItems(
-            limit: 1 << 30, search: search, status: status, codeType: codeType))
-        .length;
+      limit: 1 << 30,
+      search: search,
+      status: status,
+      codeType: codeType,
+    )).length;
   }
 
   @override
@@ -660,7 +815,8 @@ class _ScaleRepo implements LibraryRepository {
     }
     if (expectedVersion != null && expectedVersion != current.rowVersion) {
       throw ConcurrentUpdateConflictException(
-          'row_version changed: expected $expectedVersion, found ${current.rowVersion}');
+        'row_version changed: expected $expectedVersion, found ${current.rowVersion}',
+      );
     }
     items[item.code] = LibraryItem(
       code: item.code,
@@ -688,9 +844,12 @@ class _ScaleRepo implements LibraryRepository {
     // The claim is atomic; only the write below is slow.
     if (item.status == ItemStatus.disponible || !_claimed.add(loan.itemCode)) {
       throw ActiveLoanConflictException(
-          'A single available copy cannot back two loans.');
+        'A single available copy cannot back two loans.',
+      );
     }
-    await Future<void>.delayed(loanPreWriteDelay); // slow commit, like a real txn
+    await Future<void>.delayed(
+      loanPreWriteDelay,
+    ); // slow commit, like a real txn
     items[loan.itemCode] = LibraryItem(
       code: item.code,
       barcode: item.barcode,
@@ -703,18 +862,20 @@ class _ScaleRepo implements LibraryRepository {
       status: ItemStatus.emprunte,
       rowVersion: item.rowVersion,
     );
-    loans.add(Loan(
-      id: ++_loanSeq,
-      itemCode: loan.itemCode,
-      copyId: loan.copyId,
-      memberId: loan.memberId,
-      memberName: loan.memberName,
-      itemTitle: loan.itemTitle,
-      loanDate: loan.loanDate,
-      dueDate: loan.dueDate,
-      returnDate: loan.returnDate,
-      status: LoanStatus.active.storage,
-    ));
+    loans.add(
+      Loan(
+        id: ++_loanSeq,
+        itemCode: loan.itemCode,
+        copyId: loan.copyId,
+        memberId: loan.memberId,
+        memberName: loan.memberName,
+        itemTitle: loan.itemTitle,
+        loanDate: loan.loanDate,
+        dueDate: loan.dueDate,
+        returnDate: loan.returnDate,
+        status: LoanStatus.active.storage,
+      ),
+    );
   }
 
   @override
@@ -722,7 +883,8 @@ class _ScaleRepo implements LibraryRepository {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => throw UnsupportedError(
-      'The concurrency oracle deliberately does not implement '
-      '${invocation.memberName} -- a test reaching it would be asserting '
-      'nothing real.');
+    'The concurrency oracle deliberately does not implement '
+    '${invocation.memberName} -- a test reaching it would be asserting '
+    'nothing real.',
+  );
 }

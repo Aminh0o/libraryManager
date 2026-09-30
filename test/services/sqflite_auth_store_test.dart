@@ -88,8 +88,11 @@ void main() {
       );
       expect(await restarted.hasCredential(), isTrue);
       expect(await restarted.verifyPassword('correct horse'), isTrue);
-      expect(await restarted.isAuthorized(token), isTrue,
-          reason: 'issued token must persist across restart');
+      expect(
+        await restarted.isAuthorized(token),
+        isTrue,
+        reason: 'issued token must persist across restart',
+      );
     });
 
     test('revocation persists across restart', () async {

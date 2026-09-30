@@ -18,9 +18,9 @@ class _FakePathProvider extends PathProviderPlatform {
 }
 
 Future<Database> _openReadOnly(String path) => databaseFactoryFfi.openDatabase(
-      path,
-      options: OpenDatabaseOptions(readOnly: true, singleInstance: false),
-    );
+  path,
+  options: OpenDatabaseOptions(readOnly: true, singleInstance: false),
+);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -67,9 +67,10 @@ void main() {
       try {
         final ok = await probe.rawQuery('PRAGMA integrity_check');
         expect('${ok.first.values.first}', 'ok');
-        final kept = await probe
-            .rawQuery('SELECT COUNT(*) c FROM library_items WHERE code = ?',
-                ['BVAL']);
+        final kept = await probe.rawQuery(
+          'SELECT COUNT(*) c FROM library_items WHERE code = ?',
+          ['BVAL'],
+        );
         expect(kept.first['c'], 1);
       } finally {
         await probe.close();

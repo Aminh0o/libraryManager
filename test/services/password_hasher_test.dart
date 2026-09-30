@@ -16,8 +16,9 @@ void main() {
     test('matches the PBKDF2 definition for c=1 (single block)', () {
       // For iterations=1 and a 32-byte key, DK == HMAC-SHA256(password, salt||INT(1)).
       final saltB64 = base64.encode(utf8.encode('fixed-salt-16bytes'));
-      final stored =
-          PasswordHasher(iterations: 1).hash('password', salt: saltB64);
+      final stored = PasswordHasher(
+        iterations: 1,
+      ).hash('password', salt: saltB64);
       final derivedB64 = stored.split('|').last;
 
       final saltBytes = utf8.encode('fixed-salt-16bytes');
@@ -27,7 +28,10 @@ void main() {
         ..[saltBytes.length + 1] = 0
         ..[saltBytes.length + 2] = 0
         ..[saltBytes.length + 3] = 1;
-      final expected = Hmac(sha256, utf8.encode('password')).convert(block).bytes;
+      final expected = Hmac(
+        sha256,
+        utf8.encode('password'),
+      ).convert(block).bytes;
 
       expect(base64.decode(derivedB64), equals(expected));
     });
@@ -80,13 +84,15 @@ void main() {
       expect(hasher.verify('target', parts.join('|')), isFalse);
     });
 
-    test('never trusts the caller-provided iteration count to crash on garbage',
-        () {
-      expect(hasher.verify('x', 'not-a-valid-format'), isFalse);
-      expect(hasher.verify('x', 'pbkdf2|sha256|abc|AA==|AA=='), isFalse);
-      expect(hasher.verify('x', 'pbkdf2|sha512|10|AA==|AA=='), isFalse);
-      expect(hasher.verify('x', 'pbkdf2|sha256|0|AA==|AA=='), isFalse);
-    });
+    test(
+      'never trusts the caller-provided iteration count to crash on garbage',
+      () {
+        expect(hasher.verify('x', 'not-a-valid-format'), isFalse);
+        expect(hasher.verify('x', 'pbkdf2|sha256|abc|AA==|AA=='), isFalse);
+        expect(hasher.verify('x', 'pbkdf2|sha512|10|AA==|AA=='), isFalse);
+        expect(hasher.verify('x', 'pbkdf2|sha256|0|AA==|AA=='), isFalse);
+      },
+    );
   });
 
   group('tokens', () {

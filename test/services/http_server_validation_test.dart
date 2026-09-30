@@ -40,7 +40,8 @@ class _CountingRepo implements LibraryRepository {
         // real socket so its 409 mapping is proven, not just the DB path.
         if (it.barcode == 'DUPBC') {
           throw BarcodeConflictException(
-              'Barcode DUPBC is already used by item 0001.');
+            'Barcode DUPBC is already used by item 0001.',
+          );
         }
         addItems++;
         lastItem = it;
@@ -60,7 +61,8 @@ class _CountingRepo implements LibraryRepository {
         // its 409 mapping is exercised over a real socket.
         if (inv.positionalArguments[1] == 'DUPATTR') {
           throw AttributeConflictException(
-              'Attribute (STATUS, DUPATTR) already exists.');
+            'Attribute (STATUS, DUPATTR) already exists.',
+          );
         }
         return Future.value();
       case #addHistoryEntry:
@@ -78,8 +80,9 @@ class _CountingRepo implements LibraryRepository {
             inv.namedArguments[#expectedVersion] as int?;
         if (it.code == 'STALE') {
           throw ConcurrentUpdateConflictException(
-              'Item STALE was modified by another client (now version 2, '
-              'expected 0).');
+            'Item STALE was modified by another client (now version 2, '
+            'expected 0).',
+          );
         }
         return Future.value();
     }
@@ -107,27 +110,29 @@ void main() {
   });
 
   Future<http.Response> postJson(String path, Object body) => client.post(
-        Uri.parse('$base$path'),
-        headers: {'content-type': 'application/json'},
-        body: jsonEncode(body),
-      );
+    Uri.parse('$base$path'),
+    headers: {'content-type': 'application/json'},
+    body: jsonEncode(body),
+  );
 
   Future<http.Response> putJson(String path, Object body) => client.put(
-        Uri.parse('$base$path'),
-        headers: {'content-type': 'application/json'},
-        body: jsonEncode(body),
-      );
+    Uri.parse('$base$path'),
+    headers: {'content-type': 'application/json'},
+    body: jsonEncode(body),
+  );
 
   Future<http.Response> putJsonWithVersion(
-          String path, Object body, String version) =>
-      client.put(
-        Uri.parse('$base$path'),
-        headers: {
-          'content-type': 'application/json',
-          'X-Expected-Version': version,
-        },
-        body: jsonEncode(body),
-      );
+    String path,
+    Object body,
+    String version,
+  ) => client.put(
+    Uri.parse('$base$path'),
+    headers: {
+      'content-type': 'application/json',
+      'X-Expected-Version': version,
+    },
+    body: jsonEncode(body),
+  );
 
   Map<String, dynamic> decode(http.Response r) =>
       jsonDecode(r.body) as Map<String, dynamic>;
@@ -140,47 +145,65 @@ void main() {
       expect(repo.addItems, 0);
     });
 
-    test('POST /items missing required fields is a 400 and never writes',
-        () async {
-      final res = await postJson('/items', {});
-      expect(res.statusCode, 400);
-      expect(decode(res)['error'], 'bad_request');
-      expect(repo.addItems, 0);
-    });
+    test(
+      'POST /items missing required fields is a 400 and never writes',
+      () async {
+        final res = await postJson('/items', {});
+        expect(res.statusCode, 400);
+        expect(decode(res)['error'], 'bad_request');
+        expect(repo.addItems, 0);
+      },
+    );
 
-    test('POST /items with a valid body still succeeds and writes once',
-        () async {
-      final res = await postJson('/items', {'code': '0700', 'designation': 'A book'});
-      expect(res.statusCode, 200);
-      expect(repo.addItems, 1);
-      expect(repo.lastItem?.code, '0700');
-    });
+    test(
+      'POST /items with a valid body still succeeds and writes once',
+      () async {
+        final res = await postJson('/items', {
+          'code': '0700',
+          'designation': 'A book',
+        });
+        expect(res.statusCode, 200);
+        expect(repo.addItems, 1);
+        expect(repo.lastItem?.code, '0700');
+      },
+    );
 
-    test('POST /items with a wrongly-typed numeric is a 400, not a 500',
-        () async {
-      final res = await postJson('/items',
-          {'code': '1', 'designation': 'x', 'quantite': 'not-a-number'});
-      expect(res.statusCode, 400);
-      expect(decode(res)['error'], 'bad_request');
-      expect(repo.addItems, 0);
-    });
+    test(
+      'POST /items with a wrongly-typed numeric is a 400, not a 500',
+      () async {
+        final res = await postJson('/items', {
+          'code': '1',
+          'designation': 'x',
+          'quantite': 'not-a-number',
+        });
+        expect(res.statusCode, 400);
+        expect(decode(res)['error'], 'bad_request');
+        expect(repo.addItems, 0);
+      },
+    );
 
     test('POST /members with blank names is a 400 and never writes', () async {
-      final res =
-          await postJson('/members', {'first_name': '', 'last_name': '   '});
+      final res = await postJson('/members', {
+        'first_name': '',
+        'last_name': '   ',
+      });
       expect(res.statusCode, 400);
       expect(decode(res)['error'], 'bad_request');
       expect(repo.addMembers, 0);
     });
 
-    test('POST /members with an unparseable date is a 400, not a 500',
-        () async {
-      final res = await postJson(
-          '/members', {'first_name': 'A', 'registered_at': 'not-a-date'});
-      expect(res.statusCode, 400);
-      expect(decode(res)['error'], 'bad_request');
-      expect(repo.addMembers, 0);
-    });
+    test(
+      'POST /members with an unparseable date is a 400, not a 500',
+      () async {
+        final res = await postJson('/members', {
+          'first_name': 'A',
+          'registered_at': 'not-a-date',
+        });
+        expect(res.statusCode, 400);
+        expect(decode(res)['error'], 'bad_request');
+        expect(repo.addMembers, 0);
+      },
+    );
 
     test('PUT /members without an id is a 400 and never writes', () async {
       final res = await putJson('/members', {'first_name': 'A'});
@@ -189,14 +212,18 @@ void main() {
       expect(repo.updateMembers, 0);
     });
 
-    test('POST /code-definitions with a blank prefix is a 400, not a write',
-        () async {
-      final res =
-          await postJson('/code-definitions', {'prefix': '', 'label': 'Books'});
-      expect(res.statusCode, 400);
-      expect(decode(res)['error'], 'bad_request');
-      expect(repo.addDefs, 0);
-    });
+    test(
+      'POST /code-definitions with a blank prefix is a 400, not a write',
+      () async {
+        final res = await postJson('/code-definitions', {
+          'prefix': '',
+          'label': 'Books',
+        });
+        expect(res.statusCode, 400);
+        expect(decode(res)['error'], 'bad_request');
+        expect(repo.addDefs, 0);
+      },
+    );
 
     test('POST /history is recorded with the caller identity, not forged '
         'fields (DB-05)', () async {
@@ -220,81 +247,119 @@ void main() {
       expect(h['timestamp'], isNot('1999-01-01T00:00:00.000'));
     });
 
-    test('POST /history with a blank operation is a 400 and never writes',
-        () async {
-      final res = await postJson('/history', {'operation': '', 'details': 'd'});
-      expect(res.statusCode, 400);
-      expect(decode(res)['error'], 'bad_request');
-      expect(repo.lastHistory, isNull);
-    });
+    test(
+      'POST /history with a blank operation is a 400 and never writes',
+      () async {
+        final res = await postJson('/history', {
+          'operation': '',
+          'details': 'd',
+        });
+        expect(res.statusCode, 400);
+        expect(decode(res)['error'], 'bad_request');
+        expect(repo.lastHistory, isNull);
+      },
+    );
 
-    test('POST /items with a negative quantity is a 400, not a write (BE-08)',
-        () async {
-      final res = await postJson(
-          '/items', {'code': '1', 'designation': 'x', 'quantite': -5});
-      expect(res.statusCode, 400);
-      expect(decode(res)['error'], 'bad_request');
-      expect(repo.addItems, 0);
-    });
+    test(
+      'POST /items with a negative quantity is a 400, not a write (BE-08)',
+      () async {
+        final res = await postJson('/items', {
+          'code': '1',
+          'designation': 'x',
+          'quantite': -5,
+        });
+        expect(res.statusCode, 400);
+        expect(decode(res)['error'], 'bad_request');
+        expect(repo.addItems, 0);
+      },
+    );
 
-    test('a duplicate item code becomes a 409 conflict, not a 500 (BE-07)',
-        () async {
-      final res =
-          await postJson('/items', {'code': 'DUP', 'designation': 'x'});
-      expect(res.statusCode, 409);
-      expect(decode(res)['error'], 'conflict');
-      expect(repo.addItems, 0);
-    });
+    test(
+      'a duplicate item code becomes a 409 conflict, not a 500 (BE-07)',
+      () async {
+        final res = await postJson('/items', {
+          'code': 'DUP',
+          'designation': 'x',
+        });
+        expect(res.statusCode, 409);
+        expect(decode(res)['error'], 'conflict');
+        expect(repo.addItems, 0);
+      },
+    );
 
-    test('a duplicate barcode becomes a 409 conflict, not a 500 (DB-01)',
-        () async {
-      final res = await postJson(
-          '/items', {'code': '1', 'designation': 'x', 'barcode': 'DUPBC'});
-      expect(res.statusCode, 409);
-      expect(decode(res)['error'], 'conflict');
-      expect(repo.addItems, 0);
-    });
+    test(
+      'a duplicate barcode becomes a 409 conflict, not a 500 (DB-01)',
+      () async {
+        final res = await postJson('/items', {
+          'code': '1',
+          'designation': 'x',
+          'barcode': 'DUPBC',
+        });
+        expect(res.statusCode, 409);
+        expect(decode(res)['error'], 'conflict');
+        expect(repo.addItems, 0);
+      },
+    );
 
-    test('a duplicate attribute definition becomes a 409, not a 500 (DB-01)',
-        () async {
-      final res = await postJson(
-          '/attribute-definitions', {'type': 'STATUS', 'value': 'DUPATTR'});
-      expect(res.statusCode, 409);
-      expect(decode(res)['error'], 'conflict');
-    });
+    test(
+      'a duplicate attribute definition becomes a 409, not a 500 (DB-01)',
+      () async {
+        final res = await postJson('/attribute-definitions', {
+          'type': 'STATUS',
+          'value': 'DUPATTR',
+        });
+        expect(res.statusCode, 409);
+        expect(decode(res)['error'], 'conflict');
+      },
+    );
 
-    test('PUT /items forwards X-Expected-Version to the repository (TX-06)',
-        () async {
-      final res = await putJsonWithVersion(
-          '/items', {'code': '0700', 'designation': 'x'}, '7');
-      expect(res.statusCode, 200);
-      expect(repo.updateItems, 1);
-      expect(repo.lastUpdateExpectedVersion, 7,
-          reason: 'server must parse the header and pass expectedVersion');
-    });
+    test(
+      'PUT /items forwards X-Expected-Version to the repository (TX-06)',
+      () async {
+        final res = await putJsonWithVersion('/items', {
+          'code': '0700',
+          'designation': 'x',
+        }, '7');
+        expect(res.statusCode, 200);
+        expect(repo.updateItems, 1);
+        expect(
+          repo.lastUpdateExpectedVersion,
+          7,
+          reason: 'server must parse the header and pass expectedVersion',
+        );
+      },
+    );
 
-    test('PUT /items without a version is an unconditional write, so the '
-        'repository receives a null expectedVersion (backward-compat TX-06)',
-        () async {
-      final res =
-          await putJson('/items', {'code': '0700', 'designation': 'x'});
-      expect(res.statusCode, 200);
-      expect(repo.updateItems, 1);
-      expect(repo.lastUpdateExpectedVersion, isNull);
-    });
+    test(
+      'PUT /items without a version is an unconditional write, so the '
+      'repository receives a null expectedVersion (backward-compat TX-06)',
+      () async {
+        final res = await putJson('/items', {
+          'code': '0700',
+          'designation': 'x',
+        });
+        expect(res.statusCode, 200);
+        expect(repo.updateItems, 1);
+        expect(repo.lastUpdateExpectedVersion, isNull);
+      },
+    );
 
     test('a stale optimistic update becomes a 409 conflict, not a 500 '
         '(TX-06)', () async {
-      final res = await putJsonWithVersion(
-          '/items', {'code': 'STALE', 'designation': 'x'}, '0');
+      final res = await putJsonWithVersion('/items', {
+        'code': 'STALE',
+        'designation': 'x',
+      }, '0');
       expect(res.statusCode, 409);
       expect(decode(res)['error'], 'conflict');
     });
 
     test('POST /code-definitions records a server-built audit with the caller '
         'IP, not a client-forged one (BE-05 / BE-09)', () async {
-      final res = await postJson(
-          '/code-definitions', {'prefix': 'BK', 'label': 'Books'});
+      final res = await postJson('/code-definitions', {
+        'prefix': 'BK',
+        'label': 'Books',
+      });
       expect(res.statusCode, 200);
       expect(repo.addDefs, 1);
       final a = repo.lastDefAudit;

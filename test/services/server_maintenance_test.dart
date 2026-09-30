@@ -32,7 +32,8 @@ class _QuickRepo implements LibraryRepository {
 void main() {
   // Binding-free: real loopback socket.
   Future<(HttpServerService, http.Client, Uri)> start(
-      LibraryRepository repo) async {
+    LibraryRepository repo,
+  ) async {
     final server = HttpServerService(repository: repo);
     await server.startServer(host: '127.0.0.1', port: 0);
     final client = http.Client();
@@ -44,28 +45,29 @@ void main() {
     return (server, client, base);
   }
 
-  Future<void> waitInFlight(
-      HttpServerService server, int target) async {
+  Future<void> waitInFlight(HttpServerService server, int target) async {
     for (var i = 0; i < 200 && server.inFlightRequests < target; i++) {
       await Future<void>.delayed(const Duration(milliseconds: 5));
     }
   }
 
   group('maintenance quiesce gate (DB-04)', () {
-    test('refuses new requests with 503 during maintenance, resumes after',
-        () async {
-      final (server, client, base) = await start(_QuickRepo());
+    test(
+      'refuses new requests with 503 during maintenance, resumes after',
+      () async {
+        final (server, client, base) = await start(_QuickRepo());
 
-      server.enterMaintenance();
-      final refused = await client.get(base.replace(path: '/db-version'));
-      expect(refused.statusCode, 503);
-      expect(refused.body, contains('maintenance'));
+        server.enterMaintenance();
+        final refused = await client.get(base.replace(path: '/db-version'));
+        expect(refused.statusCode, 503);
+        expect(refused.body, contains('maintenance'));
 
-      server.exitMaintenance();
-      final ok = await client.get(base.replace(path: '/db-version'));
-      expect(ok.statusCode, 200);
-      expect(ok.body, contains('"1"'));
-    });
+        server.exitMaintenance();
+        final ok = await client.get(base.replace(path: '/db-version'));
+        expect(ok.statusCode, 200);
+        expect(ok.body, contains('"1"'));
+      },
+    );
 
     test('withMaintenance drains an in-flight request, refuses new work, runs '
         'the op under maintenance, then resumes', () async {
@@ -93,8 +95,11 @@ void main() {
       expect(first.statusCode, 200);
 
       expect(await maintenanceResult, 'done');
-      expect(ranUnderMaintenance, isTrue,
-          reason: 'the op must run while new requests are still refused');
+      expect(
+        ranUnderMaintenance,
+        isTrue,
+        reason: 'the op must run while new requests are still refused',
+      );
       expect(server.isMaintenance, isFalse, reason: 'must resume');
 
       final after = await client.get(base.replace(path: '/db-version'));

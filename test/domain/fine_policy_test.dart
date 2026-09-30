@@ -20,19 +20,18 @@ void main() {
       expect(FinePolicy.overdueDays(due, due), 0);
     });
 
-    test('one minute late counts as a FULL day (never fractionally cheaper)',
-        () {
-      expect(
-        FinePolicy.overdueDays(due, due.add(const Duration(minutes: 1))),
-        1,
-      );
-    });
+    test(
+      'one minute late counts as a FULL day (never fractionally cheaper)',
+      () {
+        expect(
+          FinePolicy.overdueDays(due, due.add(const Duration(minutes: 1))),
+          1,
+        );
+      },
+    );
 
     test('exact whole days', () {
-      expect(
-        FinePolicy.overdueDays(due, due.add(const Duration(days: 2))),
-        2,
-      );
+      expect(FinePolicy.overdueDays(due, due.add(const Duration(days: 2))), 2);
     });
 
     test('whole days plus a partial day rounds UP', () {
@@ -58,13 +57,13 @@ void main() {
 
   group('FinePolicy.overdueDaysFor', () {
     Loan loanDue(DateTime due) => Loan(
-          itemCode: '0001',
-          memberId: '250001',
-          memberName: 'Alice',
-          itemTitle: 'Title',
-          loanDate: due.subtract(const Duration(days: 14)),
-          dueDate: due,
-        );
+      itemCode: '0001',
+      memberId: '250001',
+      memberName: 'Alice',
+      itemTitle: 'Title',
+      loanDate: due.subtract(const Duration(days: 14)),
+      dueDate: due,
+    );
 
     test('uses the supplied instant', () {
       final l = loanDue(DateTime(2026, 1, 10));

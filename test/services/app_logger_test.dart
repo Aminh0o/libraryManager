@@ -11,7 +11,10 @@ void main() {
     test('drops records below minLevel and keeps those at/above', () {
       final lines = <String>[];
       final log = AppLogger(
-          minLevel: LogLevel.info, sink: lines.add, clock: fixedClock);
+        minLevel: LogLevel.info,
+        sink: lines.add,
+        clock: fixedClock,
+      );
 
       log.debug('t', 'hidden');
       log.info('t', 'shown-info');
@@ -28,7 +31,10 @@ void main() {
     test('a debug-level logger emits everything', () {
       final lines = <String>[];
       final log = AppLogger(
-          minLevel: LogLevel.debug, sink: lines.add, clock: fixedClock);
+        minLevel: LogLevel.debug,
+        sink: lines.add,
+        clock: fixedClock,
+      );
       log.debug('t', 'now-visible');
       expect(lines.single, contains('DEBUG'));
       expect(lines.single, contains('now-visible'));
@@ -37,16 +43,24 @@ void main() {
     test('line format is "<iso> LEVEL [tag] message"', () {
       final lines = <String>[];
       final log = AppLogger(
-          minLevel: LogLevel.info, sink: lines.add, clock: fixedClock);
+        minLevel: LogLevel.info,
+        sink: lines.add,
+        clock: fixedClock,
+      );
       log.info('http', 'listening 8080');
-      expect(lines.single,
-          '2026-01-02T03:04:05.000Z INFO [http] listening 8080');
+      expect(
+        lines.single,
+        '2026-01-02T03:04:05.000Z INFO [http] listening 8080',
+      );
     });
 
     test('error()/warn() append error + stack detail lines', () {
       final lines = <String>[];
       final log = AppLogger(
-          minLevel: LogLevel.info, sink: lines.add, clock: fixedClock);
+        minLevel: LogLevel.info,
+        sink: lines.add,
+        clock: fixedClock,
+      );
       log.error('db', 'write failed', StateError('boom'), StackTrace.empty);
       final out = lines.single;
       expect(out, contains('ERROR [db] write failed'));
@@ -76,7 +90,10 @@ void main() {
     test('records are appended to the file and survive flush()', () async {
       final file = File(p.join(tmp.path, 'app.log'));
       final log = AppLogger(
-          minLevel: LogLevel.info, logFile: file, clock: fixedClock);
+        minLevel: LogLevel.info,
+        logFile: file,
+        clock: fixedClock,
+      );
       log.info('a', 'first');
       log.warn('a', 'second');
       await log.flush();
@@ -90,11 +107,12 @@ void main() {
       final file = File(p.join(tmp.path, 'app.log'));
       // Tiny cap forces rotation after only a couple of lines.
       final log = AppLogger(
-          minLevel: LogLevel.info,
-          logFile: file,
-          clock: fixedClock,
-          maxBytesPerFile: 60,
-          keepFiles: 3);
+        minLevel: LogLevel.info,
+        logFile: file,
+        clock: fixedClock,
+        maxBytesPerFile: 60,
+        keepFiles: 3,
+      );
       for (var i = 0; i < 8; i++) {
         log.info('r', 'line-$i padding padding padding');
       }
@@ -107,11 +125,12 @@ void main() {
     test('at most keepFiles historical logs are retained', () async {
       final file = File(p.join(tmp.path, 'app.log'));
       final log = AppLogger(
-          minLevel: LogLevel.info,
-          logFile: file,
-          clock: fixedClock,
-          maxBytesPerFile: 40,
-          keepFiles: 2);
+        minLevel: LogLevel.info,
+        logFile: file,
+        clock: fixedClock,
+        maxBytesPerFile: 40,
+        keepFiles: 2,
+      );
       for (var i = 0; i < 40; i++) {
         log.info('r', 'padding-$i aaaaaaaaaaaaaaaaaaaaaaaa');
       }
@@ -128,19 +147,22 @@ void main() {
       expect(rotated, isNot(contains('app.log.3')));
     });
 
-    test('file-IO failure is swallowed (logging must never crash the app)',
-        () async {
-      // Point the "file" at a directory so every write throws.
-      final bad = Directory(p.join(tmp.path, 'not-a-file'));
-      bad.createSync();
-      final log = AppLogger(
+    test(
+      'file-IO failure is swallowed (logging must never crash the app)',
+      () async {
+        // Point the "file" at a directory so every write throws.
+        final bad = Directory(p.join(tmp.path, 'not-a-file'));
+        bad.createSync();
+        final log = AppLogger(
           minLevel: LogLevel.info,
           logFile: File(bad.path),
-          clock: fixedClock);
-      log.info('t', 'would-be-written');
-      // flush() awaits the internal chain; it must complete without throwing.
-      await expectLater(log.flush(), completes);
-    });
+          clock: fixedClock,
+        );
+        log.info('t', 'would-be-written');
+        // flush() awaits the internal chain; it must complete without throwing.
+        await expectLater(log.flush(), completes);
+      },
+    );
   });
 
   group('AppLogger.readLogContents + scrub (ARC-06 diagnostics)', () {
@@ -159,11 +181,12 @@ void main() {
       final file = File(p.join(tmp.path, 'app.log'));
       // Tiny cap so a couple of lines force a .1 rotation, keepFiles = 3.
       final log = AppLogger(
-          minLevel: LogLevel.info,
-          logFile: file,
-          clock: fixedClock,
-          maxBytesPerFile: 60,
-          keepFiles: 3);
+        minLevel: LogLevel.info,
+        logFile: file,
+        clock: fixedClock,
+        maxBytesPerFile: 60,
+        keepFiles: 3,
+      );
       log.info('r', 'oldest-marker padding padding');
       log.info('r', 'newest-marker');
       final text = await log.readLogContents();
@@ -172,8 +195,10 @@ void main() {
       expect(File('${file.path}.1').existsSync(), isTrue);
       expect(text, contains('oldest-marker'));
       // Oldest (in .1) must appear before the current file's newest line.
-      expect(text.indexOf('oldest-marker') < text.indexOf('newest-marker'),
-          isTrue);
+      expect(
+        text.indexOf('oldest-marker') < text.indexOf('newest-marker'),
+        isTrue,
+      );
     });
 
     test('scrub redacts secret-looking values but keeps the field name', () {
@@ -199,7 +224,10 @@ void main() {
       });
       final file = File(p.join(tmp.path, 'app.log'));
       final log = AppLogger(
-          minLevel: LogLevel.info, logFile: file, clock: fixedClock);
+        minLevel: LogLevel.info,
+        logFile: file,
+        clock: fixedClock,
+      );
       log.info('auth', 'login password=hunter2 for admin');
       final text = await log.readLogContents();
       expect(text, contains('password=[redacted]'));

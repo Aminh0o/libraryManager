@@ -32,60 +32,64 @@ class _CannedClient extends http.BaseClient {
 }
 
 LibraryItem _item() => LibraryItem(
-      code: '0700',
-      codeType: 'LIV',
-      designation: 'A book',
-      quantite: 1,
-      emplacement: 'A1',
-      taux: 0,
-      emplacementStock: 'S1',
-    );
+  code: '0700',
+  codeType: 'LIV',
+  designation: 'A book',
+  quantite: 1,
+  emplacement: 'A1',
+  taux: 0,
+  emplacementStock: 'S1',
+);
 
 ApiService _api(http.Client client) =>
     ApiService(hostIp: '127.0.0.1', port: 9, client: client);
 
 void main() {
   group('ApiService surfaces the server error (BE-02 / Phase 8.2)', () {
-    test('a 409 delete-conflict becomes an ApiException with the real message',
-        () async {
-      final client = _CannedClient(
-        409,
-        jsonEncode({
-          'error': 'conflict',
-          'message': 'Membre a des prêts actifs',
-        }),
-      );
-      Object? err;
-      try {
-        await _api(client).deleteMember('M1');
-      } catch (e) {
-        err = e;
-      }
-      expect(err, isA<ApiException>());
-      final ae = err! as ApiException;
-      expect(ae.statusCode, 409);
-      expect(ae.isConflict, isTrue);
-      expect(ae.message, 'Membre a des prêts actifs');
-      expect(ae.error, 'conflict');
-      expect(client.lastMethod, 'DELETE');
-      expect(client.lastPath, '/members/M1');
-    });
+    test(
+      'a 409 delete-conflict becomes an ApiException with the real message',
+      () async {
+        final client = _CannedClient(
+          409,
+          jsonEncode({
+            'error': 'conflict',
+            'message': 'Membre a des prêts actifs',
+          }),
+        );
+        Object? err;
+        try {
+          await _api(client).deleteMember('M1');
+        } catch (e) {
+          err = e;
+        }
+        expect(err, isA<ApiException>());
+        final ae = err! as ApiException;
+        expect(ae.statusCode, 409);
+        expect(ae.isConflict, isTrue);
+        expect(ae.message, 'Membre a des prêts actifs');
+        expect(ae.error, 'conflict');
+        expect(client.lastMethod, 'DELETE');
+        expect(client.lastPath, '/members/M1');
+      },
+    );
 
-    test('a 500 carries the server message instead of a generic string',
-        () async {
-      final client = _CannedClient(
-        500,
-        jsonEncode({'error': 'internal_error', 'message': 'boom'}),
-      );
-      await expectLater(
-        _api(client).addItem(_item()),
-        throwsA(
-          isA<ApiException>()
-              .having((e) => e.statusCode, 'statusCode', 500)
-              .having((e) => e.message, 'message', 'boom'),
-        ),
-      );
-    });
+    test(
+      'a 500 carries the server message instead of a generic string',
+      () async {
+        final client = _CannedClient(
+          500,
+          jsonEncode({'error': 'internal_error', 'message': 'boom'}),
+        );
+        await expectLater(
+          _api(client).addItem(_item()),
+          throwsA(
+            isA<ApiException>()
+                .having((e) => e.statusCode, 'statusCode', 500)
+                .having((e) => e.message, 'message', 'boom'),
+          ),
+        );
+      },
+    );
 
     test('a non-JSON error body falls back to the raw text', () async {
       final client = _CannedClient(502, 'Bad Gateway from proxy');
@@ -99,19 +103,21 @@ void main() {
       );
     });
 
-    test('a structured error response is NOT retried (only transport errors)',
-        () async {
-      final client = _CannedClient(
-        400,
-        jsonEncode({'error': 'bad_request', 'message': 'nope'}),
-      );
-      await expectLater(
-        _api(client).updateItem(_item()),
-        throwsA(isA<ApiException>()),
-      );
-      // _retry only re-sends on Client/Socket/Timeout exceptions; an ApiException
-      // (a definitive HTTP error) must reach the caller after a single attempt.
-      expect(client.sends, 1);
-    });
+    test(
+      'a structured error response is NOT retried (only transport errors)',
+      () async {
+        final client = _CannedClient(
+          400,
+          jsonEncode({'error': 'bad_request', 'message': 'nope'}),
+        );
+        await expectLater(
+          _api(client).updateItem(_item()),
+          throwsA(isA<ApiException>()),
+        );
+        // _retry only re-sends on Client/Socket/Timeout exceptions; an ApiException
+        // (a definitive HTTP error) must reach the caller after a single attempt.
+        expect(client.sends, 1);
+      },
+    );
   });
 }

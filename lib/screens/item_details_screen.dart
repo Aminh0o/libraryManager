@@ -46,10 +46,7 @@ class ItemDetailsScreen extends StatelessWidget {
 
     if (item == null) {
       return Scaffold(
-        appBar: AppBar(
-          title: Text(l10n.itemProfile),
-          elevation: 0,
-        ),
+        appBar: AppBar(title: Text(l10n.itemProfile), elevation: 0),
         body: Center(
           // The pinned FE2-14 key marks the whole not-found composition.
           child: KeyedSubtree(
@@ -108,8 +105,7 @@ class ItemDetailsScreen extends StatelessWidget {
                   // (Loans tab -> search item -> pick member) into one click
                   // while keeping every permission gate on the provider side.
                   if (provider.canWrite) _ItemActionsBar(item: item),
-                  if (provider.canWrite)
-                    const SizedBox(height: AppSpacing.xxl),
+                  if (provider.canWrite) const SizedBox(height: AppSpacing.xxl),
                   _InfoCard(
                     title: l10n.technicalInfo,
                     icon: Icons.qr_code_2,
@@ -210,8 +206,9 @@ class _ItemActionsBarState extends State<_ItemActionsBar> {
     if (!mounted) return;
     setState(() {
       _totalCopies = copies.length;
-      _availableCopies =
-          copies.where((c) => c.copyState == CopyState.available).length;
+      _availableCopies = copies
+          .where((c) => c.copyState == CopyState.available)
+          .length;
       _copiesLoaded = true;
     });
   }
@@ -226,15 +223,15 @@ class _ItemActionsBarState extends State<_ItemActionsBar> {
     try {
       await provider.checkOutItem(widget.item, member);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.loanSuccess)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.loanSuccess)));
       await _loadCopies();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(describeError(l10n, e))),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(describeError(l10n, e))));
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -251,15 +248,15 @@ class _ItemActionsBarState extends State<_ItemActionsBar> {
     try {
       await provider.placeReservation(widget.item.code, member.memberId);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.reserveSuccess)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.reserveSuccess)));
       await _loadCopies();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(describeError(l10n, e))),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(describeError(l10n, e))));
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -275,7 +272,8 @@ class _ItemActionsBarState extends State<_ItemActionsBar> {
     // Availability gate mirrors the provider's own rule: a title is only
     // checkout-eligible while its derived status is 'Disponible'.
     final titleAvailable = widget.item.status == 'Disponible';
-    final checkoutEnabled = !(_busy) && (isHost ? _availableCopies > 0 : titleAvailable);
+    final checkoutEnabled =
+        !(_busy) && (isHost ? _availableCopies > 0 : titleAvailable);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xl),
@@ -286,9 +284,14 @@ class _ItemActionsBarState extends State<_ItemActionsBar> {
               children: [
                 AppStatusChip(
                   label: isHost
-                      ? l10n.copiesAvailableLabel(_availableCopies, _totalCopies)
+                      ? l10n.copiesAvailableLabel(
+                          _availableCopies,
+                          _totalCopies,
+                        )
                       : ItemStatusCell.localize(widget.item.status, l10n),
-                  color: checkoutEnabled ? AppStatus.success : AppStatus.neutral,
+                  color: checkoutEnabled
+                      ? AppStatus.success
+                      : AppStatus.neutral,
                 ),
                 const Spacer(),
                 Wrap(
@@ -300,15 +303,20 @@ class _ItemActionsBarState extends State<_ItemActionsBar> {
                           ? const SizedBox(
                               width: AppIcon.sm,
                               height: AppIcon.sm,
-                              child: CircularProgressIndicator(strokeWidth: 2))
-                          : const Icon(Icons.bookmark_add_outlined,
-                              size: AppIcon.md),
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(
+                              Icons.bookmark_add_outlined,
+                              size: AppIcon.md,
+                            ),
                       label: Text(l10n.reserveAction),
                     ),
                     FilledButton.icon(
                       onPressed: checkoutEnabled ? _checkout : null,
-                      icon: const Icon(Icons.assignment_return_outlined,
-                          size: AppIcon.md),
+                      icon: const Icon(
+                        Icons.assignment_return_outlined,
+                        size: AppIcon.md,
+                      ),
                       label: Text(l10n.checkoutAction),
                     ),
                   ],
@@ -490,7 +498,8 @@ class _CopiesCardState extends State<_CopiesCard> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(AppLocalizations.of(context)!.copyStateUpdated)),
+            content: Text(AppLocalizations.of(context)!.copyStateUpdated),
+          ),
         );
       }
     } catch (e) {
@@ -541,8 +550,9 @@ class _CopiesCardState extends State<_CopiesCard> {
         content: Text(l10n.removeCopyConfirm),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(l10n.cancel)),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.cancel),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: scheme.error),
@@ -581,7 +591,9 @@ class _CopiesCardState extends State<_CopiesCard> {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(l10n.cancel),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, controller.text),
             child: Text(l10n.copyBarcodeSave),
@@ -621,7 +633,8 @@ class _CopiesCardState extends State<_CopiesCard> {
               ? const SizedBox(
                   width: AppIcon.md,
                   height: AppIcon.md,
-                  child: CircularProgressIndicator(strokeWidth: 2))
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
               : Icon(
                   Icons.add_circle_outline,
                   size: AppIcon.lg,
@@ -644,9 +657,7 @@ class _CopiesCardState extends State<_CopiesCard> {
               )
             else if (_copies.isEmpty)
               Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: AppSpacing.md,
-                ),
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                 child: Text(
                   l10n.noCopiesYet,
                   style: txt.bodyMedium?.copyWith(
@@ -658,7 +669,8 @@ class _CopiesCardState extends State<_CopiesCard> {
               for (var i = 0; i < _copies.length; i++)
                 Padding(
                   padding: EdgeInsets.only(
-                      bottom: i == _copies.length - 1 ? 0 : AppSpacing.sm),
+                    bottom: i == _copies.length - 1 ? 0 : AppSpacing.sm,
+                  ),
                   child: _copyRow(i, _copies[i], l10n),
                 ),
           ],
@@ -730,7 +742,8 @@ class _CopiesCardState extends State<_CopiesCard> {
           ? const SizedBox(
               width: AppIcon.md,
               height: AppIcon.md,
-              child: CircularProgressIndicator(strokeWidth: 2))
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
           : Icon(Icons.more_vert, size: AppIcon.lg, color: scheme.primary),
       onSelected: (v) {
         if (v is CopyState) {
@@ -773,8 +786,7 @@ class _CopiesCardState extends State<_CopiesCard> {
               Text(
                 l10n.removeCopy,
                 style: txt.bodyMedium?.copyWith(
-                  color:
-                      canRemove ? scheme.error : scheme.onSurfaceVariant,
+                  color: canRemove ? scheme.error : scheme.onSurfaceVariant,
                 ),
               ),
             ],

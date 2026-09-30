@@ -24,25 +24,29 @@ import 'package:library_manager/services/repository.dart';
 // rebuilt; none of this behavior may have drifted.
 class _EmptyRepo implements LibraryRepository {
   @override
-  Future<List<LibraryItem>> getItems(
-          {int limit = 1000,
-          int offset = 0,
-          String? search,
-          String? status,
-          String? codeType,
+  Future<List<LibraryItem>> getItems({
+    int limit = 1000,
+    int offset = 0,
+    String? search,
+    String? status,
+    String? codeType,
     String? sort,
     bool ascending = true,
-  }) async =>
-      const [];
+  }) async => const [];
   @override
-  Future<int> countItems({String? search, String? status, String? codeType,
+  Future<int> countItems({
+    String? search,
+    String? status,
+    String? codeType,
     String? sort,
     bool ascending = true,
   }) async => 0;
   @override
   Future<List<Map<String, dynamic>>> getCodeDefinitions() async => const [];
   @override
-  Future<List<Map<String, dynamic>>> getAttributeDefinitions(String? type) async => const [];
+  Future<List<Map<String, dynamic>>> getAttributeDefinitions(
+    String? type,
+  ) async => const [];
   @override
   Future<Map<String, dynamic>> getStats() async => const {};
   @override
@@ -59,8 +63,10 @@ Future<LibraryProvider> _pump(WidgetTester tester) async {
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
 
-  final provider =
-      LibraryProvider.forTesting(repository: _EmptyRepo(), isHost: false);
+  final provider = LibraryProvider.forTesting(
+    repository: _EmptyRepo(),
+    isHost: false,
+  );
   await tester.pumpWidget(
     ChangeNotifierProvider<LibraryProvider>.value(
       value: provider,
@@ -81,13 +87,16 @@ Future<LibraryProvider> _pump(WidgetTester tester) async {
 }
 
 Finder passwordField() => find.ancestor(
-    of: find.byIcon(Icons.lock_outline), matching: find.byType(TextFormField));
+  of: find.byIcon(Icons.lock_outline),
+  matching: find.byType(TextFormField),
+);
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({'locale': 'en'}));
 
-  testWidgets('the wizard walks every step and Finish persists + navigates',
-      (tester) async {
+  testWidgets('the wizard walks every step and Finish persists + navigates', (
+    tester,
+  ) async {
     await _pump(tester);
 
     // Step 1: welcome with the triple-language greeting + language buttons.
@@ -126,21 +135,23 @@ void main() {
     );
   });
 
-  testWidgets('an empty password blocks the step (validator, not a fake gate)',
-      (tester) async {
-    await _pump(tester);
-    await tester.tap(find.text('Next'));
-    await tester.pumpAndSettle();
-    expect(find.byIcon(Icons.security_outlined), findsOneWidget);
+  testWidgets(
+    'an empty password blocks the step (validator, not a fake gate)',
+    (tester) async {
+      await _pump(tester);
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.security_outlined), findsOneWidget);
 
-    await tester.tap(find.text('Next'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
 
-    expect(find.text('Required field'), findsOneWidget);
-    // Still on the password step: the wizard did NOT advance.
-    expect(find.byIcon(Icons.security_outlined), findsOneWidget);
-    expect(find.byIcon(Icons.tune_outlined), findsNothing);
-  });
+      expect(find.text('Required field'), findsOneWidget);
+      // Still on the password step: the wizard did NOT advance.
+      expect(find.byIcon(Icons.security_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.tune_outlined), findsNothing);
+    },
+  );
 
   testWidgets('Back returns to the previous step', (tester) async {
     await _pump(tester);
@@ -155,8 +166,9 @@ void main() {
     expect(find.byIcon(Icons.security_outlined), findsNothing);
   });
 
-  testWidgets('the language buttons drive the shared provider locale',
-      (tester) async {
+  testWidgets('the language buttons drive the shared provider locale', (
+    tester,
+  ) async {
     final provider = await _pump(tester);
     // forTesting defaults to 'fr' (no prefs read); establish baseline.
     await tester.tap(find.text('English'));

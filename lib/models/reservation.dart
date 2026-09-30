@@ -137,32 +137,32 @@ class Reservation {
   }
 
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'item_code': itemCode,
-        'member_id': memberId,
-        'copy_id': copyId,
-        'status': status.storage,
-        'created_at': createdAt,
-        'available_at': availableAt,
-        'available_until': availableUntil,
-        'ended_at': endedAt,
-        'note': note,
-        if (rank != null) 'rank': rank,
-      };
+    'id': id,
+    'item_code': itemCode,
+    'member_id': memberId,
+    'copy_id': copyId,
+    'status': status.storage,
+    'created_at': createdAt,
+    'available_at': availableAt,
+    'available_until': availableUntil,
+    'ended_at': endedAt,
+    'note': note,
+    if (rank != null) 'rank': rank,
+  };
 
   factory Reservation.fromMap(Map<String, dynamic> map) => Reservation(
-        id: (map['id'] as num?)?.toInt(),
-        itemCode: (map['item_code'] ?? '').toString(),
-        memberId: (map['member_id'] ?? '').toString(),
-        copyId: (map['copy_id'] as num?)?.toInt(),
-        status: ReservationStatus.parse(map['status']),
-        createdAt: map['created_at']?.toString(),
-        availableAt: map['available_at']?.toString(),
-        availableUntil: map['available_until']?.toString(),
-        endedAt: map['ended_at']?.toString(),
-        note: map['note']?.toString(),
-        rank: (map['rank'] as num?)?.toInt(),
-      );
+    id: (map['id'] as num?)?.toInt(),
+    itemCode: (map['item_code'] ?? '').toString(),
+    memberId: (map['member_id'] ?? '').toString(),
+    copyId: (map['copy_id'] as num?)?.toInt(),
+    status: ReservationStatus.parse(map['status']),
+    createdAt: map['created_at']?.toString(),
+    availableAt: map['available_at']?.toString(),
+    availableUntil: map['available_until']?.toString(),
+    endedAt: map['ended_at']?.toString(),
+    note: map['note']?.toString(),
+    rank: (map['rank'] as num?)?.toInt(),
+  );
 }
 
 /// The library's hold policy: how long a promoted holder has to pick the copy
@@ -173,10 +173,7 @@ class Reservation {
 /// The defaults are deliberately generous but FINITE: an uncollected hold must
 /// never lock a copy away from the shelf forever.
 class HoldSettings {
-  const HoldSettings({
-    required this.pickupDays,
-    required this.queueMaxPerItem,
-  });
+  const HoldSettings({required this.pickupDays, required this.queueMaxPerItem});
 
   /// Days a promoted (available) hold waits on the shelf for its holder.
   final int pickupDays;
@@ -194,9 +191,9 @@ class HoldSettings {
   );
 
   Map<String, dynamic> toMap() => {
-        'pickup_days': pickupDays,
-        'queue_max_per_item': queueMaxPerItem,
-      };
+    'pickup_days': pickupDays,
+    'queue_max_per_item': queueMaxPerItem,
+  };
 
   /// Lenient read for persisted rows: a malformed/negative/out-of-range value
   /// degrades to the DEFAULT rather than disabling expiry or unbounding the

@@ -58,43 +58,52 @@ void main() {
         "SELECT name FROM sqlite_master WHERE type='index' AND name = ?",
         ['uq_attr_type_value'],
       );
-      expect(idx, isNotEmpty,
-          reason: 'a fresh install must get the attribute UNIQUE index');
-    });
-
-    test('re-adding an existing (STATUS, Disponible) throws the typed conflict',
-        () async {
-      // 'Disponible' is seeded by _onCreate. The duplicate must surface as the
-      // typed conflict, NOT a raw DatabaseException, and add nothing.
-      Object? caught;
-      try {
-        await svc.addAttributeDefinition('STATUS', 'Disponible');
-      } catch (e) {
-        caught = e;
-      }
-      expect(caught, isA<AttributeConflictException>());
-      expect(caught, isNot(isA<DatabaseException>()));
-      expect(await count('STATUS', 'Disponible'), 1);
-    });
-
-    test('same value under a DIFFERENT type is allowed (composite key)',
-        () async {
-      await svc.addAttributeDefinition('CATEGORY', 'Disponible');
-      expect(await count('CATEGORY', 'Disponible'), 1);
-      // And the STATUS one is untouched.
-      expect(await count('STATUS', 'Disponible'), 1);
-    });
-
-    test('the index itself rejects a raw duplicate (bypassing the app check)',
-        () async {
-      // Proves the constraint is genuinely enforced at the DB layer, not just
-      // the pre-check: a direct insert of a duplicate (type,value) blows up.
-      await svc.addAttributeDefinition('SHELF', 'A1');
-      await expectLater(
-        db.insert('attribute_definitions', {'type': 'SHELF', 'value': 'A1'}),
-        throwsA(isA<DatabaseException>()),
+      expect(
+        idx,
+        isNotEmpty,
+        reason: 'a fresh install must get the attribute UNIQUE index',
       );
     });
+
+    test(
+      're-adding an existing (STATUS, Disponible) throws the typed conflict',
+      () async {
+        // 'Disponible' is seeded by _onCreate. The duplicate must surface as the
+        // typed conflict, NOT a raw DatabaseException, and add nothing.
+        Object? caught;
+        try {
+          await svc.addAttributeDefinition('STATUS', 'Disponible');
+        } catch (e) {
+          caught = e;
+        }
+        expect(caught, isA<AttributeConflictException>());
+        expect(caught, isNot(isA<DatabaseException>()));
+        expect(await count('STATUS', 'Disponible'), 1);
+      },
+    );
+
+    test(
+      'same value under a DIFFERENT type is allowed (composite key)',
+      () async {
+        await svc.addAttributeDefinition('CATEGORY', 'Disponible');
+        expect(await count('CATEGORY', 'Disponible'), 1);
+        // And the STATUS one is untouched.
+        expect(await count('STATUS', 'Disponible'), 1);
+      },
+    );
+
+    test(
+      'the index itself rejects a raw duplicate (bypassing the app check)',
+      () async {
+        // Proves the constraint is genuinely enforced at the DB layer, not just
+        // the pre-check: a direct insert of a duplicate (type,value) blows up.
+        await svc.addAttributeDefinition('SHELF', 'A1');
+        await expectLater(
+          db.insert('attribute_definitions', {'type': 'SHELF', 'value': 'A1'}),
+          throwsA(isA<DatabaseException>()),
+        );
+      },
+    );
   });
 
   group('migration resilience (DB-08 / DB-01)', () {
@@ -105,27 +114,38 @@ void main() {
       // _applyConstraintsSafely runs over it. The violated index is skipped;
       // no rows are deleted and the upgrade does not throw.
       final legacyPath = p.join(tmp.path, 'legacy.db');
-      final old = await databaseFactoryFfi.openDatabase(legacyPath,
-          options: OpenDatabaseOptions(
-            version: 14,
-            singleInstance: false,
-            onCreate: (d, _) async {
-              await d.execute('''CREATE TABLE attribute_definitions(
-                id INTEGER PRIMARY KEY AUTOINCREMENT, type TEXT, value TEXT)''');
-              await d.execute(
-                  'CREATE TABLE metadata(key TEXT PRIMARY KEY, value TEXT)');
-              await d.insert('attribute_definitions',
-                  {'type': 'STATUS', 'value': 'Dup'});
-              await d.insert('attribute_definitions',
-                  {'type': 'STATUS', 'value': 'Dup'});
-            },
-          ));
+      final old = await databaseFactoryFfi.openDatabase(
+        legacyPath,
+        options: OpenDatabaseOptions(
+          version: 14,
+          singleInstance: false,
+          onCreate: (d, _) async {
+            await d.execute(
+              '''CREATE TABLE attribute_definitions(
+                id INTEGER PRIMARY KEY AUTOINCREMENT, type TEXT, value TEXT)''',
+            );
+            await d.execute(
+              'CREATE TABLE metadata(key TEXT PRIMARY KEY, value TEXT)',
+            );
+            await d.insert('attribute_definitions', {
+              'type': 'STATUS',
+              'value': 'Dup',
+            });
+            await d.insert('attribute_definitions', {
+              'type': 'STATUS',
+              'value': 'Dup',
+            });
+          },
+        ),
+      );
       await old.close();
 
       final migrated = await svc.openDatabaseAt(legacyPath);
       expect(await migrated.getVersion(), DatabaseService.currentSchemaVersion);
-      final rows = await migrated
-          .query('attribute_definitions', where: "value = 'Dup'");
+      final rows = await migrated.query(
+        'attribute_definitions',
+        where: "value = 'Dup'",
+      );
       expect(rows.length, 2, reason: 'violators survive; none deleted');
       await migrated.close();
     });

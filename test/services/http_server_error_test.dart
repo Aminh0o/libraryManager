@@ -24,12 +24,10 @@ class _ThrowingRepo implements LibraryRepository {
     String? codeType,
     String? sort,
     bool ascending = true,
-  }) =>
-      Future.error(Exception('db exploded'));
+  }) => Future.error(Exception('db exploded'));
 
   @override
-  Future<void> deleteMember(String memberId,
-          {Map<String, dynamic>? audit}) =>
+  Future<void> deleteMember(String memberId, {Map<String, dynamic>? audit}) =>
       Future.error(ActiveLoanConflictException('Membre a des prêts actifs'));
 
   @override

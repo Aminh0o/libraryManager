@@ -53,8 +53,11 @@ void main() {
     test('only an exact version match is compatible; null is not', () {
       expect(isApiVersionCompatible(kApiProtocolVersion), isTrue);
       expect(isApiVersionCompatible(kApiProtocolVersion + 1), isFalse);
-      expect(isApiVersionCompatible(null), isFalse,
-          reason: 'a server that never advertised a version is untrusted');
+      expect(
+        isApiVersionCompatible(null),
+        isFalse,
+        reason: 'a server that never advertised a version is untrusted',
+      );
     });
   });
 
@@ -62,45 +65,64 @@ void main() {
     ApiService apiWith(http.Client c) =>
         ApiService(hostIp: '127.0.0.1', port: 9, client: c);
 
-    test('getDbVersion sends the X-Api-Version header and stores the reply',
-        () async {
-      final client = _CaptureClient(200, jsonEncode({'version': '42', 'api': 1}));
-      final api = apiWith(client);
+    test(
+      'getDbVersion sends the X-Api-Version header and stores the reply',
+      () async {
+        final client = _CaptureClient(
+          200,
+          jsonEncode({'version': '42', 'api': 1}),
+        );
+        final api = apiWith(client);
 
-      final v = await api.getDbVersion();
+        final v = await api.getDbVersion();
 
-      expect(v, '42');
-      expect(headerCaseInsensitive(client.lastHeaders, apiVersionHeader),
-          '$kApiProtocolVersion');
-      expect(client.lastPath, '/db-version');
-      expect(api.serverApiVersion, kApiProtocolVersion);
-      expect(api.isServerProtocolCompatible, isTrue);
-    });
+        expect(v, '42');
+        expect(
+          headerCaseInsensitive(client.lastHeaders, apiVersionHeader),
+          '$kApiProtocolVersion',
+        );
+        expect(client.lastPath, '/db-version');
+        expect(api.serverApiVersion, kApiProtocolVersion);
+        expect(api.isServerProtocolCompatible, isTrue);
+      },
+    );
 
-    test('a pre-versioning server (no api field) is flagged incompatible',
-        () async {
-      final api = apiWith(_CaptureClient(200, jsonEncode({'version': '7'})));
-      final v = await api.getDbVersion();
-      expect(v, '7');
-      expect(api.serverApiVersion, isNull);
-      expect(api.isServerProtocolCompatible, isFalse);
-    });
+    test(
+      'a pre-versioning server (no api field) is flagged incompatible',
+      () async {
+        final api = apiWith(_CaptureClient(200, jsonEncode({'version': '7'})));
+        final v = await api.getDbVersion();
+        expect(v, '7');
+        expect(api.serverApiVersion, isNull);
+        expect(api.isServerProtocolCompatible, isFalse);
+      },
+    );
 
     test('a mismatched advertised version is incompatible', () async {
-      final api = apiWith(_CaptureClient(
-          200, jsonEncode({'version': '1', 'api': kApiProtocolVersion + 5})));
+      final api = apiWith(
+        _CaptureClient(
+          200,
+          jsonEncode({'version': '1', 'api': kApiProtocolVersion + 5}),
+        ),
+      );
       await api.getDbVersion();
       expect(api.isServerProtocolCompatible, isFalse);
     });
 
-    test('checkConnectivity also captures the advertised version on success',
-        () async {
-      final api = apiWith(_CaptureClient(
-          200, jsonEncode({'version': '1', 'api': kApiProtocolVersion})));
-      final r = await api.checkConnectivity();
-      expect(r.status, ConnectStatus.online);
-      expect(api.serverApiVersion, kApiProtocolVersion);
-    });
+    test(
+      'checkConnectivity also captures the advertised version on success',
+      () async {
+        final api = apiWith(
+          _CaptureClient(
+            200,
+            jsonEncode({'version': '1', 'api': kApiProtocolVersion}),
+          ),
+        );
+        final r = await api.checkConnectivity();
+        expect(r.status, ConnectStatus.online);
+        expect(api.serverApiVersion, kApiProtocolVersion);
+      },
+    );
   });
 
   group('server enforces + advertises the protocol (DEP-02)', () {
@@ -129,22 +151,27 @@ void main() {
     });
 
     test('a matching header is served normally', () async {
-      final res = await client.get(Uri.parse('$base/db-version'),
-          headers: {apiVersionHeader: '$kApiProtocolVersion'});
+      final res = await client.get(
+        Uri.parse('$base/db-version'),
+        headers: {apiVersionHeader: '$kApiProtocolVersion'},
+      );
       expect(res.statusCode, 200);
     });
 
-    test('an incompatible header is refused with 426 Upgrade Required',
-        () async {
-      final res = await client.get(Uri.parse('$base/db-version'),
-          headers: {apiVersionHeader: '${kApiProtocolVersion + 9}'});
-      expect(res.statusCode, 426);
-      final body = jsonDecode(res.body) as Map<String, dynamic>;
-      expect(body['error'], 'upgrade_required');
-    });
+    test(
+      'an incompatible header is refused with 426 Upgrade Required',
+      () async {
+        final res = await client.get(
+          Uri.parse('$base/db-version'),
+          headers: {apiVersionHeader: '${kApiProtocolVersion + 9}'},
+        );
+        expect(res.statusCode, 426);
+        final body = jsonDecode(res.body) as Map<String, dynamic>;
+        expect(body['error'], 'upgrade_required');
+      },
+    );
 
-    test('a request with NO header (legacy peer) is allowed through',
-        () async {
+    test('a request with NO header (legacy peer) is allowed through', () async {
       final res = await client.get(Uri.parse('$base/db-version'));
       expect(res.statusCode, 200);
     });

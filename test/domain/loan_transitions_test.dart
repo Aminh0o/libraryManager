@@ -6,13 +6,13 @@ void main() {
   final t0 = DateTime(2026, 1, 1, 12);
 
   Loan active() => LoanTransitions.checkOut(
-        itemCode: '0001',
-        memberId: '250001',
-        memberName: 'Alice',
-        itemTitle: 'Book',
-        now: t0,
-        durationDays: 15,
-      );
+    itemCode: '0001',
+    memberId: '250001',
+    memberName: 'Alice',
+    itemTitle: 'Book',
+    now: t0,
+    durationDays: 15,
+  );
 
   group('checkOut', () {
     test('creates an active loan with dueDate = now + duration', () {
@@ -28,7 +28,10 @@ void main() {
 
   group('returnLoan', () {
     test('active -> returned sets status + return date', () {
-      final r = LoanTransitions.returnLoan(active(), when: t0.add(const Duration(days: 3)));
+      final r = LoanTransitions.returnLoan(
+        active(),
+        when: t0.add(const Duration(days: 3)),
+      );
       expect(r.status, 'Returned');
       expect(r.isReturned, isTrue);
       expect(r.isActive, isFalse);
@@ -52,10 +55,7 @@ void main() {
 
     test('BL-02: renewing a returned loan throws (no resurrection)', () {
       final returned = LoanTransitions.returnLoan(active());
-      expect(
-        () => LoanTransitions.renew(returned),
-        throwsA(isA<StateError>()),
-      );
+      expect(() => LoanTransitions.renew(returned), throwsA(isA<StateError>()));
     });
   });
 
@@ -78,8 +78,11 @@ void main() {
       );
       expect(past.isOverdue, isTrue);
       final returnedPast = past.copyWith(status: 'Returned');
-      expect(returnedPast.isOverdue, isFalse,
-          reason: 'a returned loan is never overdue');
+      expect(
+        returnedPast.isOverdue,
+        isFalse,
+        reason: 'a returned loan is never overdue',
+      );
     });
   });
 }

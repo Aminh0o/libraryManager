@@ -40,19 +40,27 @@ void main() {
   });
 
   group('server-authored audit user (BE-03 / Phase 8.3)', () {
-    test('a mutation logs the real client IP, not a connection-info object',
-        () async {
-      final res = await client.delete(Uri.parse('$base/items/ABC123'));
-      expect(res.statusCode, 200);
-      expect(repo.lastAudit, isNotNull,
-          reason: 'route should hand an audit map to the repository');
+    test(
+      'a mutation logs the real client IP, not a connection-info object',
+      () async {
+        final res = await client.delete(Uri.parse('$base/items/ABC123'));
+        expect(res.statusCode, 200);
+        expect(
+          repo.lastAudit,
+          isNotNull,
+          reason: 'route should hand an audit map to the repository',
+        );
 
-      final user = repo.lastAudit!['user'] as String;
-      expect(user, '127.0.0.1',
-          reason: 'loopback client must be recorded by IP');
-      expect(user, isNot(contains('Instance of')));
-      expect(user, isNot('Client'));
-      expect(user, isNot('unknown'));
-    });
+        final user = repo.lastAudit!['user'] as String;
+        expect(
+          user,
+          '127.0.0.1',
+          reason: 'loopback client must be recorded by IP',
+        );
+        expect(user, isNot(contains('Instance of')));
+        expect(user, isNot('Client'));
+        expect(user, isNot('unknown'));
+      },
+    );
   });
 }

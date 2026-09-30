@@ -9,7 +9,9 @@ import 'package:library_manager/widgets/confirm_action_dialog.dart';
 // error; a successful one closes it. (The item wrapper is covered separately by
 // item_delete_dialog_test.dart, which exercises this same engine.)
 Future<void> _show(
-    WidgetTester tester, Future<void> Function() onConfirm) async {
+  WidgetTester tester,
+  Future<void> Function() onConfirm,
+) async {
   await tester.pumpWidget(
     MaterialApp(
       locale: const Locale('en'),
@@ -45,8 +47,9 @@ Future<void> _show(
 }
 
 void main() {
-  testWidgets('a failed action keeps the dialog open and shows an error',
-      (tester) async {
+  testWidgets('a failed action keeps the dialog open and shows an error', (
+    tester,
+  ) async {
     var calls = 0;
     await _show(tester, () async {
       calls++;
@@ -61,7 +64,10 @@ void main() {
     expect(find.byType(ConfirmActionDialog), findsOneWidget); // still open
     expect(find.byType(SnackBar), findsOneWidget); // error surfaced
     // FE2-12: the SnackBar shows a localized category, NOT the raw exception.
-    expect(find.text('Something went wrong. Please try again.'), findsOneWidget);
+    expect(
+      find.text('Something went wrong. Please try again.'),
+      findsOneWidget,
+    );
     expect(find.textContaining('server rejected the delete'), findsNothing);
 
     await tester.pump(const Duration(seconds: 6)); // flush SnackBar timer

@@ -49,19 +49,22 @@ void main() {
       );
 
   LibraryItem item(String code) => LibraryItem.fromMap({
-        'code': code,
-        'code_type': 'LIV',
-        'designation': 'Title',
-        'quantite': 1,
-        'emplacement': 'A',
-        'taux': 10,
-        'emplacement_stock': 'S',
-        'status': 'Disponible',
-      });
+    'code': code,
+    'code_type': 'LIV',
+    'designation': 'Title',
+    'quantite': 1,
+    'emplacement': 'A',
+    'taux': 10,
+    'emplacement_stock': 'S',
+    'status': 'Disponible',
+  });
 
   Future<Map<String, dynamic>?> rowByCard(String cardId) async {
-    final r = await db
-        .query('members', where: 'member_id = ?', whereArgs: [cardId]);
+    final r = await db.query(
+      'members',
+      where: 'member_id = ?',
+      whereArgs: [cardId],
+    );
     return r.isEmpty ? null : r.first;
   }
 
@@ -97,11 +100,13 @@ void main() {
   });
 
   group('member per-row optimistic concurrency token (TX-06b)', () {
-    test('the members table carries a row_version column (schema v18)',
-        () async {
-      final cols = await db.rawQuery('PRAGMA table_info(members)');
-      expect(cols.map((c) => c['name']), contains('row_version'));
-    });
+    test(
+      'the members table carries a row_version column (schema v18)',
+      () async {
+        final cols = await db.rawQuery('PRAGMA table_info(members)');
+        expect(cols.map((c) => c['name']), contains('row_version'));
+      },
+    );
 
     test('a freshly added member starts at row_version 0', () async {
       await svc.addMember(member('M100'));
@@ -115,29 +120,38 @@ void main() {
       final id = (await rowByCard('M200'))!['id'] as int;
       expect(await versionByCard('M200'), 0);
 
-      await svc.updateMember(await edit('M200', first: 'Edited'),
-          expectedVersion: 0);
+      await svc.updateMember(
+        await edit('M200', first: 'Edited'),
+        expectedVersion: 0,
+      );
 
       expect((await rowByCard('M200'))!['first_name'], 'Edited');
       expect(await versionByCard('M200'), 1);
-      final reloaded =
-          (await svc.getMembers()).firstWhere((m) => m.id == id);
-      expect(reloaded.rowVersion, 1,
-          reason: 'the fresh token is surfaced on reads so a client can send '
-              'it back on its next edit');
+      final reloaded = (await svc.getMembers()).firstWhere((m) => m.id == id);
+      expect(
+        reloaded.rowVersion,
+        1,
+        reason:
+            'the fresh token is surfaced on reads so a client can send '
+            'it back on its next edit',
+      );
     });
 
     test('an update carrying a STALE expected version is refused and nothing '
         'clobbers (the lost-update guard)', () async {
       await svc.addMember(member('M300', first: 'Real'));
-      await svc.updateMember(await edit('M300', first: 'Real'),
-          expectedVersion: 0); // -> v1
+      await svc.updateMember(
+        await edit('M300', first: 'Real'),
+        expectedVersion: 0,
+      ); // -> v1
       expect(await versionByCard('M300'), 1);
 
       // A second client still believing the row is at v0 tries to overwrite it.
       await expectLater(
-        svc.updateMember(await edit('M300', first: 'Clobber'),
-            expectedVersion: 0),
+        svc.updateMember(
+          await edit('M300', first: 'Clobber'),
+          expectedVersion: 0,
+        ),
         throwsA(isA<ConcurrentUpdateConflictException>()),
       );
       expect((await rowByCard('M300'))!['first_name'], 'Real');
@@ -159,7 +173,10 @@ void main() {
 
       // And an optimistic write against the now-stale version 1 is refused.
       await expectLater(
-        svc.updateMember(await edit('M400', first: 'Stale'), expectedVersion: 1),
+        svc.updateMember(
+          await edit('M400', first: 'Stale'),
+          expectedVersion: 1,
+        ),
         throwsA(isA<ConcurrentUpdateConflictException>()),
       );
       expect((await rowByCard('M400'))!['first_name'], 'V2');
@@ -171,17 +188,21 @@ void main() {
       // a loan that references BOTH the member's card id and the item.
       await svc.addItem(item('TXB1'));
       await svc.addMember(member('M500', first: 'Renamer'));
-      await svc.addLoan(LoanTransitions.checkOut(
-        itemCode: 'TXB1',
-        memberId: 'M500',
-        memberName: 'Renamer Doe',
-        itemTitle: 'Title',
-        now: reg,
-      ));
+      await svc.addLoan(
+        LoanTransitions.checkOut(
+          itemCode: 'TXB1',
+          memberId: 'M500',
+          memberName: 'Renamer Doe',
+          itemTitle: 'Title',
+          now: reg,
+        ),
+      );
 
       // Bump the member to v1 with a legitimate write so v0 is now stale.
-      await svc.updateMember(await edit('M500', first: 'Renamer'),
-          expectedVersion: 0);
+      await svc.updateMember(
+        await edit('M500', first: 'Renamer'),
+        expectedVersion: 0,
+      );
       expect(await versionByCard('M500'), 1);
 
       // A STALE RENAME attempt (row id = M500's, new card id M501, still
@@ -202,12 +223,21 @@ void main() {
         throwsA(isA<ConcurrentUpdateConflictException>()),
       );
 
-      final kept = await db
-          .query('loans', where: 'member_id = ?', whereArgs: ['M500']);
-      expect(kept, isNotEmpty,
-          reason: 'the refused rename must NOT have cascaded the loan to M501');
-      final moved = await db
-          .query('loans', where: 'member_id = ?', whereArgs: ['M501']);
+      final kept = await db.query(
+        'loans',
+        where: 'member_id = ?',
+        whereArgs: ['M500'],
+      );
+      expect(
+        kept,
+        isNotEmpty,
+        reason: 'the refused rename must NOT have cascaded the loan to M501',
+      );
+      final moved = await db.query(
+        'loans',
+        where: 'member_id = ?',
+        whereArgs: ['M501'],
+      );
       expect(moved, isEmpty);
       expect(await versionByCard('M500'), 1);
       expect((await rowByCard('M500'))!['member_id'], 'M500');

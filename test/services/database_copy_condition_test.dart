@@ -31,25 +31,37 @@ void main() {
   late Directory tmp;
   late Database db;
 
-  Future<void> seed(String code, {int quantite = 1}) => svc.addItem(LibraryItem(
-        code: code,
-        codeType: 'LIV',
-        designation: 'Title $code',
-        quantite: quantite,
-        emplacement: 'A',
-        taux: 10,
-        emplacementStock: 'S',
-      ));
+  Future<void> seed(String code, {int quantite = 1}) => svc.addItem(
+    LibraryItem(
+      code: code,
+      codeType: 'LIV',
+      designation: 'Title $code',
+      quantite: quantite,
+      emplacement: 'A',
+      taux: 10,
+      emplacementStock: 'S',
+    ),
+  );
 
   Future<String?> storedStatus(String code) async {
-    final r = await db.query('library_items',
-        columns: ['status'], where: 'code = ?', whereArgs: [code], limit: 1);
+    final r = await db.query(
+      'library_items',
+      columns: ['status'],
+      where: 'code = ?',
+      whereArgs: [code],
+      limit: 1,
+    );
     return r.isEmpty ? null : r.first['status'] as String?;
   }
 
   Future<int> rowVersion(String code) async {
-    final r = await db.query('library_items',
-        columns: ['row_version'], where: 'code = ?', whereArgs: [code], limit: 1);
+    final r = await db.query(
+      'library_items',
+      columns: ['row_version'],
+      where: 'code = ?',
+      whereArgs: [code],
+      limit: 1,
+    );
     return ((r.first['row_version'] as num?) ?? 0).toInt();
   }
 
@@ -69,89 +81,114 @@ void main() {
     } catch (_) {}
   });
 
-  test('available -> maintenance sets the copy and derives the title',
-      () async {
-    await seed('Q1');
-    final copy = await onlyCopy('Q1');
-    final before = await rowVersion('Q1');
+  test(
+    'available -> maintenance sets the copy and derives the title',
+    () async {
+      await seed('Q1');
+      final copy = await onlyCopy('Q1');
+      final before = await rowVersion('Q1');
 
-    await svc.setCopyCondition(
-      copy.id!,
-      CopyState.maintenance,
-      audit: {
-        'timestamp': DateTime.now().toIso8601String(),
-        'operation': 'COPY_STATE',
-        'details': 'Copie #${copy.id} de Q1 -> En Réparation',
-        'user': 'Host',
-      },
-    );
+      await svc.setCopyCondition(
+        copy.id!,
+        CopyState.maintenance,
+        audit: {
+          'timestamp': DateTime.now().toIso8601String(),
+          'operation': 'COPY_STATE',
+          'details': 'Copie #${copy.id} de Q1 -> En Réparation',
+          'user': 'Host',
+        },
+      );
 
-    expect((await onlyCopy('Q1')).state, CopyState.maintenance.storage);
-    // The single copy is now non-lendable, so the rollup reflects it exactly.
-    expect(await storedStatus('Q1'), 'En Réparation');
-    // The title token bumps so LAN clients refresh (a real committed change).
-    expect(await rowVersion('Q1'), greaterThan(before));
-    final hist = await db.query('history',
+      expect((await onlyCopy('Q1')).state, CopyState.maintenance.storage);
+      // The single copy is now non-lendable, so the rollup reflects it exactly.
+      expect(await storedStatus('Q1'), 'En Réparation');
+      // The title token bumps so LAN clients refresh (a real committed change).
+      expect(await rowVersion('Q1'), greaterThan(before));
+      final hist = await db.query(
+        'history',
         where: "operation = ? AND details LIKE ?",
-        whereArgs: ['COPY_STATE', '%Q1%']);
-    expect(hist, isNotEmpty, reason: 'the copy change is audited in-txn');
-  });
+        whereArgs: ['COPY_STATE', '%Q1%'],
+      );
+      expect(hist, isNotEmpty, reason: 'the copy change is audited in-txn');
+    },
+  );
 
-  test('one lost copy among an available one keeps the title Disponible',
-      () async {
-    await seed('Q2', quantite: 2);
-    final copies = await svc.getCopies('Q2');
-    await svc.setCopyCondition(copies.first.id!, CopyState.lost);
+  test(
+    'one lost copy among an available one keeps the title Disponible',
+    () async {
+      await seed('Q2', quantite: 2);
+      final copies = await svc.getCopies('Q2');
+      await svc.setCopyCondition(copies.first.id!, CopyState.lost);
 
-    expect((await svc.getCopies('Q2')).first.state, CopyState.lost.storage);
-    expect(await storedStatus('Q2'), 'Disponible',
-        reason: 'an available copy still makes the title lendable (BL-05)');
-  });
+      expect((await svc.getCopies('Q2')).first.state, CopyState.lost.storage);
+      expect(
+        await storedStatus('Q2'),
+        'Disponible',
+        reason: 'an available copy still makes the title lendable (BL-05)',
+      );
+    },
+  );
 
-  test('a lost copy can be restored to available, re-deriving the title',
-      () async {
-    await seed('Q3');
-    var copy = await onlyCopy('Q3');
-    await svc.setCopyCondition(copy.id!, CopyState.lost);
-    expect(await storedStatus('Q3'), 'Perdu');
+  test(
+    'a lost copy can be restored to available, re-deriving the title',
+    () async {
+      await seed('Q3');
+      var copy = await onlyCopy('Q3');
+      await svc.setCopyCondition(copy.id!, CopyState.lost);
+      expect(await storedStatus('Q3'), 'Perdu');
 
-    copy = await onlyCopy('Q3');
-    await svc.setCopyCondition(copy.id!, CopyState.available);
-    expect((await onlyCopy('Q3')).state, CopyState.available.storage);
-    expect(await storedStatus('Q3'), 'Disponible');
-  });
+      copy = await onlyCopy('Q3');
+      await svc.setCopyCondition(copy.id!, CopyState.available);
+      expect((await onlyCopy('Q3')).state, CopyState.available.storage);
+      expect(await storedStatus('Q3'), 'Disponible');
+    },
+  );
 
-  test('a non-editable TARGET (on loan / reserved) is refused, copy unchanged',
-      () async {
-    await seed('Q4');
-    final copy = await onlyCopy('Q4');
+  test(
+    'a non-editable TARGET (on loan / reserved) is refused, copy unchanged',
+    () async {
+      await seed('Q4');
+      final copy = await onlyCopy('Q4');
 
-    await expectLater(
-      svc.setCopyCondition(copy.id!, CopyState.onLoan),
-      throwsA(isA<InvalidStatusException>()),
-    );
-    await expectLater(
-      svc.setCopyCondition(copy.id!, CopyState.reserved),
-      throwsA(isA<InvalidStatusException>()),
-    );
-    expect((await onlyCopy('Q4')).state, CopyState.available.storage,
-        reason: 'a refused request must not mutate the copy');
-  });
+      await expectLater(
+        svc.setCopyCondition(copy.id!, CopyState.onLoan),
+        throwsA(isA<InvalidStatusException>()),
+      );
+      await expectLater(
+        svc.setCopyCondition(copy.id!, CopyState.reserved),
+        throwsA(isA<InvalidStatusException>()),
+      );
+      expect(
+        (await onlyCopy('Q4')).state,
+        CopyState.available.storage,
+        reason: 'a refused request must not mutate the copy',
+      );
+    },
+  );
 
-  test('a copy that is CURRENTLY on loan cannot be hand-edited (CAS)',
-      () async {
-    await seed('Q5');
-    final copy = await onlyCopy('Q5');
-    // Simulate a genuine loan: the physical copy is now checked out.
-    await db.update('item_copies', {'state': CopyState.onLoan.storage},
-        where: 'id = ?', whereArgs: [copy.id]);
+  test(
+    'a copy that is CURRENTLY on loan cannot be hand-edited (CAS)',
+    () async {
+      await seed('Q5');
+      final copy = await onlyCopy('Q5');
+      // Simulate a genuine loan: the physical copy is now checked out.
+      await db.update(
+        'item_copies',
+        {'state': CopyState.onLoan.storage},
+        where: 'id = ?',
+        whereArgs: [copy.id],
+      );
 
-    await expectLater(
-      svc.setCopyCondition(copy.id!, CopyState.archived),
-      throwsA(isA<CopyConflictException>()),
-      reason: 'the loan owns this copy — staff must return it first',
-    );
-    expect((await onlyCopy('Q5')).state, CopyState.onLoan.storage,
-        reason: 'the guarded update must be a no-op on a locked copy');
-  });
+      await expectLater(
+        svc.setCopyCondition(copy.id!, CopyState.archived),
+        throwsA(isA<CopyConflictException>()),
+        reason: 'the loan owns this copy — staff must return it first',
+      );
+      expect(
+        (await onlyCopy('Q5')).state,
+        CopyState.onLoan.storage,
+        reason: 'the guarded update must be a no-op on a locked copy',
+      );
+    },
+  );
 }

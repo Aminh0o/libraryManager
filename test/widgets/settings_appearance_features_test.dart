@@ -20,25 +20,29 @@ import 'package:library_manager/services/repository.dart';
 // actually hide the appearance section (otherwise the flag is a lie).
 class _EmptyRepo implements LibraryRepository {
   @override
-  Future<List<LibraryItem>> getItems(
-          {int limit = 1000,
-          int offset = 0,
-          String? search,
-          String? status,
-          String? codeType,
+  Future<List<LibraryItem>> getItems({
+    int limit = 1000,
+    int offset = 0,
+    String? search,
+    String? status,
+    String? codeType,
     String? sort,
     bool ascending = true,
-  }) async =>
-      const [];
+  }) async => const [];
   @override
-  Future<int> countItems({String? search, String? status, String? codeType,
+  Future<int> countItems({
+    String? search,
+    String? status,
+    String? codeType,
     String? sort,
     bool ascending = true,
   }) async => 0;
   @override
   Future<List<Map<String, dynamic>>> getCodeDefinitions() async => const [];
   @override
-  Future<List<Map<String, dynamic>>> getAttributeDefinitions(String? type) async => const [];
+  Future<List<Map<String, dynamic>>> getAttributeDefinitions(
+    String? type,
+  ) async => const [];
   @override
   Future<Map<String, dynamic>> getStats() async => const {};
   @override
@@ -57,15 +61,20 @@ class _Harness {
   final FeatureFlags flags;
 }
 
-Future<_Harness> _pump(WidgetTester tester,
-    {required bool isHost, Map<String, Object> prefs = const {}}) async {
+Future<_Harness> _pump(
+  WidgetTester tester, {
+  required bool isHost,
+  Map<String, Object> prefs = const {},
+}) async {
   tester.view.physicalSize = const Size(1200, 3600);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
   SharedPreferences.setMockInitialValues(prefs);
 
-  final provider =
-      LibraryProvider.forTesting(repository: _EmptyRepo(), isHost: isHost);
+  final provider = LibraryProvider.forTesting(
+    repository: _EmptyRepo(),
+    isHost: isHost,
+  );
   final appearance = await AppearanceController.load();
   final flags = await FeatureFlags.load();
 
@@ -96,8 +105,9 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('appearance + feature sections are shown for a host (flag on)',
-      (tester) async {
+  testWidgets('appearance + feature sections are shown for a host (flag on)', (
+    tester,
+  ) async {
     await _pump(tester, isHost: true);
     expect(find.text('Appearance'), findsOneWidget); // category nav entry
     await openCat(tester, 'appearance');
@@ -106,8 +116,9 @@ void main() {
     expect(find.text('Features'), findsOneWidget);
   });
 
-  testWidgets('the appearance section hides when its feature flag is off',
-      (tester) async {
+  testWidgets('the appearance section hides when its feature flag is off', (
+    tester,
+  ) async {
     await _pump(
       tester,
       isHost: true,
@@ -118,21 +129,24 @@ void main() {
     expect(find.text('Connection mode'), findsOneWidget);
   });
 
-  testWidgets('picking an accent swatch updates the shared controller',
-      (tester) async {
+  testWidgets('picking an accent swatch updates the shared controller', (
+    tester,
+  ) async {
     final h = await _pump(tester, isHost: true);
     expect(h.appearance.seedValue, AppearanceController.defaultSeedValue);
 
     await openCat(tester, 'appearance');
-    await tester.tap(find.byWidgetPredicate(
-        (w) => w is Tooltip && w.message == 'Indigo'));
+    await tester.tap(
+      find.byWidgetPredicate((w) => w is Tooltip && w.message == 'Indigo'),
+    );
     await tester.pumpAndSettle();
 
     expect(h.appearance.seedValue, 0xFF3F51B5);
   });
 
-  testWidgets('the theme segmented control switches the shared controller',
-      (tester) async {
+  testWidgets('the theme segmented control switches the shared controller', (
+    tester,
+  ) async {
     final h = await _pump(tester, isHost: true);
     expect(h.appearance.themeMode, ThemeMode.system);
 
@@ -143,23 +157,29 @@ void main() {
     expect(h.appearance.themeMode, ThemeMode.dark);
   });
 
-  testWidgets('a non-admin (client) sees no feature console and no brand field',
-      (tester) async {
-    await _pump(tester, isHost: false);
-    // Appearance is per-device and shown to everyone, but the admin-only
-    // surfaces (the flag console + the white-label brand field) are gated.
-    expect(find.text('Features'), findsNothing);
-    expect(find.text('Brand name'), findsNothing);
-  });
+  testWidgets(
+    'a non-admin (client) sees no feature console and no brand field',
+    (tester) async {
+      await _pump(tester, isHost: false);
+      // Appearance is per-device and shown to everyone, but the admin-only
+      // surfaces (the flag console + the white-label brand field) are gated.
+      expect(find.text('Features'), findsNothing);
+      expect(find.text('Brand name'), findsNothing);
+    },
+  );
 
-  testWidgets('toggling the appearance flag in the console really hides it',
-      (tester) async {
+  testWidgets('toggling the appearance flag in the console really hides it', (
+    tester,
+  ) async {
     final h = await _pump(tester, isHost: true);
     expect(find.text('Appearance'), findsOneWidget);
 
     await openCat(tester, 'advanced');
     final appearanceSwitch = find.descendant(
-      of: find.widgetWithText(SwitchListTile, 'Appearance / white-label settings'),
+      of: find.widgetWithText(
+        SwitchListTile,
+        'Appearance / white-label settings',
+      ),
       matching: find.byType(Switch),
     );
     await tester.tap(appearanceSwitch);

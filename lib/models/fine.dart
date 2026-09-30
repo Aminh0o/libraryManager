@@ -38,7 +38,8 @@ enum FineStatus {
   /// Lenient parse for ALREADY-Persisted rows: unknown => [pending] (the least
   /// favourable-to-member, most conservative state — an unrecognised entry is
   /// treated as still owed, never as silently settled).
-  static FineStatus parse(Object? value) => tryParse(value) ?? FineStatus.pending;
+  static FineStatus parse(Object? value) =>
+      tryParse(value) ?? FineStatus.pending;
 }
 
 class Fine {
@@ -101,28 +102,28 @@ class Fine {
   }
 
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'loan_id': loanId,
-        'member_id': memberId,
-        'amount': amount,
-        'status': status.storage,
-        'reason': reason,
-        'created_at': createdAt,
-        'resolved_at': resolvedAt,
-        'resolved_by': resolvedBy,
-      };
+    'id': id,
+    'loan_id': loanId,
+    'member_id': memberId,
+    'amount': amount,
+    'status': status.storage,
+    'reason': reason,
+    'created_at': createdAt,
+    'resolved_at': resolvedAt,
+    'resolved_by': resolvedBy,
+  };
 
   factory Fine.fromMap(Map<String, dynamic> map) => Fine(
-        id: (map['id'] as num?)?.toInt(),
-        loanId: (map['loan_id'] as num?)?.toInt(),
-        memberId: (map['member_id'] ?? '').toString(),
-        amount: (map['amount'] as num?)?.toDouble() ?? 0.0,
-        status: FineStatus.parse(map['status']),
-        reason: map['reason']?.toString(),
-        createdAt: map['created_at']?.toString(),
-        resolvedAt: map['resolved_at']?.toString(),
-        resolvedBy: map['resolved_by']?.toString(),
-      );
+    id: (map['id'] as num?)?.toInt(),
+    loanId: (map['loan_id'] as num?)?.toInt(),
+    memberId: (map['member_id'] ?? '').toString(),
+    amount: (map['amount'] as num?)?.toDouble() ?? 0.0,
+    status: FineStatus.parse(map['status']),
+    reason: map['reason']?.toString(),
+    createdAt: map['created_at']?.toString(),
+    resolvedAt: map['resolved_at']?.toString(),
+    resolvedBy: map['resolved_by']?.toString(),
+  );
 }
 
 /// The library's fine policy: how much accrues per overdue day, and the
@@ -132,7 +133,10 @@ class Fine {
 /// The DEFAULT rate is **0.0** — enabling fines is an explicit operator action,
 /// so deploying this feature NEVER retroactively charges an existing member.
 class FineSettings {
-  const FineSettings({required this.ratePerDay, this.currency = defaultCurrency});
+  const FineSettings({
+    required this.ratePerDay,
+    this.currency = defaultCurrency,
+  });
 
   final double ratePerDay;
   final String currency;
@@ -145,12 +149,12 @@ class FineSettings {
   static const FineSettings disabled = FineSettings(ratePerDay: 0.0);
 
   Map<String, dynamic> toMap() => {
-        'rate_per_day': ratePerDay,
-        'currency': currency,
-      };
+    'rate_per_day': ratePerDay,
+    'currency': currency,
+  };
 
   factory FineSettings.fromMap(Map<dynamic, dynamic> map) => FineSettings(
-        ratePerDay: (map['rate_per_day'] as num?)?.toDouble() ?? 0.0,
-        currency: (map['currency'] ?? defaultCurrency).toString(),
-      );
+    ratePerDay: (map['rate_per_day'] as num?)?.toDouble() ?? 0.0,
+    currency: (map['currency'] ?? defaultCurrency).toString(),
+  );
 }

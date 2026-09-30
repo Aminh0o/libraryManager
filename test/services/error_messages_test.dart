@@ -40,29 +40,37 @@ void main() {
   });
 
   test('transport failures map to the network message', () {
-    expect(describeError(l10n, http.ClientException('connection refused')),
-        l10n.errNetwork);
-    expect(describeError(l10n, TimeoutException('operation timed out')),
-        l10n.errNetwork);
+    expect(
+      describeError(l10n, http.ClientException('connection refused')),
+      l10n.errNetwork,
+    );
+    expect(
+      describeError(l10n, TimeoutException('operation timed out')),
+      l10n.errNetwork,
+    );
   });
 
-  test('host-side typed integrity conflicts all map to the conflict message',
-      () {
-    for (final e in <Object>[
-      ItemCodeConflictException('dup code'),
-      BarcodeConflictException('dup barcode'),
-      MemberIdConflictException('dup member id'),
-      AttributeConflictException('dup attribute'),
-      ActiveLoanConflictException('still on loan'),
-      ConcurrentUpdateConflictException('row changed'),
-    ]) {
-      expect(describeError(l10n, e), l10n.errConflict, reason: '$e');
-    }
-  });
+  test(
+    'host-side typed integrity conflicts all map to the conflict message',
+    () {
+      for (final e in <Object>[
+        ItemCodeConflictException('dup code'),
+        BarcodeConflictException('dup barcode'),
+        MemberIdConflictException('dup member id'),
+        AttributeConflictException('dup attribute'),
+        ActiveLoanConflictException('still on loan'),
+        ConcurrentUpdateConflictException('row changed'),
+      ]) {
+        expect(describeError(l10n, e), l10n.errConflict, reason: '$e');
+      }
+    },
+  );
 
   test('an unknown error never leaks its raw text to the operator', () {
-    final result =
-        describeError(l10n, Exception('SQLITE_CONSTRAINT near line 42'));
+    final result = describeError(
+      l10n,
+      Exception('SQLITE_CONSTRAINT near line 42'),
+    );
     expect(result, l10n.errGeneric);
     expect(result.contains('SQLITE'), isFalse);
     expect(result.contains('line 42'), isFalse);

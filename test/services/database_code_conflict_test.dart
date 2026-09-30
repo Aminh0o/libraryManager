@@ -30,21 +30,21 @@ void main() {
   late Database db;
 
   LibraryItem item(String code, {String type = 'LIV'}) => LibraryItem(
-        code: code,
-        codeType: type,
-        designation: 'Title $code',
-        quantite: 1,
-        emplacement: 'A',
-        taux: 10,
-        emplacementStock: 'S',
-        status: 'Disponible',
-      );
+    code: code,
+    codeType: type,
+    designation: 'Title $code',
+    quantite: 1,
+    emplacement: 'A',
+    taux: 10,
+    emplacementStock: 'S',
+    status: 'Disponible',
+  );
   Member member(String id) => Member(
-        firstName: 'A',
-        lastName: 'B',
-        memberId: id,
-        registeredAt: DateTime(2026, 1, 1),
-      );
+    firstName: 'A',
+    lastName: 'B',
+    memberId: id,
+    registeredAt: DateTime(2026, 1, 1),
+  );
 
   setUpAll(() async {
     tmp = Directory.systemTemp.createTempSync('lib_codeconf_');
@@ -70,35 +70,46 @@ void main() {
       expect(await svc.generateNextCode('THE'), '0001');
     });
 
-    test('a duplicate item code throws ItemCodeConflictException, not a 500',
-        () async {
-      await svc.addItem(item('7000'));
-      await expectLater(
-          svc.addItem(item('7000')), throwsA(isA<ItemCodeConflictException>()));
-      // Exactly one row survived and its copies were not double-seeded (the
-      // whole second add rolled back).
-      final rows = await db.query('library_items', where: "code = '7000'");
-      expect(rows, hasLength(1));
-      final copies = await db.query('item_copies', where: "item_code = '7000'");
-      expect(copies, hasLength(1));
-    });
+    test(
+      'a duplicate item code throws ItemCodeConflictException, not a 500',
+      () async {
+        await svc.addItem(item('7000'));
+        await expectLater(
+          svc.addItem(item('7000')),
+          throwsA(isA<ItemCodeConflictException>()),
+        );
+        // Exactly one row survived and its copies were not double-seeded (the
+        // whole second add rolled back).
+        final rows = await db.query('library_items', where: "code = '7000'");
+        expect(rows, hasLength(1));
+        final copies = await db.query(
+          'item_copies',
+          where: "item_code = '7000'",
+        );
+        expect(copies, hasLength(1));
+      },
+    );
 
-    test('a duplicate member card id throws MemberIdConflictException',
-        () async {
-      await svc.addMember(member('CARD-77'));
-      await expectLater(svc.addMember(member('CARD-77')),
-          throwsA(isA<MemberIdConflictException>()));
-      final rows =
-          await db.query('members', where: "member_id = 'CARD-77'");
-      expect(rows, hasLength(1));
-    });
+    test(
+      'a duplicate member card id throws MemberIdConflictException',
+      () async {
+        await svc.addMember(member('CARD-77'));
+        await expectLater(
+          svc.addMember(member('CARD-77')),
+          throwsA(isA<MemberIdConflictException>()),
+        );
+        final rows = await db.query('members', where: "member_id = 'CARD-77'");
+        expect(rows, hasLength(1));
+      },
+    );
 
     test('distinct codes/ids still insert normally', () async {
       await svc.addItem(item('8001'));
       await svc.addItem(item('8002'));
       expect(
-          await db.query('library_items', where: "code IN ('8001','8002')"),
-          hasLength(2));
+        await db.query('library_items', where: "code IN ('8001','8002')"),
+        hasLength(2),
+      );
     });
   });
 }

@@ -42,14 +42,14 @@ class _RecordingRepo implements LibraryRepository {
 }
 
 LibraryItem _item(String code) => LibraryItem(
-      code: code,
-      codeType: 'LIV',
-      designation: 'Title $code',
-      quantite: 1,
-      emplacement: 'A',
-      taux: 0,
-      emplacementStock: 'S',
-    );
+  code: code,
+  codeType: 'LIV',
+  designation: 'Title $code',
+  quantite: 1,
+  emplacement: 'A',
+  taux: 0,
+  emplacementStock: 'S',
+);
 
 void main() {
   late HttpServerService server;
@@ -70,23 +70,28 @@ void main() {
     await server.stopServer();
   });
 
-  test('GET /items forwards search/status/codeType/limit/offset to the repo',
-      () async {
-    repo.itemsToReturn = [_item('0007')];
-    final res = await client.get(Uri.parse(
-        '$base/items?search=Titre%200007&status=Emprunt%C3%A9&codeType=LIV&limit=20&offset=40'));
-    expect(res.statusCode, 200);
-    expect(repo.getItemsCalls, hasLength(1));
-    final a = repo.getItemsCalls.single;
-    expect(a['search'], 'Titre 0007');
-    expect(a['status'], 'Emprunté');
-    expect(a['codeType'], 'LIV');
-    expect(a['limit'], 20);
-    expect(a['offset'], 40);
-    // The handler serialises the repository's page.
-    final body = (jsonDecode(res.body) as List).cast<Map<String, dynamic>>();
-    expect(body.map((m) => m['code']).toList(), ['0007']);
-  });
+  test(
+    'GET /items forwards search/status/codeType/limit/offset to the repo',
+    () async {
+      repo.itemsToReturn = [_item('0007')];
+      final res = await client.get(
+        Uri.parse(
+          '$base/items?search=Titre%200007&status=Emprunt%C3%A9&codeType=LIV&limit=20&offset=40',
+        ),
+      );
+      expect(res.statusCode, 200);
+      expect(repo.getItemsCalls, hasLength(1));
+      final a = repo.getItemsCalls.single;
+      expect(a['search'], 'Titre 0007');
+      expect(a['status'], 'Emprunté');
+      expect(a['codeType'], 'LIV');
+      expect(a['limit'], 20);
+      expect(a['offset'], 40);
+      // The handler serialises the repository's page.
+      final body = (jsonDecode(res.body) as List).cast<Map<String, dynamic>>();
+      expect(body.map((m) => m['code']).toList(), ['0007']);
+    },
+  );
 
   test('omitted query params are forwarded as null (no constraint)', () async {
     await client.get(Uri.parse('$base/items'));
@@ -100,8 +105,7 @@ void main() {
 
   test('GET /items/count forwards filters and returns {count}', () async {
     repo.countToReturn = 10;
-    final res =
-        await client.get(Uri.parse('$base/items/count?codeType=REV'));
+    final res = await client.get(Uri.parse('$base/items/count?codeType=REV'));
     expect(res.statusCode, 200);
     expect(jsonDecode(res.body), {'count': 10});
     expect(repo.countItemsCalls.single['codeType'], 'REV');

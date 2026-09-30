@@ -76,7 +76,9 @@ class ReportQuery {
     if (!usesWindow(kind)) return null;
     final n = now ?? DateTime.now();
     final today = DateTime(n.year, n.month, n.day);
-    final f = parseDay(from) ?? today.subtract(const Duration(days: defaultLookbackDays));
+    final f =
+        parseDay(from) ??
+        today.subtract(const Duration(days: defaultLookbackDays));
     final t = parseDay(to) ?? today;
     if (f.isAfter(t)) {
       throw const FormatException('The start date is after the end date.');

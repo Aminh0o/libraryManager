@@ -22,25 +22,29 @@ import 'package:library_manager/services/repository.dart';
 // gated on `provider.isHost`, so flipping the unsaved radio cannot reveal them.
 class _EmptyRepo implements LibraryRepository {
   @override
-  Future<List<LibraryItem>> getItems(
-          {int limit = 1000,
-          int offset = 0,
-          String? search,
-          String? status,
-          String? codeType,
+  Future<List<LibraryItem>> getItems({
+    int limit = 1000,
+    int offset = 0,
+    String? search,
+    String? status,
+    String? codeType,
     String? sort,
     bool ascending = true,
-  }) async =>
-      const [];
+  }) async => const [];
   @override
-  Future<int> countItems({String? search, String? status, String? codeType,
+  Future<int> countItems({
+    String? search,
+    String? status,
+    String? codeType,
     String? sort,
     bool ascending = true,
   }) async => 0;
   @override
   Future<List<Map<String, dynamic>>> getCodeDefinitions() async => const [];
   @override
-  Future<List<Map<String, dynamic>>> getAttributeDefinitions(String? type) async => const [];
+  Future<List<Map<String, dynamic>>> getAttributeDefinitions(
+    String? type,
+  ) async => const [];
   @override
   Future<Map<String, dynamic>> getStats() async => const {};
   @override
@@ -53,7 +57,10 @@ class _EmptyRepo implements LibraryRepository {
 }
 
 Future<void> _pump(WidgetTester tester, {required bool isHost}) async {
-  tester.view.physicalSize = const Size(1200, 2400); // tall so the scroll view builds all tiles
+  tester.view.physicalSize = const Size(
+    1200,
+    2400,
+  ); // tall so the scroll view builds all tiles
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
 
@@ -91,8 +98,9 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('a CLIENT does not see the host-only destructive/admin tiles',
-      (tester) async {
+  testWidgets('a CLIENT does not see the host-only destructive/admin tiles', (
+    tester,
+  ) async {
     await _pump(tester, isHost: false);
 
     // The screen rendered and the role editor (draft) is present ...
@@ -107,34 +115,38 @@ void main() {
     expect(find.text('Erase All Database'), findsNothing);
   });
 
-  testWidgets('draft-switching a client to Host WITHOUT saving does not reveal them',
-      (tester) async {
-    await _pump(tester, isHost: false);
+  testWidgets(
+    'draft-switching a client to Host WITHOUT saving does not reveal them',
+    (tester) async {
+      await _pump(tester, isHost: false);
 
-    // Unlock editing -> the 'enter password' prompt appears (an unconfigured
-    // client's local gate accepts anything).
-    await tester.tap(find.byType(CheckboxListTile));
-    await tester.pumpAndSettle();
-    expect(find.text('Enter Admin Password'), findsOneWidget);
-    await tester.enterText(
-      find.descendant(
-          of: find.byType(AlertDialog), matching: find.byType(TextField)),
-      'x',
-    );
-    await tester.tap(find.text('Validate'));
-    await tester.pumpAndSettle();
+      // Unlock editing -> the 'enter password' prompt appears (an unconfigured
+      // client's local gate accepts anything).
+      await tester.tap(find.byType(CheckboxListTile));
+      await tester.pumpAndSettle();
+      expect(find.text('Enter Admin Password'), findsOneWidget);
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.byType(TextField),
+        ),
+        'x',
+      );
+      await tester.tap(find.text('Validate'));
+      await tester.pumpAndSettle();
 
-    // Editing is now unlocked and the operator DRAFTS switching to Host ...
-    await tester.tap(find.text('Host (main PC — server)'));
-    await tester.pumpAndSettle();
+      // Editing is now unlocked and the operator DRAFTS switching to Host ...
+      await tester.tap(find.text('Host (main PC — server)'));
+      await tester.pumpAndSettle();
 
-    // ... but WITHOUT pressing Save the committed role is still client, so the
-    // destructive host tiles must NOT appear. (Under the old `_isHost`-draft
-    // gate this is exactly where they leaked through.)
-    expect(find.text('Erase All Database'), findsNothing);
-    expect(find.text('Restore Database'), findsNothing);
-    expect(find.text('Data Protection'), findsNothing);
-  });
+      // ... but WITHOUT pressing Save the committed role is still client, so the
+      // destructive host tiles must NOT appear. (Under the old `_isHost`-draft
+      // gate this is exactly where they leaked through.)
+      expect(find.text('Erase All Database'), findsNothing);
+      expect(find.text('Restore Database'), findsNothing);
+      expect(find.text('Data Protection'), findsNothing);
+    },
+  );
 
   testWidgets('a HOST sees the admin/destructive tiles', (tester) async {
     await _pump(tester, isHost: true);

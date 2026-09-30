@@ -31,7 +31,7 @@ class PasswordHasher {
   final Random _rng;
 
   PasswordHasher({this.iterations = defaultIterations, Random? rng})
-      : _rng = rng ?? Random.secure();
+    : _rng = rng ?? Random.secure();
 
   /// Returns a fresh random salt, base64-encoded.
   String generateSalt() => base64.encode(_randomBytes(_saltBytes));
@@ -45,8 +45,12 @@ class PasswordHasher {
   String hash(String password, {String? salt}) {
     final saltB64 = salt ?? generateSalt();
     final saltBytes = base64.decode(saltB64);
-    final derived = _pbkdf2(utf8.encode(password), saltBytes, iterations,
-        _derivedKeyBytes);
+    final derived = _pbkdf2(
+      utf8.encode(password),
+      saltBytes,
+      iterations,
+      _derivedKeyBytes,
+    );
     return [
       'pbkdf2',
       'sha256',
@@ -75,7 +79,12 @@ class PasswordHasher {
       return false;
     }
     if (expected.isEmpty) return false;
-    final derived = _pbkdf2(utf8.encode(password), salt, iters, expected.length);
+    final derived = _pbkdf2(
+      utf8.encode(password),
+      salt,
+      iters,
+      expected.length,
+    );
     return _constantTimeEquals(derived, expected);
   }
 
@@ -87,8 +96,12 @@ class PasswordHasher {
     return b;
   }
 
-  static Uint8List _pbkdf2(List<int> password, List<int> salt, int iterations,
-      int dkLen) {
+  static Uint8List _pbkdf2(
+    List<int> password,
+    List<int> salt,
+    int iterations,
+    int dkLen,
+  ) {
     final prf = Hmac(sha256, password);
     final blockCount = (dkLen + _hmacOutBytes - 1) ~/ _hmacOutBytes;
     final output = Uint8List(blockCount * _hmacOutBytes);

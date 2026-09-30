@@ -42,8 +42,10 @@ class _ThrowingClient extends http.BaseClient {
 class _SlowClient extends http.BaseClient {
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) {
-    return Future.delayed(const Duration(milliseconds: 400),
-        () => http.StreamedResponse(Stream<List<int>>.empty(), 200));
+    return Future.delayed(
+      const Duration(milliseconds: 400),
+      () => http.StreamedResponse(Stream<List<int>>.empty(), 200),
+    );
   }
 }
 
@@ -61,19 +63,23 @@ void main() {
       expect(client.lastPath, '/db-version');
     });
 
-    test('a 200 that is NOT our payload is a foreign listener (notAHost)',
-        () async {
-      final r = await _api(_CannedClient(200, '<html>router on this port</html>'))
-          .checkConnectivity();
-      expect(r.status, ConnectStatus.notAHost);
-      expect(r.isReachable, isTrue);
-      expect(r.isUsableHost, isFalse);
-    });
+    test(
+      'a 200 that is NOT our payload is a foreign listener (notAHost)',
+      () async {
+        final r = await _api(
+          _CannedClient(200, '<html>router on this port</html>'),
+        ).checkConnectivity();
+        expect(r.status, ConnectStatus.notAHost);
+        expect(r.isReachable, isTrue);
+        expect(r.isUsableHost, isFalse);
+      },
+    );
 
     test('401/403 mean a server is present but locked (needsAuth)', () async {
       for (final code in [401, 403]) {
-        final r = await _api(_CannedClient(code, '{"error":"unauthorized"}'))
-            .checkConnectivity();
+        final r = await _api(
+          _CannedClient(code, '{"error":"unauthorized"}'),
+        ).checkConnectivity();
         expect(r.status, ConnectStatus.needsAuth, reason: 'status $code');
         expect(r.isReachable, isTrue);
         expect(r.statusCode, code);
@@ -87,8 +93,9 @@ void main() {
     });
 
     test('a refused connection (SocketException) is unreachable', () async {
-      final r = await _api(_ThrowingClient(SocketException('Connection refused')))
-          .checkConnectivity();
+      final r = await _api(
+        _ThrowingClient(SocketException('Connection refused')),
+      ).checkConnectivity();
       expect(r.status, ConnectStatus.unreachable);
       expect(r.isReachable, isFalse);
       expect(r.message, contains('refused'));
@@ -96,24 +103,28 @@ void main() {
 
     test('a failed host lookup (ClientException) is unreachable', () async {
       final r = await _api(
-              _ThrowingClient(http.ClientException('Failed host lookup: bogus')))
-          .checkConnectivity();
+        _ThrowingClient(http.ClientException('Failed host lookup: bogus')),
+      ).checkConnectivity();
       expect(r.status, ConnectStatus.unreachable);
       expect(r.isReachable, isFalse);
     });
 
     test('a stalled host exceeds the budget as timeout', () async {
-      final r = await _api(_SlowClient())
-          .checkConnectivity(timeout: const Duration(milliseconds: 50));
+      final r = await _api(
+        _SlowClient(),
+      ).checkConnectivity(timeout: const Duration(milliseconds: 50));
       expect(r.status, ConnectStatus.timeout);
       expect(r.isReachable, isFalse);
     });
 
-    test('checkConnectivity never throws, even on an unexpected error',
-        () async {
-      final r = await _api(_ThrowingClient(Exception('weird')))
-          .checkConnectivity();
-      expect(r.status, ConnectStatus.unreachable);
-    });
+    test(
+      'checkConnectivity never throws, even on an unexpected error',
+      () async {
+        final r = await _api(
+          _ThrowingClient(Exception('weird')),
+        ).checkConnectivity();
+        expect(r.status, ConnectStatus.unreachable);
+      },
+    );
   });
 }

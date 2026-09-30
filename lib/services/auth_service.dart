@@ -38,7 +38,8 @@ abstract class AuthStore {
   /// already-paired clients are never stranded by the upgrade.
   Future<Map<String, ({String username, UserRole role})>> loadTokenPrincipals();
   Future<void> saveTokenPrincipals(
-      Map<String, ({String username, UserRole role})> principals);
+    Map<String, ({String username, UserRole role})> principals,
+  );
 }
 
 /// Default [AuthStore] used by tests and before server-side persistence ships.
@@ -70,7 +71,8 @@ class InMemoryAuthStore implements AuthStore {
   Future<void> upsertUser(String username, String hash, UserRole role) async {
     _users[username] = (
       role: role,
-      createdAt: _users[username]?.createdAt ?? DateTime.now().toIso8601String()
+      createdAt:
+          _users[username]?.createdAt ?? DateTime.now().toIso8601String(),
     );
     _userHashes[username] = hash;
   }
@@ -86,11 +88,12 @@ class InMemoryAuthStore implements AuthStore {
 
   @override
   Future<Map<String, ({String username, UserRole role})>>
-      loadTokenPrincipals() async => Map.of(_principals);
+  loadTokenPrincipals() async => Map.of(_principals);
 
   @override
   Future<void> saveTokenPrincipals(
-      Map<String, ({String username, UserRole role})> principals) async {
+    Map<String, ({String username, UserRole role})> principals,
+  ) async {
     _principals
       ..clear()
       ..addAll(principals);
@@ -116,7 +119,12 @@ class AuthResult {
   /// When [AuthStatus.locked], how long until attempts are accepted again.
   final Duration? retryAfter;
 
-  const AuthResult._(this.status, {this.token, this.principal, this.retryAfter});
+  const AuthResult._(
+    this.status, {
+    this.token,
+    this.principal,
+    this.retryAfter,
+  });
 
   factory AuthResult.success(String token, {TokenPrincipal? principal}) =>
       AuthResult._(AuthStatus.ok, token: token, principal: principal);
@@ -166,9 +174,9 @@ class AuthService {
     this.maxFailedAttempts = 5,
     this.lockoutWindow = const Duration(minutes: 5),
     DateTime Function()? now,
-  })  : _hasher = hasher ?? PasswordHasher(),
-        _store = store ?? InMemoryAuthStore(),
-        _now = now ?? DateTime.now;
+  }) : _hasher = hasher ?? PasswordHasher(),
+       _store = store ?? InMemoryAuthStore(),
+       _now = now ?? DateTime.now;
 
   /// Loads persisted credential/tokens/users once. Safe to call repeatedly.
   Future<void> ensureLoaded() async {
@@ -263,7 +271,11 @@ class AuthService {
     await ensureLoaded();
     final out = <UserRecord>[
       for (final e in _users.entries)
-        UserRecord(username: e.key, role: e.value.role, createdAt: e.value.createdAt),
+        UserRecord(
+          username: e.key,
+          role: e.value.role,
+          createdAt: e.value.createdAt,
+        ),
     ];
     if (_users['admin'] == null && await _credential() != null) {
       out.add(const UserRecord(username: adminUsername, role: UserRole.admin));
@@ -291,7 +303,10 @@ class AuthService {
     // Unattributed token: pre-10.1 shared/admin token -> keeps admin AND is
     // flagged non-named so route guards treat it as legacy (see TokenPrincipal).
     return const TokenPrincipal(
-        username: adminUsername, role: UserRole.admin, isNamed: false);
+      username: adminUsername,
+      role: UserRole.admin,
+      isNamed: false,
+    );
   }
 
   /// Authenticates [username]/[password] against the NAMED accounts first,
@@ -299,8 +314,11 @@ class AuthService {
   /// bound to the winner's identity+role. Brute-force throttling is per
   /// [sourceKey] exactly as before; failures never reveal whether the
   /// username exists (SEC-03).
-  Future<AuthResult> login(String username, String password,
-      {required String sourceKey}) async {
+  Future<AuthResult> login(
+    String username,
+    String password, {
+    required String sourceKey,
+  }) async {
     await ensureLoaded();
     final now = _now();
 
@@ -311,8 +329,10 @@ class AuthService {
 
     final user = _users[username];
     var ok = false;
-    var principal = const
-        TokenPrincipal(username: adminUsername, role: UserRole.admin);
+    var principal = const TokenPrincipal(
+      username: adminUsername,
+      role: UserRole.admin,
+    );
     if (user != null) {
       if (await verifyUserPassword(username, password)) {
         ok = true;
@@ -322,13 +342,18 @@ class AuthService {
       final stored = await _credential();
       if (stored != null && _hasher.verify(password, stored)) {
         ok = true;
-        principal =
-            const TokenPrincipal(username: adminUsername, role: UserRole.admin);
+        principal = const TokenPrincipal(
+          username: adminUsername,
+          role: UserRole.admin,
+        );
       }
     }
     if (!ok) {
-      final lockedNow = entry.recordFailure(now,
-          maxAttempts: maxFailedAttempts, window: lockoutWindow);
+      final lockedNow = entry.recordFailure(
+        now,
+        maxAttempts: maxFailedAttempts,
+        window: lockoutWindow,
+      );
       if (lockedNow) {
         return AuthResult.locked(entry.retryAfter(now, lockoutWindow));
       }
@@ -355,21 +380,27 @@ class AuthService {
   /// (managed by [setPassword]/[reset]); allowing a `users` row with the same
   /// name would create two credentials for one identity. Passwords for named
   /// accounts enforce [UserRecord.minPasswordLength].
-  Future<UserRecord> addUser(String usernameRaw, String password,
-      UserRole role) async {
+  Future<UserRecord> addUser(
+    String usernameRaw,
+    String password,
+    UserRole role,
+  ) async {
     await ensureLoaded();
     final username = UserRecord.normalizeUsername(usernameRaw);
     if (!UserRecord.isValidUsername(username)) {
       throw UserAdminException(
-          'Username must be 3-32 characters (letters, digits, . _ -), starting with a letter or digit.');
+        'Username must be 3-32 characters (letters, digits, . _ -), starting with a letter or digit.',
+      );
     }
     if (username == adminUsername) {
       throw UserAdminException(
-          'The username "admin" is reserved for the built-in administrator.');
+        'The username "admin" is reserved for the built-in administrator.',
+      );
     }
     if (password.length < UserRecord.minPasswordLength) {
       throw UserAdminException(
-          'Password must be at least ${UserRecord.minPasswordLength} characters.');
+        'Password must be at least ${UserRecord.minPasswordLength} characters.',
+      );
     }
     if (_users.containsKey(username)) {
       throw UserAdminException('A user named "$username" already exists.');
@@ -377,7 +408,10 @@ class AuthService {
     await _store.upsertUser(username, _hasher.hash(password), role);
     await _reload();
     return UserRecord(
-        username: username, role: role, createdAt: _users[username]?.createdAt);
+      username: username,
+      role: role,
+      createdAt: _users[username]?.createdAt,
+    );
   }
 
   /// Deletes a named account and revokes every token belonging to it.
@@ -385,15 +419,14 @@ class AuthService {
     await ensureLoaded();
     if (username == adminUsername && !_users.containsKey(adminUsername)) {
       throw UserAdminException(
-          'The built-in administrator cannot be deleted (reset its password instead).');
+        'The built-in administrator cannot be deleted (reset its password instead).',
+      );
     }
     if (!_users.containsKey(username)) {
       throw UserAdminException('No such user "$username".');
     }
-    if (_users[username]!.role == UserRole.admin &&
-        await _adminCount() <= 1) {
-      throw UserAdminException(
-          'Refusing to remove the last administrator.');
+    if (_users[username]!.role == UserRole.admin && await _adminCount() <= 1) {
+      throw UserAdminException('Refusing to remove the last administrator.');
     }
     await _store.removeUserRow(username);
     await _revokeTokensFor(username);
@@ -409,24 +442,26 @@ class AuthService {
     final current = _users[username];
     if (current == null) {
       throw UserAdminException(
-          username == adminUsername
-              ? 'The built-in administrator always keeps the admin role.'
-              : 'No such user "$username".');
+        username == adminUsername
+            ? 'The built-in administrator always keeps the admin role.'
+            : 'No such user "$username".',
+      );
     }
     if (current.role == UserRole.admin &&
         role != UserRole.admin &&
         await _adminCount() <= 1) {
-      throw UserAdminException(
-          'Refusing to demote the last administrator.');
+      throw UserAdminException('Refusing to demote the last administrator.');
     }
     if (username == adminUsername && role != UserRole.admin) {
       throw UserAdminException(
-          'The built-in administrator always keeps the admin role.');
+        'The built-in administrator always keeps the admin role.',
+      );
     }
     final hash = await _store.userHash(username);
     if (hash == null || hash.isEmpty) {
       throw UserAdminException(
-          'Account "$username" has no password set (reset it first).');
+        'Account "$username" has no password set (reset it first).',
+      );
     }
     await _store.upsertUser(username, hash, role);
     for (final e in _principals.entries.toList()) {
@@ -446,16 +481,21 @@ class AuthService {
     await ensureLoaded();
     if (password.length < UserRecord.minPasswordLength) {
       throw UserAdminException(
-          'Password must be at least ${UserRecord.minPasswordLength} characters.');
+        'Password must be at least ${UserRecord.minPasswordLength} characters.',
+      );
     }
     if (!_users.containsKey(username)) {
       throw UserAdminException(
-          username == adminUsername
-              ? 'The built-in administrator password is managed separately.'
-              : 'No such user "$username".');
+        username == adminUsername
+            ? 'The built-in administrator password is managed separately.'
+            : 'No such user "$username".',
+      );
     }
     await _store.upsertUser(
-        username, _hasher.hash(password), _users[username]!.role);
+      username,
+      _hasher.hash(password),
+      _users[username]!.role,
+    );
     if (_users[username]!.role == UserRole.admin) {
       await _revokeTokensFor(username);
     }
@@ -463,8 +503,10 @@ class AuthService {
   }
 
   Future<void> _revokeTokensFor(String username) async {
-    final victims =
-        _principals.entries.where((e) => e.value.username == username).map((e) => e.key).toList();
+    final victims = _principals.entries
+        .where((e) => e.value.username == username)
+        .map((e) => e.key)
+        .toList();
     if (victims.isEmpty) return;
     for (final t in victims) {
       _tokens.remove(t);
@@ -480,8 +522,7 @@ class AuthService {
     await ensureLoaded();
     final token = _hasher.generateToken();
     _tokens.add(token);
-    _principals[token] =
-        (username: principal.username, role: principal.role);
+    _principals[token] = (username: principal.username, role: principal.role);
     await _store.saveTokens(_tokens);
     await _store.saveTokenPrincipals(_principals);
     return token;
@@ -511,8 +552,7 @@ class AuthService {
   }
 
   /// Remaining failures before lockout for [sourceKey] (diagnostics/tests).
-  int failuresFor(String sourceKey) =>
-      _throttle[sourceKey]?.failures ?? 0;
+  int failuresFor(String sourceKey) => _throttle[sourceKey]?.failures ?? 0;
 }
 
 class _Throttle {
@@ -522,7 +562,11 @@ class _Throttle {
 
   /// Records a failed attempt. Returns true if this failure crossed the
   /// threshold and engaged a lockout until `now + window`.
-  bool recordFailure(DateTime now, {required int maxAttempts, required Duration window}) {
+  bool recordFailure(
+    DateTime now, {
+    required int maxAttempts,
+    required Duration window,
+  }) {
     failures++;
     _lastFailure = now;
     if (failures >= maxAttempts) {
@@ -540,7 +584,8 @@ class _Throttle {
 
   bool isLocked(DateTime now, Duration window) {
     if (_lockedUntil != null && now.isBefore(_lockedUntil!)) return true;
-    if (failures >= 0 && _lastFailure != null &&
+    if (failures >= 0 &&
+        _lastFailure != null &&
         now.difference(_lastFailure!) >= window) {
       // Window elapsed: clear the stale failure count.
       reset();

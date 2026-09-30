@@ -194,10 +194,7 @@ abstract class LibraryRepository {
   /// [StateError] (-> 409) when the hold is unknown or already terminal.
   /// Cancelling a PROMOTED hold releases its claimed copy to the shelf and
   /// promotes the next in line, atomically.
-  Future<void> cancelReservation(
-    int id, {
-    Map<String, dynamic>? audit,
-  });
+  Future<void> cancelReservation(int id, {Map<String, dynamic>? audit});
 
   /// Pass 6: swap [id]'s queue position with its immediate neighbour in the
   /// same item's queued line. `up: true` moves it one position earlier,
@@ -223,9 +220,5 @@ abstract class LibraryRepository {
 
   /// Compute the [kind] report over the optional window and return a
   /// fully-formed, presentation-ready table.
-  Future<Report> generateReport(
-    ReportKind kind, {
-    String? from,
-    String? to,
-  });
+  Future<Report> generateReport(ReportKind kind, {String? from, String? to});
 }

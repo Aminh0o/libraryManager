@@ -30,8 +30,8 @@ class AppLogger {
     this.logFile,
     this.maxBytesPerFile = 512 * 1024,
     this.keepFiles = 3,
-  })  : _sink = sink,
-        _clock = clock ?? DateTime.now;
+  }) : _sink = sink,
+       _clock = clock ?? DateTime.now;
 
   final LogLevel minLevel;
   final void Function(String line)? _sink;
@@ -104,8 +104,13 @@ class AppLogger {
         return prefix == null ? '[redacted]' : '$prefix[redacted]';
       });
 
-  void _emit(LogLevel level, String tag, String message,
-      [Object? error, StackTrace? stack]) {
+  void _emit(
+    LogLevel level,
+    String tag,
+    String message, [
+    Object? error,
+    StackTrace? stack,
+  ]) {
     if (level.index < minLevel.index) return;
     final ts = _clock().toUtc().toIso8601String();
     final sb = StringBuffer('$ts ${level.name.toUpperCase()} [$tag] $message');
@@ -164,8 +169,9 @@ class AppLogger {
 /// points it at a file during startup. Call sites read this variable, so a
 /// later re-init (or a test injecting a recording sink) takes effect without
 /// touching them.
-AppLogger appLog =
-    AppLogger(minLevel: kReleaseMode ? LogLevel.info : LogLevel.debug);
+AppLogger appLog = AppLogger(
+  minLevel: kReleaseMode ? LogLevel.info : LogLevel.debug,
+);
 
 /// Directs the global [appLog] to a rotating file under `docsDir/logs/`.
 /// Call once from `main()`. Safe to call again (e.g. a test re-points it).

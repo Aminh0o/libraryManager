@@ -27,20 +27,24 @@ void main() {
       svc.close();
     });
 
-    test('no bare port-default literal survives outside the config source',
-        () {
+    test('no bare port-default literal survives outside the config source', () {
       // Walk every production Dart file; a numeric 8080/19001 token is allowed
       // only inside comments, inside the firewall display-name label constants,
       // or in network_config.dart itself (the single source). Any other hit is a
       // re-scattered magic number.
       final lib = Directory('lib');
-      expect(lib.existsSync(), isTrue,
-          reason: 'run from the package root so lib/ is reachable');
+      expect(
+        lib.existsSync(),
+        isTrue,
+        reason: 'run from the package root so lib/ is reachable',
+      );
       final portToken = RegExp(r'(?<![0-9])(?:8080|19001)(?![0-9])');
       final offenders = <String>[];
       for (final entity in lib.listSync(recursive: true).whereType<File>()) {
         if (!entity.path.endsWith('.dart')) continue;
-        final isConfig = entity.uri.pathSegments.contains('network_config.dart');
+        final isConfig = entity.uri.pathSegments.contains(
+          'network_config.dart',
+        );
         final lines = entity.readAsLinesSync();
         for (var i = 0; i < lines.length; i++) {
           final line = lines[i];
@@ -55,9 +59,13 @@ void main() {
           offenders.add('${entity.path}:${i + 1}: $t');
         }
       }
-      expect(offenders, isEmpty,
-          reason: 'bare port literals must resolve from NetworkConfig:\n'
-              '${offenders.join('\n')}');
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'bare port literals must resolve from NetworkConfig:\n'
+            '${offenders.join('\n')}',
+      );
     });
   });
 }

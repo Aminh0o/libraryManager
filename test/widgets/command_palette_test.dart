@@ -20,25 +20,29 @@ import 'package:library_manager/services/repository.dart';
 // fixing. These pin the wiring, the role gating, and the live action.
 class _EmptyRepo implements LibraryRepository {
   @override
-  Future<List<LibraryItem>> getItems(
-          {int limit = 1000,
-          int offset = 0,
-          String? search,
-          String? status,
-          String? codeType,
+  Future<List<LibraryItem>> getItems({
+    int limit = 1000,
+    int offset = 0,
+    String? search,
+    String? status,
+    String? codeType,
     String? sort,
     bool ascending = true,
-  }) async =>
-      const [];
+  }) async => const [];
   @override
-  Future<int> countItems({String? search, String? status, String? codeType,
+  Future<int> countItems({
+    String? search,
+    String? status,
+    String? codeType,
     String? sort,
     bool ascending = true,
   }) async => 0;
   @override
   Future<List<Map<String, dynamic>>> getCodeDefinitions() async => const [];
   @override
-  Future<List<Map<String, dynamic>>> getAttributeDefinitions(String? type) async => const [];
+  Future<List<Map<String, dynamic>>> getAttributeDefinitions(
+    String? type,
+  ) async => const [];
   @override
   Future<Map<String, dynamic>> getStats() async => const {};
   @override
@@ -56,14 +60,15 @@ class _EmptyRepo implements LibraryRepository {
 /// Harry Potter title the operator was actually looking for.
 class _SearchableRepo extends _EmptyRepo {
   @override
-  Future<List<LibraryItem>> getItems(
-          {int limit = 1000,
-          int offset = 0,
-          String? search,
-          String? status,
-          String? codeType,
-          String? sort,
-          bool ascending = true}) async {
+  Future<List<LibraryItem>> getItems({
+    int limit = 1000,
+    int offset = 0,
+    String? search,
+    String? status,
+    String? codeType,
+    String? sort,
+    bool ascending = true,
+  }) async {
     if (search == null || !search.toLowerCase().contains('harr')) {
       return const [];
     }
@@ -87,8 +92,11 @@ class _Harness {
   final AppearanceController appearance;
 }
 
-Future<_Harness> _pump(WidgetTester tester,
-    {required bool isHost, required bool paletteOn}) async {
+Future<_Harness> _pump(
+  WidgetTester tester, {
+  required bool isHost,
+  required bool paletteOn,
+}) async {
   tester.view.physicalSize = const Size(1400, 1200);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
@@ -96,8 +104,10 @@ Future<_Harness> _pump(WidgetTester tester,
     'feature.flag.commandPalette': paletteOn,
   });
 
-  final provider =
-      LibraryProvider.forTesting(repository: _EmptyRepo(), isHost: isHost);
+  final provider = LibraryProvider.forTesting(
+    repository: _EmptyRepo(),
+    isHost: isHost,
+  );
   final appearance = await AppearanceController.load();
   final flags = await FeatureFlags.load();
 
@@ -123,15 +133,19 @@ Future<_Harness> _pump(WidgetTester tester,
 /// Same as [_pump] but with a repo whose `getItems` reacts to `search`, so
 /// the palette's async data path has something real to surface.
 Future<void> _pumpSearchable(
-    WidgetTester tester, {required bool paletteOn}) async {
+  WidgetTester tester, {
+  required bool paletteOn,
+}) async {
   tester.view.physicalSize = const Size(1400, 1200);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
   SharedPreferences.setMockInitialValues({
     'feature.flag.commandPalette': paletteOn,
   });
-  final provider =
-      LibraryProvider.forTesting(repository: _SearchableRepo(), isHost: true);
+  final provider = LibraryProvider.forTesting(
+    repository: _SearchableRepo(),
+    isHost: true,
+  );
   final appearance = await AppearanceController.load();
   final flags = await FeatureFlags.load();
   await tester.pumpWidget(
@@ -153,8 +167,9 @@ Future<void> _pumpSearchable(
 }
 
 void main() {
-  testWidgets('the palette trigger appears only while the flag is on',
-      (tester) async {
+  testWidgets('the palette trigger appears only while the flag is on', (
+    tester,
+  ) async {
     await _pump(tester, isHost: true, paletteOn: true);
     expect(find.byTooltip('Command palette'), findsOneWidget);
 
@@ -162,68 +177,105 @@ void main() {
     expect(find.byTooltip('Command palette'), findsNothing);
   });
 
-  testWidgets('opening the palette and running a theme command mutates the shared controller',
-      (tester) async {
-    final h = await _pump(tester, isHost: true, paletteOn: true);
-    expect(h.appearance.themeMode, ThemeMode.system);
+  testWidgets(
+    'opening the palette and running a theme command mutates the shared controller',
+    (tester) async {
+      final h = await _pump(tester, isHost: true, paletteOn: true);
+      expect(h.appearance.themeMode, ThemeMode.system);
 
-    await tester.tap(find.byTooltip('Command palette'));
-    await tester.pumpAndSettle();
-    // The palette is open with its search field.
-    expect(find.descendant(of: find.byType(AlertDialog), matching: find.byType(TextField)), findsOneWidget);
+      await tester.tap(find.byTooltip('Command palette'));
+      await tester.pumpAndSettle();
+      // The palette is open with its search field.
+      expect(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.byType(TextField),
+        ),
+        findsOneWidget,
+      );
 
-    await tester.enterText(find.descendant(of: find.byType(AlertDialog), matching: find.byType(TextField)), 'dark');
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Theme: Dark'));
-    await tester.pumpAndSettle();
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.byType(TextField),
+        ),
+        'dark',
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Theme: Dark'));
+      await tester.pumpAndSettle();
 
-    expect(h.appearance.themeMode, ThemeMode.dark);
-    // The dialog closed after running the command.
-    expect(find.descendant(of: find.byType(AlertDialog), matching: find.byType(TextField)), findsNothing);
-  });
+      expect(h.appearance.themeMode, ThemeMode.dark);
+      // The dialog closed after running the command.
+      expect(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.byType(TextField),
+        ),
+        findsNothing,
+      );
+    },
+  );
 
-  testWidgets('the palette never offers a staff command to a read-only session',
-      (tester) async {
+  testWidgets('the palette never offers a staff command to a read-only session', (
+    tester,
+  ) async {
     await _pump(tester, isHost: false, paletteOn: true);
     await tester.tap(find.byTooltip('Command palette'));
     await tester.pumpAndSettle();
 
     // A universal command IS offered (so the palette is not empty for a viewer).
-    await tester.enterText(find.descendant(of: find.byType(AlertDialog), matching: find.byType(TextField)), 'theme');
+    await tester.enterText(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.byType(TextField),
+      ),
+      'theme',
+    );
     await tester.pumpAndSettle();
     expect(find.text('Theme: Dark'), findsOneWidget);
 
     // But the write action is gated exactly like the rest of the UI.
-    await tester.enterText(find.descendant(of: find.byType(AlertDialog), matching: find.byType(TextField)), 'add');
+    await tester.enterText(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.byType(TextField),
+      ),
+      'add',
+    );
     await tester.pumpAndSettle();
     expect(find.text('Add Item'), findsNothing);
   });
 
-  testWidgets('typing 2+ characters surfaces live item matches under an Inventory section',
-      (tester) async {
-    // Core Workflow Recovery: proves Ctrl+K is now a "find anything"
-    // launcher, not just a drawer of navigation commands. Data lookup is
-    // debounced 300ms, so we advance fake time to allow it to complete.
-    await _pumpSearchable(tester, paletteOn: true);
-    await tester.tap(find.byTooltip('Command palette'));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'typing 2+ characters surfaces live item matches under an Inventory section',
+    (tester) async {
+      // Core Workflow Recovery: proves Ctrl+K is now a "find anything"
+      // launcher, not just a drawer of navigation commands. Data lookup is
+      // debounced 300ms, so we advance fake time to allow it to complete.
+      await _pumpSearchable(tester, paletteOn: true);
+      await tester.tap(find.byTooltip('Command palette'));
+      await tester.pumpAndSettle();
 
-    final field = find.descendant(
-        of: find.byType(AlertDialog), matching: find.byType(TextField));
-    await tester.enterText(field, 'harr');
-    // Let the 300ms debounce fire + the async itemMatches resolve.
-    await tester.pump(const Duration(milliseconds: 400));
-    await tester.pumpAndSettle();
+      final field = find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.byType(TextField),
+      );
+      await tester.enterText(field, 'harr');
+      // Let the 300ms debounce fire + the async itemMatches resolve.
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
 
-    expect(
-      find.textContaining('Harry Potter'),
-      findsOneWidget,
-      reason: 'the data-search branch of the palette must render live items',
-    );
-    expect(
-      find.text('Inventory'),
-      findsWidgets,
-      reason: 'item results are grouped under the inventory section header',
-    );
-  });
+      expect(
+        find.textContaining('Harry Potter'),
+        findsOneWidget,
+        reason: 'the data-search branch of the palette must render live items',
+      );
+      expect(
+        find.text('Inventory'),
+        findsWidgets,
+        reason: 'item results are grouped under the inventory section header',
+      );
+    },
+  );
 }

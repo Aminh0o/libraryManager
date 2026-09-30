@@ -39,7 +39,10 @@ void main() {
   test('an unknown id is ignored (no dead config, no throw)', () async {
     final flags = await FeatureFlags.load();
     expect(() => flags.setEnabled('not.a.real.flag', true), returnsNormally);
-    expect(flags.isEnabled('not.a.real.flag'), isFalse,
-        reason: 'a non-catalog id has no default and reports off');
+    expect(
+      flags.isEnabled('not.a.real.flag'),
+      isFalse,
+      reason: 'a non-catalog id has no default and reports off',
+    );
   });
 }

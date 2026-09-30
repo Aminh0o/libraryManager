@@ -32,14 +32,16 @@ void main() {
   group('role binding at mint time', () {
     test('a token minted by login carries that account\'s role', () async {
       await auth.addUser('librarian', _pw, UserRole.staff);
-      final res =
-          await auth.login('librarian', _pw, sourceKey: '10.0.0.5');
+      final res = await auth.login('librarian', _pw, sourceKey: '10.0.0.5');
       expect(res.isSuccess, isTrue);
       expect(res.principal, isNotNull);
       expect(res.principal!.username, 'librarian');
       expect(res.principal!.role, UserRole.staff);
-      expect(res.principal!.isNamed, isTrue,
-          reason: 'named accounts are least-privilege, not legacy');
+      expect(
+        res.principal!.isNamed,
+        isTrue,
+        reason: 'named accounts are least-privilege, not legacy',
+      );
 
       final p = await auth.principalFor(res.token!);
       expect(p.role, UserRole.staff);
@@ -49,14 +51,12 @@ void main() {
     test('viewer and admin roles are bound exactly as granted', () async {
       await auth.addUser('counter', _pw, UserRole.viewer);
       await auth.addUser('boss', _pw, UserRole.admin);
-      final v = await auth.principalFor((await auth.login(
-              'counter', _pw,
-              sourceKey: 'i'))
-          .token!);
-      final a = await auth.principalFor((await auth.login(
-              'boss', _pw,
-              sourceKey: 'i'))
-          .token!);
+      final v = await auth.principalFor(
+        (await auth.login('counter', _pw, sourceKey: 'i')).token!,
+      );
+      final a = await auth.principalFor(
+        (await auth.login('boss', _pw, sourceKey: 'i')).token!,
+      );
       expect(v.role, UserRole.viewer);
       expect(a.role, UserRole.admin);
     });
@@ -72,9 +72,13 @@ void main() {
       final t = await auth.issueToken();
       final p = await auth.principalFor(t);
       expect(p.role, UserRole.admin);
-      expect(p.isNamed, isFalse,
-          reason: 'route guards must treat this as the legacy all-powerful '
-              'path so upgrading never strands an already-paired client');
+      expect(
+        p.isNamed,
+        isFalse,
+        reason:
+            'route guards must treat this as the legacy all-powerful '
+            'path so upgrading never strands an already-paired client',
+      );
     });
   });
 
@@ -83,40 +87,60 @@ void main() {
       final rec = await auth.addUser('  Mary.Jones  ', _pw, UserRole.staff);
       expect(rec.username, 'mary.jones');
       expect(store.debugUserHash('mary.jones'), startsWith('pbkdf2|sha256|'));
-      expect(rec.toPublicMap().containsKey('hash'), isFalse,
-          reason: 'the public projection must never carry a credential');
+      expect(
+        rec.toPublicMap().containsKey('hash'),
+        isFalse,
+        reason: 'the public projection must never carry a credential',
+      );
       expect(jsonSafeUsers(await auth.users()), contains('mary.jones'));
     });
 
-    test('rejects malformed usernames, weak passwords and duplicates', () async {
-      expect(() => auth.addUser('ab', _pw, UserRole.staff),
-          throwsA(isA<UserAdminException>()));
-      expect(() => auth.addUser('-leading', _pw, UserRole.staff),
-          throwsA(isA<UserAdminException>()));
-      expect(() => auth.addUser('has spaces', _pw, UserRole.staff),
-          throwsA(isA<UserAdminException>()));
-      expect(() => auth.addUser('rob', 'short', UserRole.staff),
-          throwsA(isA<UserAdminException>()));
-      await auth.addUser('dup', _pw, UserRole.viewer);
-      expect(() => auth.addUser('dup', _pw, UserRole.viewer),
-          throwsA(isA<UserAdminException>()));
-    });
+    test(
+      'rejects malformed usernames, weak passwords and duplicates',
+      () async {
+        expect(
+          () => auth.addUser('ab', _pw, UserRole.staff),
+          throwsA(isA<UserAdminException>()),
+        );
+        expect(
+          () => auth.addUser('-leading', _pw, UserRole.staff),
+          throwsA(isA<UserAdminException>()),
+        );
+        expect(
+          () => auth.addUser('has spaces', _pw, UserRole.staff),
+          throwsA(isA<UserAdminException>()),
+        );
+        expect(
+          () => auth.addUser('rob', 'short', UserRole.staff),
+          throwsA(isA<UserAdminException>()),
+        );
+        await auth.addUser('dup', _pw, UserRole.viewer);
+        expect(
+          () => auth.addUser('dup', _pw, UserRole.viewer),
+          throwsA(isA<UserAdminException>()),
+        );
+      },
+    );
 
     test('a rejected addUser never persists a row', () async {
       await expectLater(
-          auth.addUser('bad name!', _pw, UserRole.admin),
-          throwsA(isA<UserAdminException>()));
+        auth.addUser('bad name!', _pw, UserRole.admin),
+        throwsA(isA<UserAdminException>()),
+      );
       expect(store.debugUserHash('bad name!'), isNull);
       expect(jsonSafeUsers(await auth.users()), isNot(contains('bad name!')));
     });
 
-    test('"admin" is reserved -- it cannot be recreated with a new password',
-        () async {
-      expect(
+    test(
+      '"admin" is reserved -- it cannot be recreated with a new password',
+      () async {
+        expect(
           () => auth.addUser('admin', _pw, UserRole.admin),
           throwsA(isA<UserAdminException>()),
-          reason: 'two credentials for one identity is an escalation vector');
-    });
+          reason: 'two credentials for one identity is an escalation vector',
+        );
+      },
+    );
 
     test('removing an account revokes exactly its own tokens', () async {
       await auth.addUser('alice', _pw, UserRole.staff);
@@ -127,28 +151,39 @@ void main() {
 
       await auth.removeUser('alice');
       expect(await auth.isAuthorized(a), isFalse);
-      expect(await auth.isAuthorized(b), isTrue,
-          reason: 'a delete must not collateral-damage other accounts');
-      expect(await auth.isAuthorized(legacy), isTrue,
-          reason: 'the operator\'s own session must survive');
+      expect(
+        await auth.isAuthorized(b),
+        isTrue,
+        reason: 'a delete must not collateral-damage other accounts',
+      );
+      expect(
+        await auth.isAuthorized(legacy),
+        isTrue,
+        reason: 'the operator\'s own session must survive',
+      );
     });
 
     test('an unknown account cannot be deleted', () async {
-      expect(() => auth.removeUser('ghost'),
-          throwsA(isA<UserAdminException>()));
+      expect(
+        () => auth.removeUser('ghost'),
+        throwsA(isA<UserAdminException>()),
+      );
     });
 
     test('the built-in administrator cannot be deleted', () async {
       await expectLater(
-          auth.removeUser('admin'), throwsA(isA<UserAdminException>()));
+        auth.removeUser('admin'),
+        throwsA(isA<UserAdminException>()),
+      );
       // The failure must be the reserved-identity refusal, not "no such user"
       // -- otherwise the test would pass for the wrong reason.
       expect(
-          await auth
-              .removeUser('admin')
-              .then((_) => '')
-              .catchError((Object e) => e.toString()),
-          contains('administrator'));
+        await auth
+            .removeUser('admin')
+            .then((_) => '')
+            .catchError((Object e) => e.toString()),
+        contains('administrator'),
+      );
     });
   });
 
@@ -157,20 +192,28 @@ void main() {
       await auth.addUser('solo', _pw, UserRole.admin);
       // Two admins exist (legacy + solo); demoting solo is allowed...
       await auth.changeUserRole('solo', UserRole.staff);
-      expect((await auth.users()).firstWhere((u) => u.username == 'solo').role,
-          UserRole.staff);
+      expect(
+        (await auth.users()).firstWhere((u) => u.username == 'solo').role,
+        UserRole.staff,
+      );
     });
 
-   test('the last administrator cannot be demoted or removed', () async {
+    test('the last administrator cannot be demoted or removed', () async {
       // No legacy credential, so the single named admin really IS the last.
-      final bare = AuthService(hasher: _fastHasher(), store: InMemoryAuthStore());
+      final bare = AuthService(
+        hasher: _fastHasher(),
+        store: InMemoryAuthStore(),
+      );
       await bare.addUser('owner', _pw, UserRole.admin);
       expect(
-          () => bare.changeUserRole('owner', UserRole.viewer),
-          throwsA(isA<UserAdminException>()),
-          reason: 'demoting the last admin would leave nobody who can administer');
-      expect(() => bare.removeUser('owner'),
-          throwsA(isA<UserAdminException>()));
+        () => bare.changeUserRole('owner', UserRole.viewer),
+        throwsA(isA<UserAdminException>()),
+        reason: 'demoting the last admin would leave nobody who can administer',
+      );
+      expect(
+        () => bare.removeUser('owner'),
+        throwsA(isA<UserAdminException>()),
+      );
       // Still administrable afterwards -- the refusal changed nothing.
       expect((await bare.users()).single.role, UserRole.admin);
     });
@@ -185,9 +228,10 @@ void main() {
 
     test('the built-in admin always keeps the admin role', () async {
       expect(
-          () => auth.changeUserRole('admin', UserRole.staff),
-          throwsA(isA<UserAdminException>()),
-          reason: 'roles must not be a way to strip the bootstrap identity');
+        () => auth.changeUserRole('admin', UserRole.staff),
+        throwsA(isA<UserAdminException>()),
+        reason: 'roles must not be a way to strip the bootstrap identity',
+      );
     });
   });
 
@@ -198,11 +242,18 @@ void main() {
       expect((await auth.principalFor(t)).role, UserRole.admin);
 
       await auth.changeUserRole('rising', UserRole.viewer);
-      expect((await auth.principalFor(t)).role, UserRole.viewer,
-          reason: 'a demotion that only applied after re-login is a '
-              'privilege-retention bug');
-      expect(await auth.isAuthorized(t), isTrue,
-          reason: 'demotion narrows rights, it does not end the session');
+      expect(
+        (await auth.principalFor(t)).role,
+        UserRole.viewer,
+        reason:
+            'a demotion that only applied after re-login is a '
+            'privilege-retention bug',
+      );
+      expect(
+        await auth.isAuthorized(t),
+        isTrue,
+        reason: 'demotion narrows rights, it does not end the session',
+      );
     });
 
     test('promotion likewise applies to an existing token', () async {
@@ -217,27 +268,39 @@ void main() {
       final t = (await auth.login('staff1', _pw, sourceKey: 'i')).token!;
       await auth.setUserPassword('staff1', 'replacement2');
       expect(await auth.isAuthorized(t), isTrue);
-      expect((await auth.login('staff1', 'replacement2', sourceKey: 'i'))
-          .isSuccess, isTrue);
+      expect(
+        (await auth.login('staff1', 'replacement2', sourceKey: 'i')).isSuccess,
+        isTrue,
+      );
     });
 
     test('changing an ADMIN password revokes its outstanding tokens', () async {
       await auth.addUser('chief', _pw, UserRole.admin);
       final t = (await auth.login('chief', _pw, sourceKey: 'i')).token!;
       await auth.setUserPassword('chief', 'replacement2');
-      expect(await auth.isAuthorized(t), isFalse,
-          reason: 'an admin credential change is the classic '
-              'compromise-response moment');
-      expect((await auth.login('chief', 'replacement2', sourceKey: 'i'))
-          .isSuccess, isTrue);
+      expect(
+        await auth.isAuthorized(t),
+        isFalse,
+        reason:
+            'an admin credential change is the classic '
+            'compromise-response moment',
+      );
+      expect(
+        (await auth.login('chief', 'replacement2', sourceKey: 'i')).isSuccess,
+        isTrue,
+      );
     });
 
     test('a short or unknown-target password change is refused', () async {
       await auth.addUser('staff2', _pw, UserRole.staff);
-      expect(() => auth.setUserPassword('staff2', 'tiny'),
-          throwsA(isA<UserAdminException>()));
-      expect(() => auth.setUserPassword('nobody', _pw),
-          throwsA(isA<UserAdminException>()));
+      expect(
+        () => auth.setUserPassword('staff2', 'tiny'),
+        throwsA(isA<UserAdminException>()),
+      );
+      expect(
+        () => auth.setUserPassword('nobody', _pw),
+        throwsA(isA<UserAdminException>()),
+      );
       expect(store.debugUserHash('staff2'), isNotNull);
     });
   });
@@ -250,26 +313,38 @@ void main() {
       expect(auth.failuresFor('src'), 1);
     });
 
-    test('a named account cannot log in with the legacy admin password',
-        () async {
-      await auth.addUser('iso', _pw, UserRole.viewer);
-      final res = await auth.login('iso', 'root-admin', sourceKey: 'i');
-      expect(res.isSuccess, isFalse,
-          reason: 'credentials are per-account; the shared root password must '
-              'not be a skeleton key into lesser-privileged accounts');
-    });
+    test(
+      'a named account cannot log in with the legacy admin password',
+      () async {
+        await auth.addUser('iso', _pw, UserRole.viewer);
+        final res = await auth.login('iso', 'root-admin', sourceKey: 'i');
+        expect(
+          res.isSuccess,
+          isFalse,
+          reason:
+              'credentials are per-account; the shared root password must '
+              'not be a skeleton key into lesser-privileged accounts',
+        );
+      },
+    );
 
-    test('a named admin password does not unlock the legacy admin identity',
-        () async {
-      await auth.addUser('other', 'different-pw', UserRole.admin);
-      expect(
+    test(
+      'a named admin password does not unlock the legacy admin identity',
+      () async {
+        await auth.addUser('other', 'different-pw', UserRole.admin);
+        expect(
           (await auth.login('admin', 'different-pw', sourceKey: 'i')).isSuccess,
-          isFalse);
-    });
+          isFalse,
+        );
+      },
+    );
 
     test('a malformed stored role degrades to the LEAST privileged role', () {
-      expect(UserRole.parse('ADMIN'), UserRole.viewer,
-          reason: 'storage values are case-sensitive by contract');
+      expect(
+        UserRole.parse('ADMIN'),
+        UserRole.viewer,
+        reason: 'storage values are case-sensitive by contract',
+      );
       expect(UserRole.parse('nonsense'), UserRole.viewer);
       expect(UserRole.parse(null), UserRole.viewer);
       expect(UserRole.parse('admin'), UserRole.admin);
@@ -293,9 +368,11 @@ void main() {
         '\$inject',
         '🎭unicode',
       ]) {
-        await expectLater(auth.addUser(evil, _pw, UserRole.admin),
-            throwsA(isA<UserAdminException>()),
-            reason: 'rejected before it ever reaches the store: "$evil"');
+        await expectLater(
+          auth.addUser(evil, _pw, UserRole.admin),
+          throwsA(isA<UserAdminException>()),
+          reason: 'rejected before it ever reaches the store: "$evil"',
+        );
       }
       expect(store.debugUserHash("a' OR '1'='1"), isNull);
     });
@@ -310,7 +387,7 @@ void main() {
         'mary.jones',
         'jane_d',
         'jo-h',
-        'a' * 32
+        'a' * 32,
       ]) {
         expect(UserRecord.isValidUsername(ok), isTrue, reason: ok);
       }
@@ -328,14 +405,18 @@ void main() {
       }
     });
 
-    test('mixed-case input is normalized, so "Admin" collides with "admin"',
-        () async {
-      expect(UserRecord.normalizeUsername('  Admin  '), 'admin');
-      // ...and the reserved-identity check runs on the NORMALIZED form, so
-      // casing cannot be used to create a second bootstrap identity.
-      await expectLater(auth.addUser('  AdMiN  ', _pw, UserRole.admin),
-          throwsA(isA<UserAdminException>()));
-    });
+    test(
+      'mixed-case input is normalized, so "Admin" collides with "admin"',
+      () async {
+        expect(UserRecord.normalizeUsername('  Admin  '), 'admin');
+        // ...and the reserved-identity check runs on the NORMALIZED form, so
+        // casing cannot be used to create a second bootstrap identity.
+        await expectLater(
+          auth.addUser('  AdMiN  ', _pw, UserRole.admin),
+          throwsA(isA<UserAdminException>()),
+        );
+      },
+    );
   });
 }
 

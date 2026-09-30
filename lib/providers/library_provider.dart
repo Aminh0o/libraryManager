@@ -416,7 +416,9 @@ class LibraryProvider with ChangeNotifier {
     if (_isHost) {
       _backupTimer?.cancel();
       _backupTimer = Timer.periodic(const Duration(minutes: 30), (timer) {
-        backupData().catchError((e) => appLog.error('backup', 'Auto-backup failed', e));
+        backupData().catchError(
+          (e) => appLog.error('backup', 'Auto-backup failed', e),
+        );
       });
     } else {
       _backupTimer?.cancel();
@@ -443,8 +445,7 @@ class LibraryProvider with ChangeNotifier {
     try {
       await server.startServer(onActivity: updateClientActivity);
       _isConnected = server.isRunning;
-      _serverErrorKind =
-          _isConnected ? null : LanServerErrorKind.startFailed;
+      _serverErrorKind = _isConnected ? null : LanServerErrorKind.startFailed;
       _serverError = _isConnected
           ? null
           : 'Le serveur LAN n\'a pas pu démarrer.';
@@ -1233,14 +1234,12 @@ class LibraryProvider with ChangeNotifier {
     );
   }
 
-  Future<Reservation> placeReservation(
-      String itemCode, String memberId) async {
+  Future<Reservation> placeReservation(String itemCode, String memberId) async {
     _requireHoldStaff();
     return _repository!.placeReservation(
       itemCode,
       memberId,
-      audit: _hostAudit(
-          'HOLD_PLACE', 'Hold placed: $memberId for $itemCode'),
+      audit: _hostAudit('HOLD_PLACE', 'Hold placed: $memberId for $itemCode'),
     );
   }
 
@@ -1321,7 +1320,9 @@ class LibraryProvider with ChangeNotifier {
   /// plugin is not registered and `saveFile` throws), we fall back to the
   /// historical Documents path so behavior there is unchanged.
   Future<String?> _exportTargetPath(
-      String fileName, List<String> extensions) async {
+    String fileName,
+    List<String> extensions,
+  ) async {
     String? chosen;
     var handlerAvailable = true;
     try {
@@ -1347,12 +1348,16 @@ class LibraryProvider with ChangeNotifier {
   /// authored [Report] the screen is showing (never re-derived on the client),
   /// and the export is gated by the same staff guard as the read (a report
   /// leaks patron + financial data).
-  Future<String?> exportReportCsv(Report report,
-      {Map<String, String>? labels}) async {
+  Future<String?> exportReportCsv(
+    Report report, {
+    Map<String, String>? labels,
+  }) async {
     _requireReportStaff();
     final csv = ReportExport.toCsv(report, labels: labels);
     final filePath = await _exportTargetPath(
-        '${ReportExport.baseName(report)}.csv', const ['csv']);
+      '${ReportExport.baseName(report)}.csv',
+      const ['csv'],
+    );
     if (filePath == null) return null; // user cancelled -> nothing written
     await File(filePath).writeAsString(csv);
     return filePath;
@@ -1362,14 +1367,21 @@ class LibraryProvider with ChangeNotifier {
   /// `null` if the user cancelled (finally exercising the declared `pdf`
   /// dependency, ARC-04). Same server-authored source + same staff gate as
   /// [exportReportCsv].
-  Future<String?> exportReportPdf(Report report,
-      {Map<String, String>? labels}) async {
+  Future<String?> exportReportPdf(
+    Report report, {
+    Map<String, String>? labels,
+  }) async {
     _requireReportStaff();
     // NET-11 (P20): build the PDF off the UI isolate so a large report cannot
     // freeze the desktop; the bytes are identical to a synchronous toPdfBytes.
-    final bytes = await buildReportPdfOffIsolate(report.toMap(), labels: labels);
+    final bytes = await buildReportPdfOffIsolate(
+      report.toMap(),
+      labels: labels,
+    );
     final filePath = await _exportTargetPath(
-        '${ReportExport.baseName(report)}.pdf', const ['pdf']);
+      '${ReportExport.baseName(report)}.pdf',
+      const ['pdf'],
+    );
     if (filePath == null) return null; // user cancelled -> nothing written
     await File(filePath).writeAsBytes(bytes);
     return filePath;
@@ -1395,8 +1407,10 @@ class LibraryProvider with ChangeNotifier {
       ..writeln('app_version: $kAppVersion')
       ..writeln('db_version: ${DatabaseService.currentSchemaVersion}')
       ..writeln('mode: ${_isHost ? 'host' : 'client'}')
-      ..writeln('platform: ${Platform.operatingSystem} '
-          '(${Platform.operatingSystemVersion})')
+      ..writeln(
+        'platform: ${Platform.operatingSystem} '
+        '(${Platform.operatingSystemVersion})',
+      )
       ..writeln('dart_version: ${Platform.version}')
       ..writeln('--- log (${appLog.logFile?.path ?? 'no file sink'}) ---');
     final bundle = '${header.toString()}$logs';
@@ -1754,8 +1768,8 @@ class LibraryProvider with ChangeNotifier {
   /// the operator does not see an inconsistent tail of a stale window.
   Future<void> setSort(String? column, {bool? ascending}) async {
     final nextColumn = column;
-    final nextAscending = ascending ??
-        (nextColumn == _sortColumn ? !_sortAscending : true);
+    final nextAscending =
+        ascending ?? (nextColumn == _sortColumn ? !_sortAscending : true);
     if (_sortColumn == nextColumn && _sortAscending == nextAscending) return;
     _sortColumn = nextColumn;
     _sortAscending = nextAscending;
@@ -1827,11 +1841,7 @@ class LibraryProvider with ChangeNotifier {
     final repo = _repository;
     if (repo == null || memberId.isEmpty) return const [];
     try {
-      return await repo.getHistory(
-        limit: limit,
-        offset: 0,
-        subject: memberId,
-      );
+      return await repo.getHistory(limit: limit, offset: 0, subject: memberId);
     } catch (_) {
       return const [];
     }
@@ -2105,7 +2115,9 @@ class LibraryProvider with ChangeNotifier {
     await repo.removeCopy(
       copyId,
       audit: _hostAudit(
-          'COPY_DEL', "Suppression de l'exemplaire #$copyId de $itemCode"),
+        'COPY_DEL',
+        "Suppression de l'exemplaire #$copyId de $itemCode",
+      ),
     );
     await _loadItems(keepWindow: true);
     _triggerImmediateBackup();
@@ -2114,7 +2126,10 @@ class LibraryProvider with ChangeNotifier {
   /// Phase 13: set / clear one copy's per-copy barcode (host-only). A non-empty
   /// barcode colliding with another copy throws [BarcodeConflictException].
   Future<void> setCopyBarcode(
-      String itemCode, int copyId, String? barcode) async {
+    String itemCode,
+    int copyId,
+    String? barcode,
+  ) async {
     final repo = _repository;
     if (repo is! DatabaseService) {
       throw StateError('Copy management is host-only.');
@@ -2265,7 +2280,9 @@ class LibraryProvider with ChangeNotifier {
         .split('.')
         .first;
     final filePath = await _exportTargetPath(
-        'bibliotheque_export_$timestamp.csv', const ['csv']);
+      'bibliotheque_export_$timestamp.csv',
+      const ['csv'],
+    );
     if (filePath == null) return null; // user cancelled -> nothing written
     await File(filePath).writeAsString(csv);
     return filePath;
@@ -2531,9 +2548,7 @@ Future<String> buildInventoryCsvOffIsolate(List<List<String?>> rows) =>
       );
       for (final cells in rows) {
         buffer.writeln(
-          cells
-              .map((c) => LibraryProvider.staticCsvField(c ?? ''))
-              .join(','),
+          cells.map((c) => LibraryProvider.staticCsvField(c ?? '')).join(','),
         );
       }
       return buffer.toString();

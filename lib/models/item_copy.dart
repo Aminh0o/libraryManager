@@ -27,9 +27,9 @@ enum CopyState {
   final String storage;
 
   static CopyState parse(String? value) => CopyState.values.firstWhere(
-        (s) => s.storage == value,
-        orElse: () => CopyState.available,
-      );
+    (s) => s.storage == value,
+    orElse: () => CopyState.available,
+  );
 
   /// BL-05: the title-level status vocabulary the rollup can actually produce
   /// is EXACTLY these storage strings (in enum order). The status filter and the

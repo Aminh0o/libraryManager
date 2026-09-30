@@ -14,15 +14,15 @@ enum LoanStatus {
   /// historical strings, so no data migration is required).
   final String storage;
 
-  static LoanStatus parse(String? value) => value == returned.storage
-      ? LoanStatus.returned
-      : LoanStatus.active;
+  static LoanStatus parse(String? value) =>
+      value == returned.storage ? LoanStatus.returned : LoanStatus.active;
 }
 
 class Loan {
   final int? id;
   final String itemCode; // Foreign key to LibraryItem
-  final int? copyId; // Physical copy borrowed (Phase 2 / DB-02); null on legacy per-title loans
+  final int?
+  copyId; // Physical copy borrowed (Phase 2 / DB-02); null on legacy per-title loans
   final String memberId; // Foreign key to Member
   final String memberName; // Snapshot or Joined
   final String itemTitle; // Snapshot or Joined
@@ -106,7 +106,9 @@ class Loan {
       itemTitle: map['item_title'] ?? '',
       loanDate: DateTime.parse(map['loan_date']),
       dueDate: DateTime.parse(map['due_date']),
-      returnDate: map['return_date'] != null ? DateTime.parse(map['return_date']) : null,
+      returnDate: map['return_date'] != null
+          ? DateTime.parse(map['return_date'])
+          : null,
       status: map['status'] ?? 'Active',
     );
   }

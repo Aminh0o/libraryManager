@@ -7,7 +7,9 @@ import 'package:library_manager/widgets/item_delete_dialog.dart';
 // only close on success. Regression guard for the old fire-and-forget dialog
 // that popped immediately, hiding failed deletes.
 Future<void> _showDialog(
-    WidgetTester tester, Future<void> Function() onConfirm) async {
+  WidgetTester tester,
+  Future<void> Function() onConfirm,
+) async {
   await tester.pumpWidget(
     MaterialApp(
       locale: const Locale('fr'),
@@ -40,8 +42,9 @@ Future<void> _showDialog(
 }
 
 void main() {
-  testWidgets('a failed delete keeps the dialog open and shows an error',
-      (tester) async {
+  testWidgets('a failed delete keeps the dialog open and shows an error', (
+    tester,
+  ) async {
     var calls = 0;
     await _showDialog(tester, () async {
       calls++;

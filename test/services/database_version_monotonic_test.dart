@@ -30,14 +30,14 @@ void main() {
   late Database db;
 
   LibraryItem item(String code) => LibraryItem(
-        code: code,
-        codeType: 'LIV',
-        designation: 'Title $code',
-        quantite: 1,
-        emplacement: 'A',
-        taux: 0,
-        emplacementStock: 'S',
-      );
+    code: code,
+    codeType: 'LIV',
+    designation: 'Title $code',
+    quantite: 1,
+    emplacement: 'A',
+    taux: 0,
+    emplacementStock: 'S',
+  );
 
   Future<int> version() async => int.tryParse(await svc.getDbVersion()) ?? 0;
 
@@ -55,19 +55,24 @@ void main() {
   });
 
   group('db_version change token is strictly monotonic (DB-06 / RC-06)', () {
-    test('rapid same-ms commits always advance the token and never repeat it',
-        () async {
-      final seen = <int>{};
-      for (var i = 0; i < 10; i++) {
-        final before = await version();
-        await svc.addItem(item('v$i'));
-        final after = await version();
-        expect(after, greaterThan(before),
-            reason: 'each commit must advance the token, even in the same ms');
-        seen.add(after);
-      }
-      expect(seen.length, 10, reason: 'no two commits may share a token');
-    });
+    test(
+      'rapid same-ms commits always advance the token and never repeat it',
+      () async {
+        final seen = <int>{};
+        for (var i = 0; i < 10; i++) {
+          final before = await version();
+          await svc.addItem(item('v$i'));
+          final after = await version();
+          expect(
+            after,
+            greaterThan(before),
+            reason: 'each commit must advance the token, even in the same ms',
+          );
+          seen.add(after);
+        }
+        expect(seen.length, 10, reason: 'no two commits may share a token');
+      },
+    );
 
     test('a host clock rollback cannot stall client refresh', () async {
       // Force the token far into the future (as if the clock had been ahead,
@@ -76,9 +81,10 @@ void main() {
       // "no change" to every client).
       final future =
           DateTime.now().millisecondsSinceEpoch + 10 * 60 * 60 * 1000;
-      await db.insert('metadata',
-          {'key': 'db_version', 'value': future.toString()},
-          conflictAlgorithm: ConflictAlgorithm.replace);
+      await db.insert('metadata', {
+        'key': 'db_version',
+        'value': future.toString(),
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
 
       await svc.addItem(item('clk'));
       expect(await version(), greaterThan(future));

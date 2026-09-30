@@ -17,21 +17,25 @@ Widget _wrap(Widget child, {Brightness brightness = Brightness.light}) =>
     MaterialApp(
       theme: AppTheme.light(const Color(0xFFFF9800)),
       darkTheme: AppTheme.dark(const Color(0xFFFF9800)),
-      themeMode:
-          brightness == Brightness.dark ? ThemeMode.dark : ThemeMode.light,
+      themeMode: brightness == Brightness.dark
+          ? ThemeMode.dark
+          : ThemeMode.light,
       home: Scaffold(body: child),
     );
 
 void main() {
   group('AppEmptyState', () {
-    testWidgets('renders icon + title, and nothing it was not given',
-        (tester) async {
-      await tester.pumpWidget(_wrap(
-        const AppEmptyState(
-          icon: Icons.inventory_2_outlined,
-          title: 'No items found',
+    testWidgets('renders icon + title, and nothing it was not given', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          const AppEmptyState(
+            icon: Icons.inventory_2_outlined,
+            title: 'No items found',
+          ),
         ),
-      ));
+      );
       expect(find.byIcon(Icons.inventory_2_outlined), findsOneWidget);
       expect(find.text('No items found'), findsOneWidget);
       // No invented message line, no placeholder action button (§52).
@@ -39,25 +43,28 @@ void main() {
     });
 
     testWidgets('message and action render when supplied', (tester) async {
-      await tester.pumpWidget(_wrap(
-        AppEmptyState(
-          icon: Icons.people_outline,
-          title: 'No members',
-          message: 'Add your first member to start lending.',
-          action: FilledButton(onPressed: () {}, child: const Text('Add')),
+      await tester.pumpWidget(
+        _wrap(
+          AppEmptyState(
+            icon: Icons.people_outline,
+            title: 'No members',
+            message: 'Add your first member to start lending.',
+            action: FilledButton(onPressed: () {}, child: const Text('Add')),
+          ),
         ),
-      ));
-      expect(find.text('Add your first member to start lending.'),
-          findsOneWidget);
+      );
+      expect(
+        find.text('Add your first member to start lending.'),
+        findsOneWidget,
+      );
       expect(find.byWidgetPredicate((w) => w is FilledButton), findsOneWidget);
     });
   });
 
-  testWidgets('AppLoadingState shows one spinner and an optional label',
-      (tester) async {
-    await tester.pumpWidget(
-      _wrap(const AppLoadingState(message: 'Loading…')),
-    );
+  testWidgets('AppLoadingState shows one spinner and an optional label', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_wrap(const AppLoadingState(message: 'Loading…')));
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
     expect(find.text('Loading…'), findsOneWidget);
   });
@@ -68,20 +75,25 @@ void main() {
         _wrap(const AppErrorState(message: 'Could not reach the server')),
       );
       expect(find.text('Could not reach the server'), findsOneWidget);
-      expect(find.byWidgetPredicate((w) => w is FilledButton), findsNothing,
-          reason: 'retry requires BOTH a label and a real callback');
+      expect(
+        find.byWidgetPredicate((w) => w is FilledButton),
+        findsNothing,
+        reason: 'retry requires BOTH a label and a real callback',
+      );
     });
 
     testWidgets('retry fires the provided callback', (tester) async {
       var retries = 0;
-      await tester.pumpWidget(_wrap(
-        AppErrorState(
-          message: 'Sync failed',
-          details: 'SocketException: host unreachable',
-          retryLabel: 'Try again',
-          onRetry: () => retries++,
+      await tester.pumpWidget(
+        _wrap(
+          AppErrorState(
+            message: 'Sync failed',
+            details: 'SocketException: host unreachable',
+            retryLabel: 'Try again',
+            onRetry: () => retries++,
+          ),
         ),
-      ));
+      );
       // Settle so the entrance animation cannot affect the hit test.
       await tester.pumpAndSettle();
       expect(find.text('SocketException: host unreachable'), findsOneWidget);
@@ -93,20 +105,26 @@ void main() {
   });
 
   group('AppStatusChip', () {
-    testWidgets('pairs color with TEXT -- meaning never rests on hue alone',
-        (tester) async {
-      await tester.pumpWidget(_wrap(
-        const AppStatusChip(label: 'Available', color: AppStatus.available),
-      ));
+    testWidgets('pairs color with TEXT -- meaning never rests on hue alone', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          const AppStatusChip(label: 'Available', color: AppStatus.available),
+        ),
+      );
       expect(find.text('Available'), findsOneWidget);
     });
 
-    testWidgets('stays legible in dark mode (tint derives from the hue)',
-        (tester) async {
-      await tester.pumpWidget(_wrap(
-        const AppStatusChip(label: 'Overdue', color: AppStatus.danger),
-        brightness: Brightness.dark,
-      ));
+    testWidgets('stays legible in dark mode (tint derives from the hue)', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          const AppStatusChip(label: 'Overdue', color: AppStatus.danger),
+          brightness: Brightness.dark,
+        ),
+      );
       await tester.pumpAndSettle();
       expect(find.text('Overdue'), findsOneWidget);
       // No framework exceptions surfaced by pumpAndSettle above.

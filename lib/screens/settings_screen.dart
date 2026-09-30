@@ -112,14 +112,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     try {
-      await provider.updateSettings(
-        _isHost,
-        _ipController.text,
-      );
+      await provider.updateSettings(_isHost, _ipController.text);
       if (!mounted) return;
-      messenger.showSnackBar(
-        SnackBar(content: Text(l10n.savedSuccessfully)),
-      );
+      messenger.showSnackBar(SnackBar(content: Text(l10n.savedSuccessfully)));
     } catch (e) {
       if (!mounted) return;
       messenger.showSnackBar(
@@ -362,8 +357,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ? IconButton(
                               icon: const Icon(Icons.clear, size: AppIcon.md),
                               tooltip: l10n.cancel,
-                              onPressed: () =>
-                                  setState(_searchCtrl.clear),
+                              onPressed: () => setState(_searchCtrl.clear),
                             )
                           : null,
                       isDense: true,
@@ -499,7 +493,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onChanged: (val) async {
               if (val == true) {
                 final passed = await _showPasswordPrompt(
-                    context, title: l10n.enterPassword);
+                  context,
+                  title: l10n.enterPassword,
+                );
                 if (passed) {
                   setState(() => _canEditSettings = true);
                 }
@@ -571,10 +567,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onPressed: _savingSettings
                     ? null
                     : () => setState(() {
-                          // Revert the draft to the committed settings.
-                          _isHost = provider.isHost;
-                          _ipController.text = provider.hostIp;
-                        }),
+                        // Revert the draft to the committed settings.
+                        _isHost = provider.isHost;
+                        _ipController.text = provider.hostIp;
+                      }),
                 child: Text(l10n.settingsRevert),
               ),
             ],
@@ -615,9 +611,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             });
             await p.updateSettings(false, ip);
             if (!mounted) return;
-            messenger.showSnackBar(
-              SnackBar(content: Text(savedText)),
-            );
+            messenger.showSnackBar(SnackBar(content: Text(savedText)));
           }
         },
       ),
@@ -679,9 +673,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             });
             await p.updateSettings(false, ip);
             if (!context.mounted) return;
-            messenger.showSnackBar(
-              SnackBar(content: Text(l10n.pairingIpSet)),
-            );
+            messenger.showSnackBar(SnackBar(content: Text(l10n.pairingIpSet)));
           } else {
             messenger.showSnackBar(
               SnackBar(content: Text(l10n.pairingHostNotFound)),
@@ -756,7 +748,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           } catch (e) {
             if (!context.mounted) return;
             messenger.showSnackBar(
-                SnackBar(content: Text(describeError(l10n, e))));
+              SnackBar(content: Text(describeError(l10n, e))),
+            );
             return;
           }
           final ip = await p.getLocalIp();
@@ -785,25 +778,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: AppSpacing.lg),
                   Text(
                     code,
-                    style: Theme.of(dialogContext)
-                        .textTheme
-                        .titleLarge
+                    style: Theme.of(dialogContext).textTheme.titleLarge
                         ?.copyWith(fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: AppSpacing.sm),
-                  Text('IP: $ip',
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  Text(
+                    'IP: $ip',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   if (minutesLeft != null) ...[
                     const SizedBox(height: AppSpacing.xs),
                     Text(
-                      l10n.pairingValidMinutes(minutesLeft <= 0 ? 0 : minutesLeft),
-                      style: Theme.of(dialogContext)
-                          .textTheme
-                          .bodySmall
+                      l10n.pairingValidMinutes(
+                        minutesLeft <= 0 ? 0 : minutesLeft,
+                      ),
+                      style: Theme.of(dialogContext).textTheme.bodySmall
                           ?.copyWith(
-                            color: Theme.of(dialogContext)
-                                .colorScheme
-                                .onSurfaceVariant,
+                            color: Theme.of(
+                              dialogContext,
+                            ).colorScheme.onSurfaceVariant,
                           ),
                     ),
                   ],
@@ -823,7 +816,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _connectedDevicesCard(
-      AppLocalizations l10n, LibraryProvider provider) {
+    AppLocalizations l10n,
+    LibraryProvider provider,
+  ) {
     return Card(
       child: ListTile(
         leading: const Icon(Icons.devices, size: AppIcon.lg),
@@ -885,27 +880,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
               // ARC-06: never claim "you are up to date" when no feed
               // was ever contacted -- say so honestly.
               messenger.showSnackBar(
-                  SnackBar(content: Text(l10n.updateNotConfigured)));
+                SnackBar(content: Text(l10n.updateNotConfigured)),
+              );
               break;
             case UpdateStatus.failed:
               messenger.showSnackBar(
-                  SnackBar(content: Text(l10n.updateCheckFailed)));
+                SnackBar(content: Text(l10n.updateCheckFailed)),
+              );
               break;
             case UpdateStatus.upToDate:
               messenger.showSnackBar(
-                  SnackBar(content: Text(l10n.noUpdateAvailable)));
+                SnackBar(content: Text(l10n.noUpdateAvailable)),
+              );
               break;
             case UpdateStatus.available:
               showDialog(
                 context: context,
                 builder: (dialogContext) => AlertDialog(
                   title: Text(l10n.updateAvailable),
-                  content: Text(
-                      l10n.updateFoundVersion(result.version ?? '')),
+                  content: Text(l10n.updateFoundVersion(result.version ?? '')),
                   actions: [
                     TextButton(
-                        onPressed: () => Navigator.pop(dialogContext),
-                        child: Text(l10n.cancel)),
+                      onPressed: () => Navigator.pop(dialogContext),
+                      child: Text(l10n.cancel),
+                    ),
                     if (result.hasUpdate)
                       TextButton(
                         onPressed: () {
@@ -938,12 +936,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             final path = await provider.exportDiagnostics();
             if (path != null && context.mounted) {
               scaffold.showSnackBar(
-                  SnackBar(content: Text(l10n.diagnosticsSaved(path))));
+                SnackBar(content: Text(l10n.diagnosticsSaved(path))),
+              );
             }
           } catch (e) {
             if (context.mounted) {
               scaffold.showSnackBar(
-                  SnackBar(content: Text(l10n.diagnosticsFailed)));
+                SnackBar(content: Text(l10n.diagnosticsFailed)),
+              );
             }
           }
         },
@@ -951,8 +951,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _dataProtectionBlock(
-      AppLocalizations l10n, LibraryProvider provider) {
+  Widget _dataProtectionBlock(AppLocalizations l10n, LibraryProvider provider) {
     final scheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -973,7 +972,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 messenger.showSnackBar(
                   SnackBar(
                     content: Text(
-                        ok ? l10n.lanAccessEnabled : l10n.lanAccessFailed),
+                      ok ? l10n.lanAccessEnabled : l10n.lanAccessFailed,
+                    ),
                   ),
                 );
               },
@@ -985,34 +985,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: Text(l10n.backupDatabase),
             subtitle: Text(l10n.backupDescription),
             onTap: () async {
-              final p =
-                  Provider.of<LibraryProvider>(context, listen: false);
+              final p = Provider.of<LibraryProvider>(context, listen: false);
               final scaffold = ScaffoldMessenger.of(context);
               try {
                 await p.backupData();
                 scaffold.showSnackBar(
-                    SnackBar(content: Text(l10n.backupSuccess)));
+                  SnackBar(content: Text(l10n.backupSuccess)),
+                );
               } catch (e) {
                 scaffold.showSnackBar(
-                    SnackBar(content: Text('${l10n.backupFailed} $e')));
+                  SnackBar(content: Text('${l10n.backupFailed} $e')),
+                );
               }
             },
           ),
         ),
         Card(
           child: ListTile(
-            leading: Icon(Icons.restore_outlined,
-                size: AppIcon.lg, color: scheme.error),
+            leading: Icon(
+              Icons.restore_outlined,
+              size: AppIcon.lg,
+              color: scheme.error,
+            ),
             title: Text(l10n.restoreDatabase),
             subtitle: Text(l10n.restoreDescription),
             onTap: () async {
-              final p =
-                  Provider.of<LibraryProvider>(context, listen: false);
+              final p = Provider.of<LibraryProvider>(context, listen: false);
               final scaffold = ScaffoldMessenger.of(context);
               final l10n = AppLocalizations.of(context)!;
               try {
-                FilePickerResult? result =
-                    await FilePicker.platform.pickFiles(
+                FilePickerResult? result = await FilePicker.platform.pickFiles(
                   dialogTitle: l10n.selectBackupDatabase,
                   type: FileType.any,
                 );
@@ -1033,14 +1035,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       onConfirm: () async {
                         await p.restoreData(path);
                         scaffold.showSnackBar(
-                            SnackBar(content: Text(l10n.restoreSuccess)));
+                          SnackBar(content: Text(l10n.restoreSuccess)),
+                        );
                       },
                     ),
                   );
                 }
               } catch (e) {
                 scaffold.showSnackBar(
-                    SnackBar(content: Text('${l10n.restoreFailed} $e')));
+                  SnackBar(content: Text('${l10n.restoreFailed} $e')),
+                );
               }
             },
           ),
@@ -1050,8 +1054,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             leading: const Icon(Icons.table_view, size: AppIcon.lg),
             title: Text(l10n.importExcel),
             onTap: () async {
-              final p =
-                  Provider.of<LibraryProvider>(context, listen: false);
+              final p = Provider.of<LibraryProvider>(context, listen: false);
               final scaffold = ScaffoldMessenger.of(context);
               try {
                 FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -1063,11 +1066,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   final path = result.files.single.path!;
                   await p.importItemsFromExcel(path);
                   scaffold.showSnackBar(
-                      SnackBar(content: Text(l10n.importSuccess)));
+                    SnackBar(content: Text(l10n.importSuccess)),
+                  );
                 }
               } catch (e) {
                 scaffold.showSnackBar(
-                    SnackBar(content: Text('${l10n.importError}$e')));
+                  SnackBar(content: Text('${l10n.importError}$e')),
+                );
               }
             },
           ),
@@ -1083,18 +1088,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: Text(l10n.exportCsv),
             subtitle: Text(l10n.exportSuccess),
             onTap: () async {
-              final p =
-                  Provider.of<LibraryProvider>(context, listen: false);
+              final p = Provider.of<LibraryProvider>(context, listen: false);
               final scaffold = ScaffoldMessenger.of(context);
               try {
                 final path = await p.exportToCsv();
                 if (path != null) {
                   scaffold.showSnackBar(
-                      SnackBar(content: Text(l10n.exportSuccess)));
+                    SnackBar(content: Text(l10n.exportSuccess)),
+                  );
                 }
               } catch (e) {
-                scaffold.showSnackBar(
-                    SnackBar(content: Text('$e')));
+                scaffold.showSnackBar(SnackBar(content: Text('$e')));
               }
             },
           ),
@@ -1113,7 +1117,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         onTap: () async {
           final navigator = Navigator.of(context);
           final passed = await _showPasswordPrompt(
-              context, title: l10n.enterPassword);
+            context,
+            title: l10n.enterPassword,
+          );
           if (passed && mounted) {
             navigator.push(
               MaterialPageRoute(builder: (context) => const HistoryScreen()),
@@ -1140,7 +1146,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => const CodeManagementScreen()),
+                  builder: (context) => const CodeManagementScreen(),
+                ),
               );
             },
           ),
@@ -1155,8 +1162,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (context) =>
-                        const AttributeManagementScreen()),
+                  builder: (context) => const AttributeManagementScreen(),
+                ),
               );
             },
           ),
@@ -1165,20 +1172,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _adminPasswordCard(
-      AppLocalizations l10n, LibraryProvider provider) {
+  Widget _adminPasswordCard(AppLocalizations l10n, LibraryProvider provider) {
     return Card(
       child: ListTile(
         leading: const Icon(Icons.lock_outline, size: AppIcon.lg),
         title: Text(l10n.adminPassword),
         subtitle: Text(
-            provider.hasAdminPassword ? l10n.changePassword : l10n.setPassword),
+          provider.hasAdminPassword ? l10n.changePassword : l10n.setPassword,
+        ),
         trailing: const Icon(Icons.chevron_right),
         onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(
-                builder: (context) => const PasswordManagementScreen()),
+              builder: (context) => const PasswordManagementScreen(),
+            ),
           );
         },
       ),
@@ -1196,8 +1204,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         Card(
           color: scheme.errorContainer.withValues(alpha: 0.35),
           child: ListTile(
-            leading: Icon(Icons.delete_forever,
-                size: AppIcon.lg, color: scheme.error),
+            leading: Icon(
+              Icons.delete_forever,
+              size: AppIcon.lg,
+              color: scheme.error,
+            ),
             title: Text(l10n.eraseAllData),
             subtitle: Text(
               l10n.eraseWarning,
@@ -1209,8 +1220,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         Card(
           color: scheme.errorContainer.withValues(alpha: 0.35),
           child: ListTile(
-            leading:
-                Icon(Icons.restart_alt, size: AppIcon.lg, color: scheme.error),
+            leading: Icon(
+              Icons.restart_alt,
+              size: AppIcon.lg,
+              color: scheme.error,
+            ),
             title: Text(l10n.setupRoadmap),
             subtitle: Text(
               l10n.resetOnboardingDesc,
@@ -1220,13 +1234,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               final messenger = ScaffoldMessenger.of(context);
               final resetText = l10n.resetRestartApp;
               final passed = await _showPasswordPrompt(
-                  context, title: l10n.enterPassword);
+                context,
+                title: l10n.enterPassword,
+              );
               if (!context.mounted || !passed) return;
               await OnboardingService.resetSetup();
               if (!context.mounted) return;
-              messenger.showSnackBar(
-                SnackBar(content: Text(resetText)),
-              );
+              messenger.showSnackBar(SnackBar(content: Text(resetText)));
             },
           ),
         ),
@@ -1240,8 +1254,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final provider = Provider.of<LibraryProvider>(context, listen: false);
     final l10n = AppLocalizations.of(context)!;
 
-    final passed =
-        await _showPasswordPrompt(context, title: l10n.enterPassword);
+    final passed = await _showPasswordPrompt(
+      context,
+      title: l10n.enterPassword,
+    );
     if (!context.mounted || !passed) return;
 
     final confirm = await showDialog<bool>(
@@ -1251,8 +1267,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         content: Text(l10n.eraseWarning),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(l10n.cancel)),
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.cancel),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(
@@ -1270,14 +1287,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final successString = l10n.dataWiped;
       await provider.clearAllData();
       if (!context.mounted) return;
-      messenger.showSnackBar(
-        SnackBar(content: Text(successString)),
-      );
+      messenger.showSnackBar(SnackBar(content: Text(successString)));
     }
   }
 
   Future<bool> _showPasswordPrompt(
-      BuildContext context, {required String title}) async {
+    BuildContext context, {
+    required String title,
+  }) async {
     final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController();
     final result = await showDialog<bool>(
@@ -1291,12 +1308,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(l10n.cancel)),
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.cancel),
+          ),
           TextButton(
             onPressed: () async {
-              final provider =
-                  Provider.of<LibraryProvider>(context, listen: false);
+              final provider = Provider.of<LibraryProvider>(
+                context,
+                listen: false,
+              );
               final messenger = ScaffoldMessenger.of(context);
               // FE2-11: verify against the server-side credential, not the
               // local empty-password check that anyone could pass.
@@ -1324,7 +1344,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// indistinguishable from a wrong password so accounts cannot be enumerated
   /// — shows one generic message.
   Future<void> _showSignInDialog(
-      BuildContext context, LibraryProvider provider, AppLocalizations l10n) async {
+    BuildContext context,
+    LibraryProvider provider,
+    AppLocalizations l10n,
+  ) async {
     final messenger = ScaffoldMessenger.of(context);
     final ok = await showDialog<bool>(
       context: context,
@@ -1332,10 +1355,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
     if (!context.mounted) return;
     if (ok == true) {
-      messenger.showSnackBar(SnackBar(
-        content: Text(l10n.signedInAs(
-            provider.sessionUsername ?? '', roleLabel(l10n, provider.sessionRole))),
-      ));
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            l10n.signedInAs(
+              provider.sessionUsername ?? '',
+              roleLabel(l10n, provider.sessionRole),
+            ),
+          ),
+        ),
+      );
     } else {
       messenger.showSnackBar(
         SnackBar(
@@ -1410,8 +1439,7 @@ class _PairingRoleDialogState extends State<_PairingRoleDialog> {
               title: Text(roleLabel(l10n, r)),
               subtitle: Text(
                 roleDescription(l10n, r),
-                style:
-                    txt.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                style: txt.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
               ),
               onTap: () => setState(() => _role = r),
             ),
@@ -1485,8 +1513,7 @@ class _SignInDialogState extends State<_SignInDialog> {
             decoration: InputDecoration(
               labelText: l10n.password,
               suffixIcon: IconButton(
-                icon: Icon(
-                    _obscure ? Icons.visibility_off : Icons.visibility),
+                icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility),
                 onPressed: () => setState(() => _obscure = !_obscure),
               ),
             ),
@@ -1554,10 +1581,10 @@ class _AppearanceSectionState extends State<_AppearanceSection> {
     final canAdmin = context.watch<LibraryProvider>().canAdminister;
 
     String themeLabel(ThemeMode m) => switch (m) {
-          ThemeMode.system => l10n.themeSystem,
-          ThemeMode.light => l10n.themeLight,
-          ThemeMode.dark => l10n.themeDark,
-        };
+      ThemeMode.system => l10n.themeSystem,
+      ThemeMode.light => l10n.themeLight,
+      ThemeMode.dark => l10n.themeDark,
+    };
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

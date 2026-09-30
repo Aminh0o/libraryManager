@@ -15,31 +15,39 @@ import 'package:library_manager/widgets/item_status_cell.dart';
 /// the old FE2-04 permission inversion can no longer be expressed at all — and
 /// (b) that the full copy-derived vocabulary renders truthfully (FE2-06).
 Widget _wrap(Widget child) => MaterialApp(
-      locale: const Locale('fr'),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: Scaffold(body: Center(child: child)),
-    );
+  locale: const Locale('fr'),
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  home: Scaffold(body: Center(child: child)),
+);
 
 void main() {
-  testWidgets('the HOST gets a read-only derived chip, NOT an editor',
-      (tester) async {
-    await tester.pumpWidget(_wrap(
-      const ItemStatusCell(status: ItemStatus.disponible, isHost: true),
-    ));
+  testWidgets('the HOST gets a read-only derived chip, NOT an editor', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _wrap(const ItemStatusCell(status: ItemStatus.disponible, isHost: true)),
+    );
 
-    expect(find.byType(DropdownButton<String>), findsNothing,
-        reason: 'status is derived from copies; the grid must not hand out an '
-            'inline title-status editor');
+    expect(
+      find.byType(DropdownButton<String>),
+      findsNothing,
+      reason:
+          'status is derived from copies; the grid must not hand out an '
+          'inline title-status editor',
+    );
     expect(find.byType(PopupMenuButton<Object>), findsNothing);
-    expect(find.text('Disponible'), findsOneWidget,
-        reason: 'the derived status is still displayed, just not editable');
+    expect(
+      find.text('Disponible'),
+      findsOneWidget,
+      reason: 'the derived status is still displayed, just not editable',
+    );
   });
 
   testWidgets('a CLIENT also gets a read-only chip', (tester) async {
-    await tester.pumpWidget(_wrap(
-      const ItemStatusCell(status: ItemStatus.emprunte, isHost: false),
-    ));
+    await tester.pumpWidget(
+      _wrap(const ItemStatusCell(status: ItemStatus.emprunte, isHost: false)),
+    );
 
     expect(find.byType(DropdownButton<String>), findsNothing);
     expect(find.text('Emprunté'), findsOneWidget);
@@ -60,9 +68,13 @@ void main() {
   testWidgets('an untranslatable legacy / DB-only status renders its raw value '
       'truthfully (FE2-06)', (tester) async {
     await tester.pumpWidget(_wrap(const ItemStatusCell(status: 'Payé')));
-    expect(find.text('Payé'), findsOneWidget,
-        reason: 'a value the app cannot translate must be shown as-is, never '
-            'coerced to a friendly default');
+    expect(
+      find.text('Payé'),
+      findsOneWidget,
+      reason:
+          'a value the app cannot translate must be shown as-is, never '
+          'coerced to a friendly default',
+    );
   });
 
   test('statusColor tints the vocabulary from the ONE centralized palette', () {
@@ -71,24 +83,33 @@ void main() {
     // centralized AppStatus semantics, so a status reads identically on every
     // surface: disponible=green, emprunté=blue, réservé=orange, endommagé=red,
     // réparation=magenta, perdu=brown, archivé=blue-grey, unknown=neutral grey.
-    expect(ItemStatusCell.statusColor(ItemStatus.disponible),
-        AppStatus.available);
+    expect(
+      ItemStatusCell.statusColor(ItemStatus.disponible),
+      AppStatus.available,
+    );
     expect(ItemStatusCell.statusColor(ItemStatus.emprunte), AppStatus.borrowed);
     expect(ItemStatusCell.statusColor(ItemStatus.reserve), AppStatus.reserved);
     expect(ItemStatusCell.statusColor(ItemStatus.endommage), AppStatus.damaged);
     expect(ItemStatusCell.statusColor('En Réparation'), AppStatus.repair);
     expect(ItemStatusCell.statusColor('Perdu'), AppStatus.lost);
     expect(ItemStatusCell.statusColor('Archivé'), AppStatus.archived);
-    expect(ItemStatusCell.statusColor('Payé'), AppStatus.neutral,
-        reason: 'an unknown value falls back to the neutral chip');
+    expect(
+      ItemStatusCell.statusColor('Payé'),
+      AppStatus.neutral,
+      reason: 'an unknown value falls back to the neutral chip',
+    );
   });
 
-  testWidgets('the cell renders through the shared AppStatusChip (§44)',
-      (tester) async {
-    await tester.pumpWidget(_wrap(
-      const ItemStatusCell(status: ItemStatus.disponible),
-    ));
-    expect(find.byType(AppStatusChip), findsOneWidget,
-        reason: 'status tinting lives in exactly one chip implementation');
+  testWidgets('the cell renders through the shared AppStatusChip (§44)', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _wrap(const ItemStatusCell(status: ItemStatus.disponible)),
+    );
+    expect(
+      find.byType(AppStatusChip),
+      findsOneWidget,
+      reason: 'status tinting lives in exactly one chip implementation',
+    );
   });
 }

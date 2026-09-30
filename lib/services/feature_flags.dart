@@ -18,11 +18,23 @@ class FeatureFlags extends ChangeNotifier {
   /// The known flags and their shipped-by-default state. An operator toggles
   /// these from the admin Settings -> Features section.
   static const List<Flag> catalog = [
-    Flag(id: 'commandPalette', label: 'Command palette (Ctrl+K)', defaultOn: true),
-    Flag(id: 'notificationCenter', label: 'Notification center', defaultOn: true),
+    Flag(
+      id: 'commandPalette',
+      label: 'Command palette (Ctrl+K)',
+      defaultOn: true,
+    ),
+    Flag(
+      id: 'notificationCenter',
+      label: 'Notification center',
+      defaultOn: true,
+    ),
     Flag(id: 'systemHealth', label: 'System-health dashboard', defaultOn: true),
     Flag(id: 'lanChat', label: 'LAN staff chat', defaultOn: true),
-    Flag(id: 'appearanceSettings', label: 'Appearance / white-label settings', defaultOn: true),
+    Flag(
+      id: 'appearanceSettings',
+      label: 'Appearance / white-label settings',
+      defaultOn: true,
+    ),
   ];
 
   static List<String> get knownIds => catalog.map((f) => f.id).toList();
@@ -68,11 +80,7 @@ class FeatureFlags extends ChangeNotifier {
 /// A single named flag with its operator-facing label and shipped default.
 @immutable
 class Flag {
-  const Flag({
-    required this.id,
-    required this.label,
-    required this.defaultOn,
-  });
+  const Flag({required this.id, required this.label, required this.defaultOn});
   final String id;
   final String label;
   final bool defaultOn;

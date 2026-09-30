@@ -63,10 +63,7 @@ void main() {
 
     test('findAvailable returns an available copy or null', () {
       expect(CopyLedger.findAvailable([copy(1), copy(2)])?.id, 1);
-      expect(
-        CopyLedger.findAvailable([copy(1, state: 'Emprunté')]),
-        isNull,
-      );
+      expect(CopyLedger.findAvailable([copy(1, state: 'Emprunté')]), isNull);
       expect(CopyLedger.findAvailable([]), isNull);
     });
   });
@@ -90,27 +87,25 @@ void main() {
       expect(() => CopyLedger.checkout([copy(1)], 99), throwsStateError);
     });
 
-    test('throws when checking out an already-out copy (no double-checkout)',
-        () {
-      expect(
-        () => CopyLedger.checkout([copy(1, state: 'Emprunté')], 1),
-        throwsStateError,
-      );
-    });
+    test(
+      'throws when checking out an already-out copy (no double-checkout)',
+      () {
+        expect(
+          () => CopyLedger.checkout([copy(1, state: 'Emprunté')], 1),
+          throwsStateError,
+        );
+      },
+    );
   });
 
   group('returnCopy', () {
     test('marks an on-loan copy available', () {
-      final after =
-          CopyLedger.returnCopy([copy(1, state: 'Emprunté')], 1);
+      final after = CopyLedger.returnCopy([copy(1, state: 'Emprunté')], 1);
       expect(after.single.isAvailable, isTrue);
     });
 
     test('throws when returning a copy that is not on loan', () {
-      expect(
-        () => CopyLedger.returnCopy([copy(1)], 1),
-        throwsStateError,
-      );
+      expect(() => CopyLedger.returnCopy([copy(1)], 1), throwsStateError);
     });
 
     test('throws on an unknown copy', () {
@@ -122,10 +117,13 @@ void main() {
   });
 
   group('deriveTitleStatus (fixes DB-02 impossible states)', () {
-    test('a title with any available copy is Disponible even if others out', () {
-      final copies = [copy(1), copy(2, state: 'Emprunté')];
-      expect(CopyLedger.deriveTitleStatus(copies), 'Disponible');
-    });
+    test(
+      'a title with any available copy is Disponible even if others out',
+      () {
+        final copies = [copy(1), copy(2, state: 'Emprunté')];
+        expect(CopyLedger.deriveTitleStatus(copies), 'Disponible');
+      },
+    );
 
     test('all copies out -> Emprunté', () {
       final copies = [copy(1, state: 'Emprunté'), copy(2, state: 'Emprunté')];
@@ -138,19 +136,20 @@ void main() {
 
     test('none available, no loans: maintenance beats archived beats lost', () {
       expect(
-        CopyLedger.deriveTitleStatus(
-            [copy(1, state: 'Perdu'), copy(2, state: 'En Réparation')]),
+        CopyLedger.deriveTitleStatus([
+          copy(1, state: 'Perdu'),
+          copy(2, state: 'En Réparation'),
+        ]),
         'En Réparation',
       );
       expect(
-        CopyLedger.deriveTitleStatus(
-            [copy(1, state: 'Perdu'), copy(2, state: 'Archivé')]),
+        CopyLedger.deriveTitleStatus([
+          copy(1, state: 'Perdu'),
+          copy(2, state: 'Archivé'),
+        ]),
         'Archivé',
       );
-      expect(
-        CopyLedger.deriveTitleStatus([copy(1, state: 'Perdu')]),
-        'Perdu',
-      );
+      expect(CopyLedger.deriveTitleStatus([copy(1, state: 'Perdu')]), 'Perdu');
     });
   });
 

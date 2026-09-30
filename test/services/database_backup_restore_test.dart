@@ -19,9 +19,9 @@ class _FakePathProvider extends PathProviderPlatform {
 /// Opens the file at [path] read-only without migrations so a produced backup
 /// can be inspected independently of the live database.
 Future<Database> _openReadOnly(String path) => databaseFactoryFfi.openDatabase(
-      path,
-      options: OpenDatabaseOptions(readOnly: true, singleInstance: false),
-    );
+  path,
+  options: OpenDatabaseOptions(readOnly: true, singleInstance: false),
+);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -50,8 +50,10 @@ void main() {
 
   Future<int> liveCount(String code) async {
     final db = await svc.database;
-    final r = await db
-        .rawQuery('SELECT COUNT(*) c FROM library_items WHERE code = ?', [code]);
+    final r = await db.rawQuery(
+      'SELECT COUNT(*) c FROM library_items WHERE code = ?',
+      [code],
+    );
     return r.first['c'] as int;
   }
 
@@ -70,26 +72,32 @@ void main() {
   }
 
   group('backup / restore (Phase 9.1)', () {
-    test('VACUUM INTO yields a consistent, independently-valid snapshot',
-        () async {
-      await putItem('BK01', 'Backed Up');
-      final backup = p.join(tmp.path, 'snap1.db');
+    test(
+      'VACUUM INTO yields a consistent, independently-valid snapshot',
+      () async {
+        await putItem('BK01', 'Backed Up');
+        final backup = p.join(tmp.path, 'snap1.db');
 
-      await svc.backupDatabase(backup);
+        await svc.backupDatabase(backup);
 
-      expect(await File(backup).exists(), isTrue);
-      final probe = await _openReadOnly(backup);
-      try {
-        final integrity = await probe.rawQuery('PRAGMA integrity_check');
-        expect(integrity.first.values.first, 'ok',
-            reason: 'the backup must pass integrity_check (not a torn copy)');
-        final rows = await probe
-            .rawQuery("SELECT designation FROM library_items WHERE code='BK01'");
-        expect(rows.single['designation'], 'Backed Up');
-      } finally {
-        await probe.close();
-      }
-    });
+        expect(await File(backup).exists(), isTrue);
+        final probe = await _openReadOnly(backup);
+        try {
+          final integrity = await probe.rawQuery('PRAGMA integrity_check');
+          expect(
+            integrity.first.values.first,
+            'ok',
+            reason: 'the backup must pass integrity_check (not a torn copy)',
+          );
+          final rows = await probe.rawQuery(
+            "SELECT designation FROM library_items WHERE code='BK01'",
+          );
+          expect(rows.single['designation'], 'Backed Up');
+        } finally {
+          await probe.close();
+        }
+      },
+    );
 
     test('restore of a valid backup replaces the live data', () async {
       // backup snapshot already taken above contains BK01 only.
@@ -105,39 +113,47 @@ void main() {
       expect(await File('$livePath.pre_restore').exists(), isTrue);
     });
 
-    test('a non-database file is rejected and leaves the live DB untouched',
-        () async {
-      await putItem('KEEP1', 'Must Survive');
-      final bad = File(p.join(tmp.path, 'garbage.db'));
-      await bad.writeAsBytes(List<int>.generate(4096, (i) => (i * 7) % 256));
+    test(
+      'a non-database file is rejected and leaves the live DB untouched',
+      () async {
+        await putItem('KEEP1', 'Must Survive');
+        final bad = File(p.join(tmp.path, 'garbage.db'));
+        await bad.writeAsBytes(List<int>.generate(4096, (i) => (i * 7) % 256));
 
-      await expectLater(
-        svc.restoreDatabase(bad.path),
-        throwsA(isA<RestoreException>()),
-      );
+        await expectLater(
+          svc.restoreDatabase(bad.path),
+          throwsA(isA<RestoreException>()),
+        );
 
-      // Live DB is still open and intact.
-      expect(await liveCount('KEEP1'), 1);
-    });
+        // Live DB is still open and intact.
+        expect(await liveCount('KEEP1'), 1);
+      },
+    );
 
-    test('a valid SQLite db that is not a library backup is rejected',
-        () async {
-      final foreign = p.join(tmp.path, 'foreign.db');
-      final other = await databaseFactoryFfi.openDatabase(foreign,
-          options: OpenDatabaseOptions(singleInstance: false));
-      await other.execute('CREATE TABLE unrelated(id INTEGER PRIMARY KEY)');
-      await other.close();
+    test(
+      'a valid SQLite db that is not a library backup is rejected',
+      () async {
+        final foreign = p.join(tmp.path, 'foreign.db');
+        final other = await databaseFactoryFfi.openDatabase(
+          foreign,
+          options: OpenDatabaseOptions(singleInstance: false),
+        );
+        await other.execute('CREATE TABLE unrelated(id INTEGER PRIMARY KEY)');
+        await other.close();
 
-      await expectLater(
-        svc.restoreDatabase(foreign),
-        throwsA(isA<RestoreException>()),
-      );
-      expect(await liveCount('KEEP1'), 1,
-          reason: 'the live library must survive a rejected foreign restore');
-    });
+        await expectLater(
+          svc.restoreDatabase(foreign),
+          throwsA(isA<RestoreException>()),
+        );
+        expect(
+          await liveCount('KEEP1'),
+          1,
+          reason: 'the live library must survive a rejected foreign restore',
+        );
+      },
+    );
 
-    test('a missing backup path is rejected before anything happens',
-        () async {
+    test('a missing backup path is rejected before anything happens', () async {
       await expectLater(
         svc.restoreDatabase(p.join(tmp.path, 'does_not_exist.db')),
         throwsA(isA<RestoreException>()),

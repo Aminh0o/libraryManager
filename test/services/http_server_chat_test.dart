@@ -38,21 +38,28 @@ void main() {
   });
 
   Future<http.Response> get(String path, {String? token}) => client.get(
-      Uri.parse('$base$path'),
-      headers: token == null ? {} : {'Authorization': 'Bearer $token'});
+    Uri.parse('$base$path'),
+    headers: token == null ? {} : {'Authorization': 'Bearer $token'},
+  );
 
-  Future<http.Response> post(String path, Map<String, dynamic> body,
-          {String? token}) =>
-      client.post(Uri.parse('$base$path'),
-          headers: {
-            'Content-Type': 'application/json',
-            if (token != null) 'Authorization': 'Bearer $token',
-          },
-          body: jsonEncode(body));
+  Future<http.Response> post(
+    String path,
+    Map<String, dynamic> body, {
+    String? token,
+  }) => client.post(
+    Uri.parse('$base$path'),
+    headers: {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    },
+    body: jsonEncode(body),
+  );
 
   Future<String> tokenFor(String username, String password) async {
-    final res =
-        await post('/auth/login', {'username': username, 'password': password});
+    final res = await post('/auth/login', {
+      'username': username,
+      'password': password,
+    });
     expect(res.statusCode, 200, reason: 'login failed for $username');
     return jsonDecode(res.body)['token'] as String;
   }
@@ -61,9 +68,11 @@ void main() {
 
   Future<String> addAndLogin(String name, String pw, String role) async {
     final t = await adminToken();
-    final r = await post('/users',
-        {'username': name, 'password': pw, 'role': role},
-        token: t);
+    final r = await post('/users', {
+      'username': name,
+      'password': pw,
+      'role': role,
+    }, token: t);
     expect(r.statusCode, 201, reason: 'seed user $name failed: ${r.body}');
     return tokenFor(name, pw);
   }
@@ -76,14 +85,17 @@ void main() {
     expect((await send('hi')).statusCode, 401);
   });
 
-  test('a viewer is refused chat read AND write (staff-only surface)', () async {
-    final viewer = await addAndLogin('kiosk', 'kiosk-pw-1', 'viewer');
-    final r = await get('/chat', token: viewer);
-    final w = await send('hello', token: viewer);
-    expect(r.statusCode, 403, reason: r.body);
-    expect(w.statusCode, 403, reason: w.body);
-    expect(jsonDecode(r.body)['error'], 'forbidden');
-  });
+  test(
+    'a viewer is refused chat read AND write (staff-only surface)',
+    () async {
+      final viewer = await addAndLogin('kiosk', 'kiosk-pw-1', 'viewer');
+      final r = await get('/chat', token: viewer);
+      final w = await send('hello', token: viewer);
+      expect(r.statusCode, 403, reason: r.body);
+      expect(w.statusCode, 403, reason: w.body);
+      expect(jsonDecode(r.body)['error'], 'forbidden');
+    },
+  );
 
   test('staff post + read share one store with the host UI', () async {
     final staff = await addAndLogin('libby', 'libby-pw-1', 'staff');
@@ -97,8 +109,8 @@ void main() {
     // A client poll sees it over HTTP...
     final fetched = await get('/chat?since=0', token: staff);
     expect(fetched.statusCode, 200);
-    final msgs =
-        (jsonDecode(fetched.body)['messages'] as List<dynamic>).cast<Map>();
+    final msgs = (jsonDecode(fetched.body)['messages'] as List<dynamic>)
+        .cast<Map>();
     expect(msgs, hasLength(1));
     expect(msgs.first['text'], 'the printer is jammed');
 
@@ -117,8 +129,9 @@ void main() {
     expect((first['messages'] as List), hasLength(2));
 
     await send('three', token: admin);
-    final second =
-        jsonDecode((await get('/chat?since=$cursor', token: admin)).body);
+    final second = jsonDecode(
+      (await get('/chat?since=$cursor', token: admin)).body,
+    );
     final newer = (second['messages'] as List<dynamic>).cast<Map>();
     expect(newer, hasLength(1));
     expect(newer.single['text'], 'three');
@@ -128,14 +141,14 @@ void main() {
     server.postChatLocal('admin', 'admin', 'from the host');
     final staff = await addAndLogin('libby', 'libby-pw-1', 'staff');
     final res = await get('/chat?since=0', token: staff);
-    final msgs = (jsonDecode(res.body)['messages'] as List<dynamic>).cast<Map>();
+    final msgs = (jsonDecode(res.body)['messages'] as List<dynamic>)
+        .cast<Map>();
     expect(msgs, hasLength(1));
     expect(msgs.single['text'], 'from the host');
     expect(msgs.single['sender'], 'admin');
   });
 
-  test('empty and over-long messages are refused, never fake-accepted',
-      () async {
+  test('empty and over-long messages are refused, never fake-accepted', () async {
     final staff = await addAndLogin('libby', 'libby-pw-1', 'staff');
     expect((await send('   ', token: staff)).statusCode, 400);
     expect((await send('', token: staff)).statusCode, 400);

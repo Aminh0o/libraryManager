@@ -22,9 +22,9 @@ class AppearanceController extends ChangeNotifier {
     required ThemeMode mode,
     required int seedValue,
     required String brandName,
-  })  : _mode = mode,
-        _seedValue = seedValue,
-        _brandName = brandName;
+  }) : _mode = mode,
+       _seedValue = seedValue,
+       _brandName = brandName;
 
   static const String _kMode = 'appearance.themeMode';
   static const String _kSeed = 'appearance.seedValue';
@@ -75,14 +75,17 @@ class AppearanceController extends ChangeNotifier {
       // Best-effort: keep defaults.
     }
     return AppearanceController._(
-        mode: mode, seedValue: seed, brandName: brand);
+      mode: mode,
+      seedValue: seed,
+      brandName: brand,
+    );
   }
 
   static ThemeMode _decodeMode(String? raw) => switch (raw) {
-        'light' => ThemeMode.light,
-        'dark' => ThemeMode.dark,
-        _ => ThemeMode.system,
-      };
+    'light' => ThemeMode.light,
+    'dark' => ThemeMode.dark,
+    _ => ThemeMode.system,
+  };
 
   Future<void> setThemeMode(ThemeMode mode) {
     if (_mode == mode) return Future.value();
@@ -125,10 +128,8 @@ class AppearanceController extends ChangeNotifier {
   /// separately from [themeFor] so the seed/brightness behaviour is unit-
   /// testable without touching `GoogleFonts` (which lazily fetches fonts over
   /// the network and is therefore hostile to a pure Dart test binding).
-  ColorScheme colorSchemeFor(Brightness brightness) => ColorScheme.fromSeed(
-        seedColor: seedColor,
-        brightness: brightness,
-      );
+  ColorScheme colorSchemeFor(Brightness brightness) =>
+      ColorScheme.fromSeed(seedColor: seedColor, brightness: brightness);
 
   /// The full theme for [brightness], driven by the persisted seed. Delegates
   /// the whole visual system to [AppTheme] (Phase A) so light + dark are both

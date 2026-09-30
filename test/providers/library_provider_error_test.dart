@@ -27,17 +27,20 @@ class _ThrowingRepo implements LibraryRepository {
 /// error OBJECT (and a non-descriptive sentinel in `errorMessage`) so the UI can
 /// render a localized category instead of leaking the exception text.
 void main() {
-  test('a failed load records the error object without a raw message', () async {
-    final provider = LibraryProvider.forTesting(
-      repository: _ThrowingRepo(),
-      isHost: true,
-    );
+  test(
+    'a failed load records the error object without a raw message',
+    () async {
+      final provider = LibraryProvider.forTesting(
+        repository: _ThrowingRepo(),
+        isHost: true,
+      );
 
-    await provider.reload();
+      await provider.reload();
 
-    expect(provider.errorMessage, isNotNull); // "has error" flag still set
-    expect(provider.errorMessage, isNot(contains('database is down')));
-    expect(provider.errorMessage, isNot(contains('Erreur')));
-    expect(provider.loadError, isA<StateError>()); // the UI classifies this
-  });
+      expect(provider.errorMessage, isNotNull); // "has error" flag still set
+      expect(provider.errorMessage, isNot(contains('database is down')));
+      expect(provider.errorMessage, isNot(contains('Erreur')));
+      expect(provider.loadError, isA<StateError>()); // the UI classifies this
+    },
+  );
 }

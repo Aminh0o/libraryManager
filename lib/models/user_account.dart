@@ -71,8 +71,7 @@ class UserRecord {
   /// Username policy: 3-32 chars, letters/digits/dot/underscore/hyphen, must
   /// start with a letter or digit. Case-insensitive systems are simplified by
   /// storing the exact lowercase form; [normalize] enforces that.
-  static final RegExp _namePattern =
-      RegExp(r'^[a-z0-9][a-z0-9._-]{2,31}$');
+  static final RegExp _namePattern = RegExp(r'^[a-z0-9][a-z0-9._-]{2,31}$');
 
   /// Minimum password length for NAMED accounts. (The legacy shared `admin`
   /// credential keeps its historical policy; new accounts must be stronger.)
@@ -86,10 +85,10 @@ class UserRecord {
   /// The publicly-visible projection of this account (no hash, no metadata
   /// the client does not need).
   Map<String, dynamic> toPublicMap() => {
-        'username': username,
-        'role': role.storage,
-        if (createdAt != null) 'created_at': createdAt,
-      };
+    'username': username,
+    'role': role.storage,
+    if (createdAt != null) 'created_at': createdAt,
+  };
 }
 
 /// The authenticated identity behind a bearer token, resolved by

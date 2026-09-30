@@ -79,10 +79,10 @@ class HttpServerService {
     RateLimiter? rateLimiter,
     this.maxRequestBodyBytes = 5 * 1024 * 1024,
     this.requestTimeout = const Duration(seconds: 30),
-  })  : _db = repository ?? DatabaseService(),
-        _auth = auth,
-        _rateLimit = rateLimiter ?? RateLimiter(),
-        _idempotency = idempotencyStore ?? IdempotencyStore();
+  }) : _db = repository ?? DatabaseService(),
+       _auth = auth,
+       _rateLimit = rateLimiter ?? RateLimiter(),
+       _idempotency = idempotencyStore ?? IdempotencyStore();
 
   bool get isRunning => _server != null;
 
@@ -214,11 +214,14 @@ class HttpServerService {
           // are 400; state conflicts (duplicate/unknown account, last-admin
           // guard) are 409. Messages are server-authored and carry no secrets.
           final m = e.message;
-          final badRequest = m.contains('characters') ||
+          final badRequest =
+              m.contains('characters') ||
               m.contains('starting with') ||
               m.contains('Password must not');
-          return _json(badRequest ? 400 : 409,
-              {'error': badRequest ? 'bad_request' : 'conflict', 'message': m});
+          return _json(badRequest ? 400 : 409, {
+            'error': badRequest ? 'bad_request' : 'conflict',
+            'message': m,
+          });
         } on StateError catch (e) {
           // Phase 10.2: a fine settle refused because the ledger row is unknown
           // or ALREADY resolved (the compare-and-swap on the pending state).
@@ -227,8 +230,10 @@ class HttpServerService {
           // refusal carrying the server's concrete reason.
           return _json(409, {'error': 'conflict', 'message': e.message});
         } on FormatException {
-          return _json(
-              400, {'error': 'bad_request', 'message': 'Invalid JSON body'});
+          return _json(400, {
+            'error': 'bad_request',
+            'message': 'Invalid JSON body',
+          });
         } on _BodyTooLargeException {
           return _json(413, {
             'error': 'payload_too_large',
@@ -237,10 +242,12 @@ class HttpServerService {
         } catch (e, st) {
           // Persist before responding: a release-mode 500 that only debugPrints
           // leaves no trace on a user's machine (REL/logging).
-          appLog.error('http',
-              '[$reqId] Unhandled error on ${request.method} ${request.url}',
-              e,
-              st);
+          appLog.error(
+            'http',
+            '[$reqId] Unhandled error on ${request.method} ${request.url}',
+            e,
+            st,
+          );
           return _json(500, {
             'error': 'internal_error',
             'message': kReleaseMode ? 'Internal server error' : '$e',
@@ -310,15 +317,17 @@ class HttpServerService {
             'message': 'Request body exceeds $maxRequestBodyBytes bytes',
           });
         }
-        final guarded =
-            request.change(body: _capStream(request.read(), maxRequestBodyBytes));
+        final guarded = request.change(
+          body: _capStream(request.read(), maxRequestBodyBytes),
+        );
         return await Future.value(inner(guarded)).timeout(
           requestTimeout,
           onTimeout: () {
             appLog.warn(
-                'http',
-                '[${request.context['reqId'] ?? '-'}] Request timed out after '
-                '$requestTimeout: ${request.method} ${request.url}');
+              'http',
+              '[${request.context['reqId'] ?? '-'}] Request timed out after '
+                  '$requestTimeout: ${request.method} ${request.url}',
+            );
             return _json(504, {
               'error': 'gateway_timeout',
               'message': 'Request processing timed out',
@@ -358,7 +367,8 @@ class HttpServerService {
         if (retryAfter != null) {
           return _json(429, {
             'error': 'rate_limited',
-            'message': 'Too many write requests; retry after '
+            'message':
+                'Too many write requests; retry after '
                 '${retryAfter.inSeconds}s',
             'retry_after_seconds': retryAfter.inSeconds,
           });
@@ -398,11 +408,18 @@ class HttpServerService {
         try {
           map = jsonDecode(body) as Map<String, dynamic>;
         } catch (_) {
-          return _json(400, {'error': 'bad_request', 'message': 'Invalid JSON body'});
+          return _json(400, {
+            'error': 'bad_request',
+            'message': 'Invalid JSON body',
+          });
         }
         final username = (map['username'] ?? '').toString();
         final password = (map['password'] ?? '').toString();
-        final result = await _auth.login(username, password, sourceKey: _clientIp(request));
+        final result = await _auth.login(
+          username,
+          password,
+          sourceKey: _clientIp(request),
+        );
         switch (result.status) {
           case AuthStatus.ok:
             // Echo the winner's identity+role (Phase 10.1) so the client can
@@ -410,8 +427,10 @@ class HttpServerService {
             // SERVER remains the enforcement authority regardless.
             return _json(200, {
               'token': result.token,
-              if (result.principal != null) 'username': result.principal!.username,
-              if (result.principal != null) 'role': result.principal!.role.storage,
+              if (result.principal != null)
+                'username': result.principal!.username,
+              if (result.principal != null)
+                'role': result.principal!.role.storage,
             });
           case AuthStatus.locked:
             return _json(429, {
@@ -449,9 +468,7 @@ class HttpServerService {
         if (denied != null) return denied;
         final list = await _auth.users();
         return _json(200, {
-          'users': [
-            for (final u in list) u.toPublicMap(),
-          ],
+          'users': [for (final u in list) u.toPublicMap()],
         });
       });
 
@@ -475,8 +492,10 @@ class HttpServerService {
         return _json(200, {'ok': true});
       });
 
-      router.put('/users/<username>/password',
-          (Request request, String username) async {
+      router.put('/users/<username>/password', (
+        Request request,
+        String username,
+      ) async {
         final denied = _forbiddenUnless(request, UserRole.admin);
         if (denied != null) return denied;
         final map = await readJsonObject(request);
@@ -485,7 +504,10 @@ class HttpServerService {
         return _json(200, {'ok': true});
       });
 
-      router.delete('/users/<username>', (Request request, String username) async {
+      router.delete('/users/<username>', (
+        Request request,
+        String username,
+      ) async {
         final denied = _forbiddenUnless(request, UserRole.admin);
         if (denied != null) return denied;
         await _auth.removeUser(Uri.decodeComponent(username));
@@ -506,8 +528,10 @@ class HttpServerService {
         final raw = map['text'];
         final text = (raw is String ? raw : '').trim();
         if (text.isEmpty) {
-          return _json(
-              400, {'error': 'bad_request', 'message': 'Empty message'});
+          return _json(400, {
+            'error': 'bad_request',
+            'message': 'Empty message',
+          });
         }
         if (text.length > _chatMaxTextChars) {
           return _json(400, {
@@ -555,7 +579,10 @@ class HttpServerService {
         ascending: (q['order'] ?? 'asc').toLowerCase() != 'desc',
       );
       final jsonList = items.map((item) => item.toMap()).toList();
-      return Response.ok(jsonEncode(jsonList), headers: {'content-type': 'application/json'});
+      return Response.ok(
+        jsonEncode(jsonList),
+        headers: {'content-type': 'application/json'},
+      );
     });
 
     // GET /items/count — total rows matching the same filters, so clients can
@@ -581,19 +608,23 @@ class HttpServerService {
       // BE-08: reject a negative quantity/price as a 400 (never persisted).
       if (item.quantite < 0 || item.taux < 0) {
         throw MalformedRequestException(
-            'quantite and taux must not be negative');
+          'quantite and taux must not be negative',
+        );
       }
       // Audit is written atomically with the mutation (TX-01 / 5.2).
-      await _db.addItem(item, audit: {
-        'timestamp': DateTime.now().toIso8601String(),
-        'operation': 'ADD',
-        'details': 'Item ajouté: ${item.fullCode}',
-        'user': _clientIp(request),
-      });
+      await _db.addItem(
+        item,
+        audit: {
+          'timestamp': DateTime.now().toIso8601String(),
+          'operation': 'ADD',
+          'details': 'Item ajouté: ${item.fullCode}',
+          'user': _clientIp(request),
+        },
+      );
       return Response.ok('Item added');
     });
 
-     // PUT /items
+    // PUT /items
     router.put('/items', (Request request) async {
       final denied = _forbiddenUnless(request, UserRole.staff);
       if (denied != null) return denied;
@@ -604,22 +635,26 @@ class HttpServerService {
       // BE-08: reject a negative quantity/price as a 400 (never persisted).
       if (item.quantite < 0 || item.taux < 0) {
         throw MalformedRequestException(
-            'quantite and taux must not be negative');
+          'quantite and taux must not be negative',
+        );
       }
       // TX-06: honour an optimistic-concurrency check when the client sends the
       // version it read. Absent (or non-numeric) => unconditional write, so the
       // route stays backward-compatible with legacy/host callers.
       final verHeader = request.headers['x-expected-version'];
-      final expectedVersion =
-          verHeader == null ? null : int.tryParse(verHeader.trim());
-      await _db.updateItem(item,
-          audit: {
-            'timestamp': DateTime.now().toIso8601String(),
-            'operation': 'UPDATE',
-            'details': 'Item modifié: ${item.fullCode}',
-            'user': _clientIp(request),
-          },
-          expectedVersion: expectedVersion);
+      final expectedVersion = verHeader == null
+          ? null
+          : int.tryParse(verHeader.trim());
+      await _db.updateItem(
+        item,
+        audit: {
+          'timestamp': DateTime.now().toIso8601String(),
+          'operation': 'UPDATE',
+          'details': 'Item modifié: ${item.fullCode}',
+          'user': _clientIp(request),
+        },
+        expectedVersion: expectedVersion,
+      );
       return Response.ok('Item updated');
     });
 
@@ -631,12 +666,15 @@ class HttpServerService {
       // segment; DB keys are the raw value, so decode before use.
       final itemCode = Uri.decodeComponent(code);
       try {
-        await _db.deleteItem(itemCode, audit: {
-          'timestamp': DateTime.now().toIso8601String(),
-          'operation': 'DELETE',
-          'details': 'Item supprimé: $itemCode',
-          'user': _clientIp(request),
-        });
+        await _db.deleteItem(
+          itemCode,
+          audit: {
+            'timestamp': DateTime.now().toIso8601String(),
+            'operation': 'DELETE',
+            'details': 'Item supprimé: $itemCode',
+            'user': _clientIp(request),
+          },
+        );
       } on ActiveLoanConflictException catch (e) {
         // BL-04: refuse to delete a title that is on loan (409, not 500).
         return _json(409, {'error': 'conflict', 'message': e.message});
@@ -660,7 +698,10 @@ class HttpServerService {
         offset: offset,
         subject: subject,
       );
-      return Response.ok(jsonEncode(stats), headers: {'content-type': 'application/json'});
+      return Response.ok(
+        jsonEncode(stats),
+        headers: {'content-type': 'application/json'},
+      );
     });
 
     // POST /history -- DB-05: a client may append an audit line, but ONLY with
@@ -687,7 +728,10 @@ class HttpServerService {
     // GET /stats
     router.get('/stats', (Request request) async {
       final stats = await _db.getStats();
-      return Response.ok(jsonEncode(stats), headers: {'content-type': 'application/json'});
+      return Response.ok(
+        jsonEncode(stats),
+        headers: {'content-type': 'application/json'},
+      );
     });
 
     router.get('/barcode/<barcode>', (Request request, String barcode) async {
@@ -696,7 +740,10 @@ class HttpServerService {
       if (item == null) {
         return Response.notFound(jsonEncode({'error': 'Item not found'}));
       }
-      return Response.ok(jsonEncode(item.toMap()), headers: {'content-type': 'application/json'});
+      return Response.ok(
+        jsonEncode(item.toMap()),
+        headers: {'content-type': 'application/json'},
+      );
     });
 
     // GET /db-version -- also advertises the host's API protocol so a client
@@ -704,14 +751,21 @@ class HttpServerService {
     router.get('/db-version', (Request request) async {
       final version = await _db.getDbVersion();
       return Response.ok(
-          jsonEncode({'version': version, apiVersionBodyKey: kApiProtocolVersion}),
-          headers: {'content-type': 'application/json'});
+        jsonEncode({
+          'version': version,
+          apiVersionBodyKey: kApiProtocolVersion,
+        }),
+        headers: {'content-type': 'application/json'},
+      );
     });
 
     // Code Definitions CRUD
     router.get('/code-definitions', (Request request) async {
       final defs = await _db.getCodeDefinitions();
-      return Response.ok(jsonEncode(defs), headers: {'content-type': 'application/json'});
+      return Response.ok(
+        jsonEncode(defs),
+        headers: {'content-type': 'application/json'},
+      );
     });
 
     router.post('/code-definitions', (Request request) async {
@@ -720,41 +774,60 @@ class HttpServerService {
       final map = await readJsonObject(request);
       final newPrefix = requireNonEmpty(map, 'prefix');
       final label = requireNonEmpty(map, 'label');
-      await _db.addCodeDefinition(newPrefix, label, audit: {
-        'timestamp': DateTime.now().toIso8601String(),
-        'operation': 'ADD_VAR',
-        'details': 'Code definition added: $newPrefix ($label)',
-        'user': _clientIp(request),
-      });
+      await _db.addCodeDefinition(
+        newPrefix,
+        label,
+        audit: {
+          'timestamp': DateTime.now().toIso8601String(),
+          'operation': 'ADD_VAR',
+          'details': 'Code definition added: $newPrefix ($label)',
+          'user': _clientIp(request),
+        },
+      );
       return Response.ok('Definition added');
     });
 
-    router.put('/code-definitions/<prefix>', (Request request, String prefix) async {
+    router.put('/code-definitions/<prefix>', (
+      Request request,
+      String prefix,
+    ) async {
       final denied = _forbiddenUnless(request, UserRole.admin);
       if (denied != null) return denied;
       final oldPrefix = Uri.decodeComponent(prefix); // FB-04
       final map = await readJsonObject(request);
       final replacementPrefix = requireNonEmpty(map, 'prefix');
       final label = requireNonEmpty(map, 'label');
-      await _db.updateCodeDefinition(oldPrefix, replacementPrefix, label, audit: {
-        'timestamp': DateTime.now().toIso8601String(),
-        'operation': 'UPDATE_VAR',
-        'details': 'Code definition updated: $oldPrefix -> $replacementPrefix ($label)',
-        'user': _clientIp(request),
-      });
+      await _db.updateCodeDefinition(
+        oldPrefix,
+        replacementPrefix,
+        label,
+        audit: {
+          'timestamp': DateTime.now().toIso8601String(),
+          'operation': 'UPDATE_VAR',
+          'details':
+              'Code definition updated: $oldPrefix -> $replacementPrefix ($label)',
+          'user': _clientIp(request),
+        },
+      );
       return Response.ok('Definition updated');
     });
 
-    router.delete('/code-definitions/<prefix>', (Request request, String prefix) async {
+    router.delete('/code-definitions/<prefix>', (
+      Request request,
+      String prefix,
+    ) async {
       final denied = _forbiddenUnless(request, UserRole.admin);
       if (denied != null) return denied;
       final target = Uri.decodeComponent(prefix); // FB-04
-      await _db.deleteCodeDefinition(target, audit: {
-        'timestamp': DateTime.now().toIso8601String(),
-        'operation': 'DELETE_VAR',
-        'details': 'Code definition deleted: $target',
-        'user': _clientIp(request),
-      });
+      await _db.deleteCodeDefinition(
+        target,
+        audit: {
+          'timestamp': DateTime.now().toIso8601String(),
+          'operation': 'DELETE_VAR',
+          'details': 'Code definition deleted: $target',
+          'user': _clientIp(request),
+        },
+      );
       return Response.ok('Definition deleted');
     });
 
@@ -762,7 +835,10 @@ class HttpServerService {
     router.get('/attribute-definitions', (Request request) async {
       final type = request.url.queryParameters['type'];
       final defs = await _db.getAttributeDefinitions(type);
-      return Response.ok(jsonEncode(defs), headers: {'content-type': 'application/json'});
+      return Response.ok(
+        jsonEncode(defs),
+        headers: {'content-type': 'application/json'},
+      );
     });
 
     router.post('/attribute-definitions', (Request request) async {
@@ -771,26 +847,36 @@ class HttpServerService {
       final map = await readJsonObject(request);
       final type = requireNonEmpty(map, 'type');
       final value = requireNonEmpty(map, 'value');
-      await _db.addAttributeDefinition(type, value, audit: {
-        'timestamp': DateTime.now().toIso8601String(),
-        'operation': 'ADD_ATTR',
-        'details': 'Attribute definition added ($type): $value',
-        'user': _clientIp(request),
-      });
+      await _db.addAttributeDefinition(
+        type,
+        value,
+        audit: {
+          'timestamp': DateTime.now().toIso8601String(),
+          'operation': 'ADD_ATTR',
+          'details': 'Attribute definition added ($type): $value',
+          'user': _clientIp(request),
+        },
+      );
       return Response.ok('Attribute added');
     });
 
-    router.delete('/attribute-definitions/<id>', (Request request, String id) async {
+    router.delete('/attribute-definitions/<id>', (
+      Request request,
+      String id,
+    ) async {
       final denied = _forbiddenUnless(request, UserRole.admin);
       if (denied != null) return denied;
       final intId = int.tryParse(id);
       if (intId != null) {
-        await _db.deleteAttributeDefinition(intId, audit: {
-          'timestamp': DateTime.now().toIso8601String(),
-          'operation': 'DELETE_ATTR',
-          'details': 'Attribute definition deleted (ID: $intId)',
-          'user': _clientIp(request),
-        });
+        await _db.deleteAttributeDefinition(
+          intId,
+          audit: {
+            'timestamp': DateTime.now().toIso8601String(),
+            'operation': 'DELETE_ATTR',
+            'details': 'Attribute definition deleted (ID: $intId)',
+            'user': _clientIp(request),
+          },
+        );
       }
       return Response.ok('Attribute deleted');
     });
@@ -799,7 +885,10 @@ class HttpServerService {
     router.get('/members', (Request request) async {
       final members = await _db.getMembers();
       final jsonList = members.map((m) => m.toMap()).toList();
-      return Response.ok(jsonEncode(jsonList), headers: {'content-type': 'application/json'});
+      return Response.ok(
+        jsonEncode(jsonList),
+        headers: {'content-type': 'application/json'},
+      );
     });
 
     router.post('/members', (Request request) async {
@@ -822,13 +911,16 @@ class HttpServerService {
           registeredAt: member.registeredAt,
         );
       }
-      await _db.addMember(finalMember, audit: {
-        'timestamp': DateTime.now().toIso8601String(),
-        'operation': 'ADD_MEMBER',
-        'details': 'Member added: ${finalMember.fullName}',
-        'user': _clientIp(request),
-      });
-      
+      await _db.addMember(
+        finalMember,
+        audit: {
+          'timestamp': DateTime.now().toIso8601String(),
+          'operation': 'ADD_MEMBER',
+          'details': 'Member added: ${finalMember.fullName}',
+          'user': _clientIp(request),
+        },
+      );
+
       return Response.ok(
         jsonEncode(finalMember.toMap()),
         headers: {'content-type': 'application/json'},
@@ -842,38 +934,48 @@ class HttpServerService {
       requireMemberName(map);
       if (map['id'] == null) {
         throw MalformedRequestException(
-            'Field "id" is required to update a member');
+          'Field "id" is required to update a member',
+        );
       }
       final member = parseModel(map, Member.fromMap, 'Member');
       // TX-06: honour an optimistic-concurrency check when the client sends the
       // version it read. Absent (or non-numeric) => unconditional write, so the
       // route stays backward-compatible with legacy/host callers.
       final verHeader = request.headers['x-expected-version'];
-      final expectedVersion =
-          verHeader == null ? null : int.tryParse(verHeader.trim());
-      await _db.updateMember(member,
-          audit: {
-            'timestamp': DateTime.now().toIso8601String(),
-            'operation': 'UPDATE_MEMBER',
-            'details': 'Member updated: ${member.fullName}',
-            'user': _clientIp(request),
-          },
-          expectedVersion: expectedVersion);
-      
+      final expectedVersion = verHeader == null
+          ? null
+          : int.tryParse(verHeader.trim());
+      await _db.updateMember(
+        member,
+        audit: {
+          'timestamp': DateTime.now().toIso8601String(),
+          'operation': 'UPDATE_MEMBER',
+          'details': 'Member updated: ${member.fullName}',
+          'user': _clientIp(request),
+        },
+        expectedVersion: expectedVersion,
+      );
+
       return Response.ok('Member updated');
     });
 
-    router.delete('/members/<memberId>', (Request request, String memberId) async {
+    router.delete('/members/<memberId>', (
+      Request request,
+      String memberId,
+    ) async {
       final denied = _forbiddenUnless(request, UserRole.staff);
       if (denied != null) return denied;
       final id = Uri.decodeComponent(memberId); // FB-04
       try {
-        await _db.deleteMember(id, audit: {
-          'timestamp': DateTime.now().toIso8601String(),
-          'operation': 'DELETE_MEMBER',
-          'details': 'Member deleted: $id',
-          'user': _clientIp(request),
-        });
+        await _db.deleteMember(
+          id,
+          audit: {
+            'timestamp': DateTime.now().toIso8601String(),
+            'operation': 'DELETE_MEMBER',
+            'details': 'Member deleted: $id',
+            'user': _clientIp(request),
+          },
+        );
       } on ActiveLoanConflictException catch (e) {
         // BL-04: refuse to delete a member with items still out (409, not 500).
         return _json(409, {'error': 'conflict', 'message': e.message});
@@ -888,7 +990,10 @@ class HttpServerService {
       final activeOnly = queryParams['activeOnly'] == 'true';
       final loans = await _db.getLoans(activeOnly: activeOnly);
       final jsonList = loans.map((l) => l.toMap()).toList();
-      return Response.ok(jsonEncode(jsonList), headers: {'content-type': 'application/json'});
+      return Response.ok(
+        jsonEncode(jsonList),
+        headers: {'content-type': 'application/json'},
+      );
     });
 
     // Scan-to-return resolution (BL-03): maps a copied/scanned value to the
@@ -910,13 +1015,16 @@ class HttpServerService {
       if (denied != null) return denied;
       final map = await readJsonObject(request);
       final loan = parseModel(map, Loan.fromMap, 'Loan');
-      await _db.addLoan(loan, audit: {
-        'timestamp': DateTime.now().toIso8601String(),
-        'operation': 'LOAN_OUT',
-        'details': 'Loan created: ${loan.itemCode} to ${loan.memberName}',
-        'user': _clientIp(request),
-      });
-      
+      await _db.addLoan(
+        loan,
+        audit: {
+          'timestamp': DateTime.now().toIso8601String(),
+          'operation': 'LOAN_OUT',
+          'details': 'Loan created: ${loan.itemCode} to ${loan.memberName}',
+          'user': _clientIp(request),
+        },
+      );
+
       return Response.ok('Loan added');
     });
 
@@ -925,13 +1033,18 @@ class HttpServerService {
       if (denied != null) return denied;
       final map = await readJsonObject(request);
       final loan = parseModel(map, Loan.fromMap, 'Loan');
-      await _db.updateLoan(loan, audit: {
-        'timestamp': DateTime.now().toIso8601String(),
-        'operation': loan.status == LoanStatus.returned.storage ? 'LOAN_RETURN' : 'LOAN_UPDATE',
-        'details': 'Loan updated: ${loan.itemCode}',
-        'user': _clientIp(request),
-      });
-      
+      await _db.updateLoan(
+        loan,
+        audit: {
+          'timestamp': DateTime.now().toIso8601String(),
+          'operation': loan.status == LoanStatus.returned.storage
+              ? 'LOAN_RETURN'
+              : 'LOAN_UPDATE',
+          'details': 'Loan updated: ${loan.itemCode}',
+          'user': _clientIp(request),
+        },
+      );
+
       return Response.ok('Loan updated');
     });
 
@@ -960,7 +1073,8 @@ class HttpServerService {
       final rate = map['rate_per_day'];
       if (rate is! num || !rate.isFinite || rate < 0) {
         throw MalformedRequestException(
-            'rate_per_day must be a non-negative number');
+          'rate_per_day must be a non-negative number',
+        );
       }
       final currencyRaw = map['currency'];
       final currency = (currencyRaw is String && currencyRaw.trim().isNotEmpty)
@@ -989,7 +1103,8 @@ class HttpServerService {
         status = FineStatus.tryParse(statusRaw);
         if (status == null) {
           throw MalformedRequestException(
-              'status must be one of: pending, paid, waived');
+            'status must be one of: pending, paid, waived',
+          );
         }
       }
       final fines = await _db.getFines(memberId: memberId, status: status);
@@ -1017,14 +1132,16 @@ class HttpServerService {
       if (fineId == null) {
         throw MalformedRequestException('fine id must be an integer');
       }
-      await _db.payFine(fineId,
-          operatorName: principalOf(request)?.username,
-          audit: {
-            'timestamp': DateTime.now().toIso8601String(),
-            'operation': 'FINE_PAY',
-            'details': 'Fine #$fineId marked paid',
-            'user': _clientIp(request),
-          });
+      await _db.payFine(
+        fineId,
+        operatorName: principalOf(request)?.username,
+        audit: {
+          'timestamp': DateTime.now().toIso8601String(),
+          'operation': 'FINE_PAY',
+          'details': 'Fine #$fineId marked paid',
+          'user': _clientIp(request),
+        },
+      );
       return _json(200, {'ok': true});
     });
 
@@ -1035,14 +1152,16 @@ class HttpServerService {
       if (fineId == null) {
         throw MalformedRequestException('fine id must be an integer');
       }
-      await _db.waiveFine(fineId,
-          operatorName: principalOf(request)?.username,
-          audit: {
-            'timestamp': DateTime.now().toIso8601String(),
-            'operation': 'FINE_WAIVE',
-            'details': 'Fine #$fineId waived',
-            'user': _clientIp(request),
-          });
+      await _db.waiveFine(
+        fineId,
+        operatorName: principalOf(request)?.username,
+        audit: {
+          'timestamp': DateTime.now().toIso8601String(),
+          'operation': 'FINE_WAIVE',
+          'details': 'Fine #$fineId waived',
+          'user': _clientIp(request),
+        },
+      );
       return _json(200, {'ok': true});
     });
 
@@ -1069,22 +1188,20 @@ class HttpServerService {
       if (denied != null) return denied;
       final map = await readJsonObject(request);
       final pickup = map['pickup_days'];
-      if (pickup is! num ||
-          !pickup.isFinite ||
-          pickup < 1 ||
-          pickup > 90) {
+      if (pickup is! num || !pickup.isFinite || pickup < 1 || pickup > 90) {
         throw MalformedRequestException(
-            'pickup_days must be a whole number between 1 and 90');
+          'pickup_days must be a whole number between 1 and 90',
+        );
       }
       final cap = map['queue_max_per_item'];
       if (cap is! num || !cap.isFinite || cap < 1 || cap > 500) {
         throw MalformedRequestException(
-            'queue_max_per_item must be a whole number between 1 and 500');
+          'queue_max_per_item must be a whole number between 1 and 500',
+        );
       }
       await _db.setHoldSettings(
         // Persist the SANITISED integers, never the raw client number.
-        HoldSettings(
-            pickupDays: pickup.toInt(), queueMaxPerItem: cap.toInt()),
+        HoldSettings(pickupDays: pickup.toInt(), queueMaxPerItem: cap.toInt()),
         audit: {
           'timestamp': DateTime.now().toIso8601String(),
           'operation': 'HOLD_SETTINGS',
@@ -1102,12 +1219,16 @@ class HttpServerService {
       final map = await readJsonObject(request);
       final itemCode = requireNonEmpty(map, 'item_code');
       final memberId = requireNonEmpty(map, 'member_id');
-      final res = await _db.placeReservation(itemCode, memberId, audit: {
-        'timestamp': DateTime.now().toIso8601String(),
-        'operation': 'HOLD_PLACE',
-        'details': 'Hold placed: $memberId for $itemCode',
-        'user': _clientIp(request),
-      });
+      final res = await _db.placeReservation(
+        itemCode,
+        memberId,
+        audit: {
+          'timestamp': DateTime.now().toIso8601String(),
+          'operation': 'HOLD_PLACE',
+          'details': 'Hold placed: $memberId for $itemCode',
+          'user': _clientIp(request),
+        },
+      );
       return _json(201, res.toMap());
     });
 
@@ -1121,7 +1242,8 @@ class HttpServerService {
         status = ReservationStatus.tryParse(statusRaw);
         if (status == null) {
           throw MalformedRequestException(
-              'status must be one of: queued, available, fulfilled, cancelled, expired');
+            'status must be one of: queued, available, fulfilled, cancelled, expired',
+          );
         }
       }
       final liveOnly = q['live'] == '1';
@@ -1147,19 +1269,25 @@ class HttpServerService {
       );
     });
 
-    router.post('/reservations/<id>/cancel', (Request request, String id) async {
+    router.post('/reservations/<id>/cancel', (
+      Request request,
+      String id,
+    ) async {
       final denied = _forbiddenUnless(request, UserRole.staff);
       if (denied != null) return denied;
       final holdId = int.tryParse(id);
       if (holdId == null) {
         throw MalformedRequestException('reservation id must be an integer');
       }
-      await _db.cancelReservation(holdId, audit: {
-        'timestamp': DateTime.now().toIso8601String(),
-        'operation': 'HOLD_CANCEL',
-        'details': 'Hold #$holdId cancelled',
-        'user': _clientIp(request),
-      });
+      await _db.cancelReservation(
+        holdId,
+        audit: {
+          'timestamp': DateTime.now().toIso8601String(),
+          'operation': 'HOLD_CANCEL',
+          'details': 'Hold #$holdId cancelled',
+          'user': _clientIp(request),
+        },
+      );
       return _json(200, {'ok': true});
     });
 
@@ -1180,8 +1308,7 @@ class HttpServerService {
       final map = await readJsonObject(request);
       final dir = map['direction']?.toString();
       if (dir != 'up' && dir != 'down') {
-        throw MalformedRequestException(
-            "direction must be 'up' or 'down'");
+        throw MalformedRequestException("direction must be 'up' or 'down'");
       }
       final up = dir == 'up';
       await _db.moveReservation(
@@ -1288,10 +1415,10 @@ class HttpServerService {
   }
 
   Response _json(int status, Map<String, dynamic> body) => Response(
-        status,
-        body: jsonEncode(body),
-        headers: {'content-type': 'application/json'},
-      );
+    status,
+    body: jsonEncode(body),
+    headers: {'content-type': 'application/json'},
+  );
 
   /// Phase 10.1 role gate for route handlers. Returns a structured 403 when
   /// the authenticated bearer lacks [minimum]; null means "proceed".
@@ -1317,13 +1444,15 @@ class HttpServerService {
     final role = UserRole.tryParse(raw);
     if (role == null) {
       throw MalformedRequestException(
-          'role must be one of: admin, staff, viewer.');
+        'role must be one of: admin, staff, viewer.',
+      );
     }
     return role;
   }
 
   String _clientIp(Request request) {
-    final connectionInfo = request.context['shelf.io.connection_info'] as dynamic;
+    final connectionInfo =
+        request.context['shelf.io.connection_info'] as dynamic;
     if (connectionInfo != null) {
       try {
         return connectionInfo.remoteAddress.address as String;
@@ -1369,7 +1498,8 @@ String requireNonEmpty(Map<String, dynamic> map, String field) {
   final v = map[field];
   if (v is! String || v.trim().isEmpty) {
     throw MalformedRequestException(
-        'Field "$field" must be a non-empty string');
+      'Field "$field" must be a non-empty string',
+    );
   }
   return v.trim();
 }
@@ -1397,6 +1527,8 @@ T parseModel<T>(
   } on MalformedRequestException {
     rethrow;
   } catch (_) {
-    throw MalformedRequestException('$label has a missing or wrongly-typed field');
+    throw MalformedRequestException(
+      '$label has a missing or wrongly-typed field',
+    );
   }
 }

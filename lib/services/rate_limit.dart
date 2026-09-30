@@ -16,9 +16,9 @@ class RateLimiter {
     this.capacity = 40,
     this.refillPerMinute = 120,
     DateTime Function()? clock,
-  })  : assert(capacity > 0),
-        assert(refillPerMinute > 0),
-        _clock = clock ?? DateTime.now;
+  }) : assert(capacity > 0),
+       assert(refillPerMinute > 0),
+       _clock = clock ?? DateTime.now;
 
   /// Maximum burst of writes a single source may make instantaneously.
   final int capacity;
@@ -33,8 +33,10 @@ class RateLimiter {
   /// is allowed, or a suggested `Retry-After` duration when it must be refused.
   Duration? tryAcquire(String key) {
     final now = _clock();
-    final bucket =
-        _buckets.putIfAbsent(key, () => _TokenBucket(capacity.toDouble(), now));
+    final bucket = _buckets.putIfAbsent(
+      key,
+      () => _TokenBucket(capacity.toDouble(), now),
+    );
     final elapsedMin =
         now.difference(bucket.updatedAt).inMicroseconds / 60000000.0;
     if (elapsedMin > 0) {

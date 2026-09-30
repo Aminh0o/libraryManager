@@ -29,8 +29,12 @@ enum ConnectStatus {
 }
 
 class ConnectivityResult {
-  const ConnectivityResult(this.status,
-      {this.statusCode, this.latencyMs, this.message});
+  const ConnectivityResult(
+    this.status, {
+    this.statusCode,
+    this.latencyMs,
+    this.message,
+  });
 
   final ConnectStatus status;
   final int? statusCode;
@@ -38,14 +42,15 @@ class ConnectivityResult {
   final String? message;
 
   /// Something listening on the port answered (even if it rejected us).
-  bool get isReachable => status != ConnectStatus.unreachable &&
-      status != ConnectStatus.timeout;
+  bool get isReachable =>
+      status != ConnectStatus.unreachable && status != ConnectStatus.timeout;
 
   /// A usable connection to THIS app's server is established (no auth gate).
   bool get isUsableHost => status == ConnectStatus.online;
 
   @override
-  String toString() => 'ConnectivityResult($status'
+  String toString() =>
+      'ConnectivityResult($status'
       '${statusCode != null ? ', $statusCode' : ''}'
       '${message != null ? ', $message' : ''})';
 }
@@ -80,7 +85,8 @@ class ApiService implements LibraryRepository {
   int? serverApiVersion;
 
   /// Whether the last-seen host speaks this build's API protocol.
-  bool get isServerProtocolCompatible => isApiVersionCompatible(serverApiVersion);
+  bool get isServerProtocolCompatible =>
+      isApiVersionCompatible(serverApiVersion);
 
   ApiService({
     required this.hostIp,
@@ -88,8 +94,8 @@ class ApiService implements LibraryRepository {
     this.authToken,
     http.Client? client,
     Duration timeout = const Duration(seconds: 3),
-  })  : _client = client ?? http.Client(),
-        _timeout = timeout;
+  }) : _client = client ?? http.Client(),
+       _timeout = timeout;
 
   String get _baseUrl => 'http://$hostIp:$port';
 
@@ -119,15 +125,19 @@ class ApiService implements LibraryRepository {
   /// across every network retry of that operation, letting the server replay
   /// the original outcome instead of re-executing a duplicate write
   /// (REL-03 / TX-05 / 6.2).
-  String _newIdempotencyKey() => List.generate(16, (_) => _rand.nextInt(256))
-      .map((b) => b.toRadixString(16).padLeft(2, '0'))
-      .join();
+  String _newIdempotencyKey() => List.generate(
+    16,
+    (_) => _rand.nextInt(256),
+  ).map((b) => b.toRadixString(16).padLeft(2, '0')).join();
 
   /// Builds a typed [ApiException] from a non-2xx [response], surfacing the
   /// server's structured `{"error","message"}` body (BE-02) instead of
   /// collapsing every failure to a generic message. Falls back to the raw body
   /// or [fallback] when the body is absent or not the expected JSON shape.
-  ApiException _apiError(http.Response response, [String fallback = 'Request failed']) {
+  ApiException _apiError(
+    http.Response response, [
+    String fallback = 'Request failed',
+  ]) {
     var message = fallback;
     String? code;
     final body = response.body;
@@ -135,8 +145,8 @@ class ApiService implements LibraryRepository {
       try {
         final decoded = jsonDecode(body);
         if (decoded is Map) {
-          message =
-              (decoded['message'] ?? decoded['error'] ?? fallback).toString();
+          message = (decoded['message'] ?? decoded['error'] ?? fallback)
+              .toString();
           code = decoded['error']?.toString();
         } else {
           message = body;
@@ -149,7 +159,9 @@ class ApiService implements LibraryRepository {
   }
 
   bool _isRetryable(Object e) {
-    return e is http.ClientException || e is SocketException || e is TimeoutException;
+    return e is http.ClientException ||
+        e is SocketException ||
+        e is TimeoutException;
   }
 
   Future<T> _retry<T>(Future<T> Function() action, {int maxRetries = 1}) async {
@@ -170,10 +182,20 @@ class ApiService implements LibraryRepository {
 
   Future<http.Response> _get(Uri uri) =>
       _client.get(uri, headers: _withAuth()).timeout(_timeout);
-  Future<http.Response> _post(Uri uri, {Map<String, String>? headers, Object? body}) =>
-      _client.post(uri, headers: _withAuth(headers), body: body).timeout(_timeout);
-  Future<http.Response> _put(Uri uri, {Map<String, String>? headers, Object? body}) =>
-      _client.put(uri, headers: _withAuth(headers), body: body).timeout(_timeout);
+  Future<http.Response> _post(
+    Uri uri, {
+    Map<String, String>? headers,
+    Object? body,
+  }) => _client
+      .post(uri, headers: _withAuth(headers), body: body)
+      .timeout(_timeout);
+  Future<http.Response> _put(
+    Uri uri, {
+    Map<String, String>? headers,
+    Object? body,
+  }) => _client
+      .put(uri, headers: _withAuth(headers), body: body)
+      .timeout(_timeout);
   Future<http.Response> _delete(Uri uri) =>
       _client.delete(uri, headers: _withAuth()).timeout(_timeout);
 
@@ -197,8 +219,9 @@ class ApiService implements LibraryRepository {
           )
           .timeout(_timeout);
       if (response.statusCode == 200) {
-        final session =
-            LoginSession.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
+        final session = LoginSession.fromJson(
+          jsonDecode(response.body) as Map<String, dynamic>,
+        );
         if (session.isValid) {
           authToken = session.token;
           sessionRole = session.role;
@@ -251,7 +274,9 @@ class ApiService implements LibraryRepository {
       }
       final body = jsonDecode(response.body);
       final list = body is Map ? (body['users'] ?? const []) : body;
-      return [for (final u in List<dynamic>.from(list as Iterable)) _userFrom(u)];
+      return [
+        for (final u in List<dynamic>.from(list as Iterable)) _userFrom(u),
+      ];
     });
   }
 
@@ -318,7 +343,9 @@ class ApiService implements LibraryRepository {
 
   Future<void> deleteUser(String username) async {
     await _retry(() async {
-      final response = await _delete(Uri.parse('$_baseUrl/users/${_seg(username)}'));
+      final response = await _delete(
+        Uri.parse('$_baseUrl/users/${_seg(username)}'),
+      );
       if (response.statusCode != 200) {
         throw _apiError(response, 'Failed to remove account');
       }
@@ -350,21 +377,30 @@ class ApiService implements LibraryRepository {
       }
       if (res.statusCode == 401 || res.statusCode == 403) {
         // A server is present and enforcing auth; pairing/login is required.
-        return ConnectivityResult(ConnectStatus.needsAuth,
-            statusCode: res.statusCode, latencyMs: latency);
-      }
-      return ConnectivityResult(ConnectStatus.httpError,
+        return ConnectivityResult(
+          ConnectStatus.needsAuth,
           statusCode: res.statusCode,
           latencyMs: latency,
-          message: 'Server replied ${res.statusCode}');
+        );
+      }
+      return ConnectivityResult(
+        ConnectStatus.httpError,
+        statusCode: res.statusCode,
+        latencyMs: latency,
+        message: 'Server replied ${res.statusCode}',
+      );
     } on TimeoutException {
       sw.stop();
-      return ConnectivityResult(ConnectStatus.timeout,
-          latencyMs: sw.elapsedMilliseconds,
-          message: 'No response within ${dur.inMilliseconds}ms');
+      return ConnectivityResult(
+        ConnectStatus.timeout,
+        latencyMs: sw.elapsedMilliseconds,
+        message: 'No response within ${dur.inMilliseconds}ms',
+      );
     } on SocketException catch (e) {
-      return ConnectivityResult(ConnectStatus.unreachable,
-          message: e.osError?.message ?? e.message);
+      return ConnectivityResult(
+        ConnectStatus.unreachable,
+        message: e.osError?.message ?? e.message,
+      );
     } on http.ClientException catch (e) {
       // package:http funnels refused connections / failed host lookups here.
       return ConnectivityResult(ConnectStatus.unreachable, message: e.message);
@@ -408,10 +444,18 @@ class ApiService implements LibraryRepository {
     bool ascending = true,
   }) async {
     return _retry(() async {
-      final response =
-          await _get(_itemsUri('/items', limit: limit, offset: offset,
-              search: search, status: status, codeType: codeType,
-              sort: sort, ascending: ascending));
+      final response = await _get(
+        _itemsUri(
+          '/items',
+          limit: limit,
+          offset: offset,
+          search: search,
+          status: status,
+          codeType: codeType,
+          sort: sort,
+          ascending: ascending,
+        ),
+      );
       if (response.statusCode == 200) {
         final List<dynamic> jsonList = jsonDecode(response.body);
         return jsonList.map((map) => LibraryItem.fromMap(map)).toList();
@@ -422,11 +466,20 @@ class ApiService implements LibraryRepository {
   }
 
   @override
-  Future<int> countItems(
-      {String? search, String? status, String? codeType}) async {
+  Future<int> countItems({
+    String? search,
+    String? status,
+    String? codeType,
+  }) async {
     return _retry(() async {
-      final response = await _get(_itemsUri('/items/count',
-          search: search, status: status, codeType: codeType));
+      final response = await _get(
+        _itemsUri(
+          '/items/count',
+          search: search,
+          status: status,
+          codeType: codeType,
+        ),
+      );
       if (response.statusCode == 200) {
         return (jsonDecode(response.body)['count'] as num).toInt();
       }
@@ -436,14 +489,16 @@ class ApiService implements LibraryRepository {
 
   /// Builds a `$_baseUrl<path>` with URL-encoded query parameters; null / empty
   /// filters are omitted so the server applies no constraint for them.
-  Uri _itemsUri(String path,
-      {int? limit,
-      int? offset,
-      String? search,
-      String? status,
-      String? codeType,
-      String? sort,
-      bool? ascending}) {
+  Uri _itemsUri(
+    String path, {
+    int? limit,
+    int? offset,
+    String? search,
+    String? status,
+    String? codeType,
+    String? sort,
+    bool? ascending,
+  }) {
     final params = <String, String>{
       if (limit != null) 'limit': '$limit',
       if (offset != null) 'offset': '$offset',
@@ -451,10 +506,12 @@ class ApiService implements LibraryRepository {
       if (status != null && status.isNotEmpty) 'status': status,
       if (codeType != null && codeType.isNotEmpty) 'codeType': codeType,
       if (sort != null && sort.isNotEmpty) 'sort': sort,
-      if (sort != null && sort.isNotEmpty) 'order': (ascending ?? true) ? 'asc' : 'desc',
+      if (sort != null && sort.isNotEmpty)
+        'order': (ascending ?? true) ? 'asc' : 'desc',
     };
-    return Uri.parse('$_baseUrl$path').replace(
-        queryParameters: params.isEmpty ? null : params);
+    return Uri.parse(
+      '$_baseUrl$path',
+    ).replace(queryParameters: params.isEmpty ? null : params);
   }
 
   // NOTE (TX-01/5.2): the mutating methods below accept an optional `audit`
@@ -481,8 +538,11 @@ class ApiService implements LibraryRepository {
   }
 
   @override
-  Future<void> updateItem(LibraryItem item,
-      {Map<String, dynamic>? audit, int? expectedVersion}) async {
+  Future<void> updateItem(
+    LibraryItem item, {
+    Map<String, dynamic>? audit,
+    int? expectedVersion,
+  }) async {
     await _retry(() async {
       final response = await _put(
         Uri.parse('$_baseUrl/items'),
@@ -503,7 +563,9 @@ class ApiService implements LibraryRepository {
   @override
   Future<void> deleteItem(String code, {Map<String, dynamic>? audit}) async {
     await _retry(() async {
-      final response = await _delete(Uri.parse('$_baseUrl/items/${_seg(code)}'));
+      final response = await _delete(
+        Uri.parse('$_baseUrl/items/${_seg(code)}'),
+      );
       if (response.statusCode != 200) {
         throw _apiError(response, 'Failed to delete item');
       }
@@ -557,7 +619,9 @@ class ApiService implements LibraryRepository {
   @override
   Future<LibraryItem?> getItemByBarcode(String barcode) async {
     try {
-      final response = await _get(Uri.parse('$_baseUrl/barcode/${_seg(barcode)}'));
+      final response = await _get(
+        Uri.parse('$_baseUrl/barcode/${_seg(barcode)}'),
+      );
       if (response.statusCode == 200) {
         return LibraryItem.fromMap(jsonDecode(response.body));
       }
@@ -619,8 +683,11 @@ class ApiService implements LibraryRepository {
   // from the request (real client IP + clock), so [audit] is intentionally
   // ignored here (BE-05 / BE-09).
   @override
-  Future<void> addCodeDefinition(String prefix, String label,
-      {Map<String, dynamic>? audit}) async {
+  Future<void> addCodeDefinition(
+    String prefix,
+    String label, {
+    Map<String, dynamic>? audit,
+  }) async {
     final idemKey = _newIdempotencyKey();
     await _retry(() async {
       final response = await _post(
@@ -638,8 +705,12 @@ class ApiService implements LibraryRepository {
   }
 
   @override
-  Future<void> updateCodeDefinition(String oldPrefix, String newPrefix,
-      String label, {Map<String, dynamic>? audit}) async {
+  Future<void> updateCodeDefinition(
+    String oldPrefix,
+    String newPrefix,
+    String label, {
+    Map<String, dynamic>? audit,
+  }) async {
     await _retry(() async {
       final response = await _put(
         Uri.parse('$_baseUrl/code-definitions/${_seg(oldPrefix)}'),
@@ -653,10 +724,14 @@ class ApiService implements LibraryRepository {
   }
 
   @override
-  Future<void> deleteCodeDefinition(String prefix,
-      {Map<String, dynamic>? audit}) async {
+  Future<void> deleteCodeDefinition(
+    String prefix, {
+    Map<String, dynamic>? audit,
+  }) async {
     await _retry(() async {
-      final response = await _delete(Uri.parse('$_baseUrl/code-definitions/${_seg(prefix)}'));
+      final response = await _delete(
+        Uri.parse('$_baseUrl/code-definitions/${_seg(prefix)}'),
+      );
       if (response.statusCode != 200) {
         throw _apiError(response, 'Failed to delete code definition');
       }
@@ -664,7 +739,9 @@ class ApiService implements LibraryRepository {
   }
 
   @override
-  Future<List<Map<String, dynamic>>> getAttributeDefinitions(String? type) async {
+  Future<List<Map<String, dynamic>>> getAttributeDefinitions(
+    String? type,
+  ) async {
     return _retry(() async {
       // FB-04: build the query via Uri so a `type` with specials is encoded
       // (the server reads it back through queryParameters, already decoded).
@@ -682,8 +759,11 @@ class ApiService implements LibraryRepository {
   }
 
   @override
-  Future<void> addAttributeDefinition(String type, String value,
-      {Map<String, dynamic>? audit}) async {
+  Future<void> addAttributeDefinition(
+    String type,
+    String value, {
+    Map<String, dynamic>? audit,
+  }) async {
     final idemKey = _newIdempotencyKey();
     await _retry(() async {
       final response = await _post(
@@ -701,10 +781,14 @@ class ApiService implements LibraryRepository {
   }
 
   @override
-  Future<void> deleteAttributeDefinition(int id,
-      {Map<String, dynamic>? audit}) async {
+  Future<void> deleteAttributeDefinition(
+    int id, {
+    Map<String, dynamic>? audit,
+  }) async {
     await _retry(() async {
-      final response = await _delete(Uri.parse('$_baseUrl/attribute-definitions/${_seg('$id')}'));
+      final response = await _delete(
+        Uri.parse('$_baseUrl/attribute-definitions/${_seg('$id')}'),
+      );
       if (response.statusCode != 200) {
         throw _apiError(response, 'Failed to delete attribute definition');
       }
@@ -744,8 +828,11 @@ class ApiService implements LibraryRepository {
   }
 
   @override
-  Future<void> updateMember(Member member,
-      {Map<String, dynamic>? audit, int? expectedVersion}) async {
+  Future<void> updateMember(
+    Member member, {
+    Map<String, dynamic>? audit,
+    int? expectedVersion,
+  }) async {
     await _retry(() async {
       final response = await _put(
         Uri.parse('$_baseUrl/members'),
@@ -764,9 +851,14 @@ class ApiService implements LibraryRepository {
   }
 
   @override
-  Future<void> deleteMember(String memberId, {Map<String, dynamic>? audit}) async {
+  Future<void> deleteMember(
+    String memberId, {
+    Map<String, dynamic>? audit,
+  }) async {
     await _retry(() async {
-      final response = await _delete(Uri.parse('$_baseUrl/members/${_seg(memberId)}'));
+      final response = await _delete(
+        Uri.parse('$_baseUrl/members/${_seg(memberId)}'),
+      );
       if (response.statusCode != 200) {
         throw _apiError(response, 'Failed to delete member');
       }
@@ -777,7 +869,9 @@ class ApiService implements LibraryRepository {
   @override
   Future<List<Loan>> getLoans({bool activeOnly = false}) async {
     return _retry(() async {
-      final url = activeOnly ? '$_baseUrl/loans?activeOnly=true' : '$_baseUrl/loans';
+      final url = activeOnly
+          ? '$_baseUrl/loans?activeOnly=true'
+          : '$_baseUrl/loans';
       final response = await _get(Uri.parse(url));
       if (response.statusCode == 200) {
         final List<dynamic> jsonList = jsonDecode(response.body);
@@ -825,8 +919,9 @@ class ApiService implements LibraryRepository {
     // The server owns scan resolution (BL-03); a miss returns 404 -> null.
     try {
       final code = Uri.encodeComponent(scanned.trim());
-      final response =
-          await _get(Uri.parse('$_baseUrl/loans/resolve-scan?code=$code'));
+      final response = await _get(
+        Uri.parse('$_baseUrl/loans/resolve-scan?code=$code'),
+      );
       if (response.statusCode == 200) {
         return Loan.fromMap(jsonDecode(response.body));
       }
@@ -858,8 +953,10 @@ class ApiService implements LibraryRepository {
   }
 
   @override
-  Future<void> setFineSettings(FineSettings settings,
-      {Map<String, dynamic>? audit}) async {
+  Future<void> setFineSettings(
+    FineSettings settings, {
+    Map<String, dynamic>? audit,
+  }) async {
     await _retry(() async {
       final response = await _put(
         Uri.parse('$_baseUrl/settings/fines'),
@@ -880,13 +977,15 @@ class ApiService implements LibraryRepository {
         if (status != null) 'status': status.storage,
       };
       final base = Uri.parse('$_baseUrl/fines');
-      final response = await _get(base.replace(
-          queryParameters: params.isEmpty ? null : params));
+      final response = await _get(
+        base.replace(queryParameters: params.isEmpty ? null : params),
+      );
       if (response.statusCode != 200) {
         throw _apiError(response, 'Failed to load fines');
       }
       final List<dynamic> jsonList = jsonDecode(response.body);
-      return jsonList.map((m) => Fine.fromMap(Map<String, dynamic>.from(m)))
+      return jsonList
+          .map((m) => Fine.fromMap(Map<String, dynamic>.from(m)))
           .toList();
     });
   }
@@ -896,7 +995,8 @@ class ApiService implements LibraryRepository {
     return _retry(() async {
       final base = Uri.parse('$_baseUrl/fines/balance');
       final response = await _get(
-          base.replace(queryParameters: {'member_id': memberId}));
+        base.replace(queryParameters: {'member_id': memberId}),
+      );
       if (response.statusCode != 200) {
         throw _apiError(response, 'Failed to load balance');
       }
@@ -907,14 +1007,18 @@ class ApiService implements LibraryRepository {
   }
 
   @override
-  Future<void> payFine(int id,
-          {String? operatorName, Map<String, dynamic>? audit}) =>
-      _resolveFineRemote(id, 'pay');
+  Future<void> payFine(
+    int id, {
+    String? operatorName,
+    Map<String, dynamic>? audit,
+  }) => _resolveFineRemote(id, 'pay');
 
   @override
-  Future<void> waiveFine(int id,
-          {String? operatorName, Map<String, dynamic>? audit}) =>
-      _resolveFineRemote(id, 'waive');
+  Future<void> waiveFine(
+    int id, {
+    String? operatorName,
+    Map<String, dynamic>? audit,
+  }) => _resolveFineRemote(id, 'waive');
 
   Future<void> _resolveFineRemote(int id, String verb) async {
     final idemKey = _newIdempotencyKey();
@@ -952,8 +1056,10 @@ class ApiService implements LibraryRepository {
   }
 
   @override
-  Future<void> setHoldSettings(HoldSettings settings,
-      {Map<String, dynamic>? audit}) async {
+  Future<void> setHoldSettings(
+    HoldSettings settings, {
+    Map<String, dynamic>? audit,
+  }) async {
     await _retry(() async {
       final response = await _put(
         Uri.parse('$_baseUrl/settings/holds'),
@@ -989,7 +1095,8 @@ class ApiService implements LibraryRepository {
         throw _apiError(response, 'Failed to place hold');
       }
       return Reservation.fromMap(
-          Map<String, dynamic>.from(jsonDecode(response.body) as Map));
+        Map<String, dynamic>.from(jsonDecode(response.body) as Map),
+      );
     });
   }
 
@@ -1009,7 +1116,8 @@ class ApiService implements LibraryRepository {
       };
       final base = Uri.parse('$_baseUrl/reservations');
       final response = await _get(
-          base.replace(queryParameters: params.isEmpty ? null : params));
+        base.replace(queryParameters: params.isEmpty ? null : params),
+      );
       if (response.statusCode != 200) {
         throw _apiError(response, 'Failed to load holds');
       }
@@ -1094,12 +1202,14 @@ class ApiService implements LibraryRepository {
       };
       final base = Uri.parse('$_baseUrl/reports/${kind.storage}');
       final response = await _get(
-          base.replace(queryParameters: params.isEmpty ? null : params));
+        base.replace(queryParameters: params.isEmpty ? null : params),
+      );
       if (response.statusCode != 200) {
         throw _apiError(response, 'Failed to build report');
       }
       return Report.fromMap(
-          Map<String, dynamic>.from(jsonDecode(response.body) as Map));
+        Map<String, dynamic>.from(jsonDecode(response.body) as Map),
+      );
     });
   }
 
@@ -1128,7 +1238,9 @@ class ApiService implements LibraryRepository {
   /// Phase 19: fetch chat messages newer than [since] (`GET /chat?since=`),
   /// returning them plus the host's current high-water id so the caller can
   /// advance its poll cursor and never re-request delivered rows.
-  Future<({List<ChatMessage> messages, int latest})> fetchChat(int since) async {
+  Future<({List<ChatMessage> messages, int latest})> fetchChat(
+    int since,
+  ) async {
     return _retry(() async {
       final response = await _get(Uri.parse('$_baseUrl/chat?since=$since'));
       if (response.statusCode != 200) {
@@ -1160,4 +1272,3 @@ class ApiException implements Exception {
   String toString() =>
       'ApiException($statusCode, ${error ?? 'error'}: $message)';
 }
-

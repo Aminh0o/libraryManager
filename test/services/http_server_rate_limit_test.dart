@@ -44,7 +44,10 @@ void main() {
       // 2-token burst, refills at 60/min (1/sec) -- enough that a minute's wait
       // restores a full bucket for the recovery assertion.
       rateLimiter: RateLimiter(
-          capacity: 2, refillPerMinute: 60, clock: () => now),
+        capacity: 2,
+        refillPerMinute: 60,
+        clock: () => now,
+      ),
     );
     await server.startServer(host: '127.0.0.1', port: 0);
     base = 'http://127.0.0.1:${server.port}';
@@ -57,10 +60,10 @@ void main() {
   });
 
   Future<http.Response> postItem(String code) => client.post(
-        Uri.parse('$base/items'),
-        headers: {'content-type': 'application/json'},
-        body: jsonEncode({'code': code, 'designation': 'x'}),
-      );
+    Uri.parse('$base/items'),
+    headers: {'content-type': 'application/json'},
+    body: jsonEncode({'code': code, 'designation': 'x'}),
+  );
 
   Map<String, dynamic> decode(http.Response r) =>
       jsonDecode(r.body) as Map<String, dynamic>;
@@ -73,23 +76,28 @@ void main() {
       final throttled = await postItem('A3');
       expect(throttled.statusCode, 429);
       expect(decode(throttled)['error'], 'rate_limited');
-      expect(repo.addItems, 2, reason: 'throttled writes must not reach the repo');
+      expect(
+        repo.addItems,
+        2,
+        reason: 'throttled writes must not reach the repo',
+      );
     });
 
-    test('READS are exempt so the /db-version sync poll is never throttled',
-        () async {
-      // Exhaust the write bucket first.
-      await postItem('B1');
-      await postItem('B2');
-      expect((await postItem('B3')).statusCode, 429);
-      // A read still succeeds despite no write tokens remaining.
-      final get = await client.get(Uri.parse('$base/db-version'));
-      expect(get.statusCode, 200);
-      expect(decode(get)['version'], '1');
-    });
+    test(
+      'READS are exempt so the /db-version sync poll is never throttled',
+      () async {
+        // Exhaust the write bucket first.
+        await postItem('B1');
+        await postItem('B2');
+        expect((await postItem('B3')).statusCode, 429);
+        // A read still succeeds despite no write tokens remaining.
+        final get = await client.get(Uri.parse('$base/db-version'));
+        expect(get.statusCode, 200);
+        expect(decode(get)['version'], '1');
+      },
+    );
 
-    test('the bucket refills over time so a throttled source recovers',
-        () async {
+    test('the bucket refills over time so a throttled source recovers', () async {
       await postItem('C1');
       await postItem('C2');
       expect((await postItem('C3')).statusCode, 429);

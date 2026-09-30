@@ -51,39 +51,45 @@ void main() {
     });
   }
 
-  test('subject narrows the response to matching rows in timestamp DESC',
-      () async {
-    // Wipe any prior rows so ordering assertions are deterministic.
-    final db = await svc.database;
-    await db.delete('history');
-    await seed('Copie #1 de BK-001 -> available', '2026-01-01T10:00:00.000');
-    await seed('Copie #2 de BK-001 -> maintenance', '2026-01-02T10:00:00.000');
-    await seed('Emprunt: BK-001 par Amira', '2026-01-03T10:00:00.000');
-    await seed('Hold placed: M-999 for BK-777', '2026-01-04T10:00:00.000');
-    await seed('Item ajouté: M-999', '2026-01-05T10:00:00.000');
+  test(
+    'subject narrows the response to matching rows in timestamp DESC',
+    () async {
+      // Wipe any prior rows so ordering assertions are deterministic.
+      final db = await svc.database;
+      await db.delete('history');
+      await seed('Copie #1 de BK-001 -> available', '2026-01-01T10:00:00.000');
+      await seed(
+        'Copie #2 de BK-001 -> maintenance',
+        '2026-01-02T10:00:00.000',
+      );
+      await seed('Emprunt: BK-001 par Amira', '2026-01-03T10:00:00.000');
+      await seed('Hold placed: M-999 for BK-777', '2026-01-04T10:00:00.000');
+      await seed('Item ajouté: M-999', '2026-01-05T10:00:00.000');
 
-    final hits = await svc.getHistory(subject: 'BK-001', limit: 50);
-    expect(hits.length, 3);
-    // DESC order: the most-recent (2026-01-03) comes first.
-    expect(hits.first['timestamp'], '2026-01-03T10:00:00.000');
-    expect(hits.last['timestamp'], '2026-01-01T10:00:00.000');
-    // Sanity: none of the two non-matching rows leaked in.
-    expect(
-      hits.any((r) => (r['details'] as String).contains('BK-777')),
-      isFalse,
-    );
-  });
+      final hits = await svc.getHistory(subject: 'BK-001', limit: 50);
+      expect(hits.length, 3);
+      // DESC order: the most-recent (2026-01-03) comes first.
+      expect(hits.first['timestamp'], '2026-01-03T10:00:00.000');
+      expect(hits.last['timestamp'], '2026-01-01T10:00:00.000');
+      // Sanity: none of the two non-matching rows leaked in.
+      expect(
+        hits.any((r) => (r['details'] as String).contains('BK-777')),
+        isFalse,
+      );
+    },
+  );
 
-  test('empty-string subject behaves like no filter (never LIKE \'%%\')',
-      () async {
-    final byEmpty = await svc.getHistory(subject: '', limit: 50);
-    final byNull = await svc.getHistory(limit: 50);
-    expect(byEmpty.length, byNull.length);
-    expect(byEmpty.length, 5);
-  });
+  test(
+    'empty-string subject behaves like no filter (never LIKE \'%%\')',
+    () async {
+      final byEmpty = await svc.getHistory(subject: '', limit: 50);
+      final byNull = await svc.getHistory(limit: 50);
+      expect(byEmpty.length, byNull.length);
+      expect(byEmpty.length, 5);
+    },
+  );
 
-  test('null subject preserves the pre-Pass-5 unfiltered behaviour',
-      () async {
+  test('null subject preserves the pre-Pass-5 unfiltered behaviour', () async {
     final rows = await svc.getHistory(limit: 50);
     // Every seeded row from the previous test is still present: 3 BK-001,
     // 1 BK-777, 1 M-999.

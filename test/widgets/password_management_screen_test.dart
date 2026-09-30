@@ -23,10 +23,7 @@ class _FakeRepo implements LibraryRepository {
   dynamic noSuchMethod(Invocation invocation) => null;
 }
 
-Future<void> _pumpScreen(
-  WidgetTester tester,
-  LibraryProvider provider,
-) async {
+Future<void> _pumpScreen(WidgetTester tester, LibraryProvider provider) async {
   tester.view.physicalSize = const Size(1280, 1024);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
@@ -45,9 +42,11 @@ Future<void> _pumpScreen(
           builder: (context) => Scaffold(
             body: Center(
               child: ElevatedButton(
-                onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => const PasswordManagementScreen(),
-                )),
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const PasswordManagementScreen(),
+                  ),
+                ),
                 child: const Text('open'),
               ),
             ),
@@ -74,8 +73,9 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  testWidgets('enforced credential + WRONG old password: change is blocked',
-      (tester) async {
+  testWidgets('enforced credential + WRONG old password: change is blocked', (
+    tester,
+  ) async {
     final auth = AuthService(store: InMemoryAuthStore());
     await auth.setPassword('s3cret');
     final provider = LibraryProvider.forTesting(
@@ -101,8 +101,9 @@ void main() {
     expect(await auth.verifyPassword('s3cret'), isTrue);
   });
 
-  testWidgets('enforced credential + CORRECT old password: change succeeds',
-      (tester) async {
+  testWidgets('enforced credential + CORRECT old password: change succeeds', (
+    tester,
+  ) async {
     final auth = AuthService(store: InMemoryAuthStore());
     await auth.setPassword('s3cret');
     final provider = LibraryProvider.forTesting(
@@ -125,27 +126,29 @@ void main() {
     expect(find.text('Password updated successfully'), findsOneWidget);
   });
 
-  testWidgets('bootstrap (no credential yet): no old-password step, set directly',
-      (tester) async {
-    final auth = AuthService(store: InMemoryAuthStore());
-    final provider = LibraryProvider.forTesting(
-      repository: _FakeRepo(),
-      isHost: true,
-      authService: auth,
-    );
-    await _pumpScreen(tester, provider);
+  testWidgets(
+    'bootstrap (no credential yet): no old-password step, set directly',
+    (tester) async {
+      final auth = AuthService(store: InMemoryAuthStore());
+      final provider = LibraryProvider.forTesting(
+        repository: _FakeRepo(),
+        isHost: true,
+        authService: auth,
+      );
+      await _pumpScreen(tester, provider);
 
-    // First-time setup must never demand an old password that does not exist.
-    expect(find.byKey(const Key('oldPassword')), findsNothing);
-    expect(find.byKey(const Key('newPassword')), findsOneWidget);
+      // First-time setup must never demand an old password that does not exist.
+      expect(find.byKey(const Key('oldPassword')), findsNothing);
+      expect(find.byKey(const Key('newPassword')), findsOneWidget);
 
-    await _type(tester, const Key('newPassword'), 'firstpw');
-    await _type(tester, const Key('confirmPassword'), 'firstpw');
-    await tester.tap(find.byKey(const Key('savePassword')));
-    await tester.pump();
-    await tester.pumpAndSettle();
+      await _type(tester, const Key('newPassword'), 'firstpw');
+      await _type(tester, const Key('confirmPassword'), 'firstpw');
+      await tester.tap(find.byKey(const Key('savePassword')));
+      await tester.pump();
+      await tester.pumpAndSettle();
 
-    expect(await auth.verifyPassword('firstpw'), isTrue);
-    expect(await provider.passwordEnforcementActive(), isTrue);
-  });
+      expect(await auth.verifyPassword('firstpw'), isTrue);
+      expect(await provider.passwordEnforcementActive(), isTrue);
+    },
+  );
 }

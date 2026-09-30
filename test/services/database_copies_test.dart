@@ -13,8 +13,11 @@ void main() {
   late Database db;
   late DatabaseService svc;
 
-  Future<void> seedItem(String code,
-      {required int quantite, String status = 'Disponible'}) async {
+  Future<void> seedItem(
+    String code, {
+    required int quantite,
+    String status = 'Disponible',
+  }) async {
     await db.insert('library_items', {
       'code': code,
       'code_type': 'LIV',
@@ -110,8 +113,9 @@ void main() {
     });
 
     test('getCopyByBarcode resolves a per-copy barcode (BL-03 seam)', () async {
-      final id =
-          await svc.addCopy(ItemCopy(itemCode: '0007', barcode: 'SCAN-7'));
+      final id = await svc.addCopy(
+        ItemCopy(itemCode: '0007', barcode: 'SCAN-7'),
+      );
       final found = await svc.getCopyByBarcode('SCAN-7');
       expect(found?.id, id);
       expect(await svc.getCopyByBarcode('missing'), isNull);
@@ -153,7 +157,11 @@ void main() {
     });
 
     test('a Perdu copy is not counted as on loan', () async {
-      await seedItem('0300', quantite: 2, status: 'Perdu'); // backfill => 2 Perdu
+      await seedItem(
+        '0300',
+        quantite: 2,
+        status: 'Perdu',
+      ); // backfill => 2 Perdu
       await svc.backfillCopiesFromItems();
       final stats = await svc.getStats();
       expect(stats['totalQuantity'], 2);

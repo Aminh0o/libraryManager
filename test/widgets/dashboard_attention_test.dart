@@ -21,11 +21,7 @@ import 'package:library_manager/services/repository.dart';
 /// - when a source has a count, a tappable tile surfaces it AND a tap
 ///   actually asks the parent to switch to the matching rail tab.
 class _Repo implements LibraryRepository {
-  _Repo({
-    this.loans = const [],
-    this.fines = const [],
-    this.ready = const [],
-  });
+  _Repo({this.loans = const [], this.fines = const [], this.ready = const []});
 
   final List<Loan> loans;
   final List<Fine> fines;
@@ -40,17 +36,16 @@ class _Repo implements LibraryRepository {
     String? codeType,
     String? sort,
     bool ascending = true,
-  }) async =>
-      const [];
+  }) async => const [];
 
   @override
-  Future<int> countItems(
-          {String? search,
-          String? status,
-          String? codeType,
-          String? sort,
-          bool ascending = true}) async =>
-      0;
+  Future<int> countItems({
+    String? search,
+    String? status,
+    String? codeType,
+    String? sort,
+    bool ascending = true,
+  }) async => 0;
 
   @override
   Future<List<Member>> getMembers() async => const [];
@@ -62,11 +57,8 @@ class _Repo implements LibraryRepository {
   }
 
   @override
-  Future<List<Fine>> getFines(
-          {String? memberId, FineStatus? status}) async =>
-      fines
-          .where((f) => status == null || f.status == status)
-          .toList();
+  Future<List<Fine>> getFines({String? memberId, FineStatus? status}) async =>
+      fines.where((f) => status == null || f.status == status).toList();
 
   @override
   Future<List<Reservation>> readyForPickup() async => ready;
@@ -77,15 +69,14 @@ class _Repo implements LibraryRepository {
     String? memberId,
     ReservationStatus? status,
     bool liveOnly = false,
-  }) async =>
-      const [];
+  }) async => const [];
 
   @override
   Future<List<Map<String, dynamic>>> getCodeDefinitions() async => const [];
   @override
   Future<List<Map<String, dynamic>>> getAttributeDefinitions(
-          String? type) async =>
-      const [];
+    String? type,
+  ) async => const [];
   @override
   Future<Map<String, dynamic>> getStats() async => const {};
 
@@ -130,54 +121,51 @@ Future<LibraryProvider> _pump(
 
 /// A past-due `Active` loan, which is what `Loan.isOverdue` reads.
 Loan _overdue() => Loan(
-      itemCode: 'BK-001',
-      memberId: 'M-001',
-      memberName: 'A',
-      itemTitle: 'T',
-      loanDate: DateTime(2020, 1, 1),
-      dueDate: DateTime(2020, 1, 16),
-      status: 'Active',
-    );
+  itemCode: 'BK-001',
+  memberId: 'M-001',
+  memberName: 'A',
+  itemTitle: 'T',
+  loanDate: DateTime(2020, 1, 1),
+  dueDate: DateTime(2020, 1, 16),
+  status: 'Active',
+);
 
 /// A due-date in the future is Active but NOT overdue; used by the "quiet
 /// day" test to prove the panel keys off the DERIVED overdue flag, not just
 /// "is there any active loan".
 Loan _onTime() => Loan(
-      itemCode: 'BK-002',
-      memberId: 'M-001',
-      memberName: 'B',
-      itemTitle: 'U',
-      loanDate: DateTime(2099, 1, 1),
-      dueDate: DateTime(2099, 1, 16),
-      status: 'Active',
-    );
+  itemCode: 'BK-002',
+  memberId: 'M-001',
+  memberName: 'B',
+  itemTitle: 'U',
+  loanDate: DateTime(2099, 1, 1),
+  dueDate: DateTime(2099, 1, 16),
+  status: 'Active',
+);
 
 Fine _pendingFine() => const Fine(
-      memberId: 'M-001',
-      amount: 100,
-      status: FineStatus.pending,
-      reason: 'late',
-    );
+  memberId: 'M-001',
+  amount: 100,
+  status: FineStatus.pending,
+  reason: 'late',
+);
 
 Reservation _holdReady() => const Reservation(
-      itemCode: 'BK-099',
-      memberId: 'M-001',
-      status: ReservationStatus.available,
-    );
+  itemCode: 'BK-099',
+  memberId: 'M-001',
+  status: ReservationStatus.available,
+);
 
 void main() {
-  testWidgets('a fully-quiet day hides the Needs Attention section entirely',
-      (tester) async {
-    await _pump(
-      tester,
-      repo: _Repo(loans: [_onTime()]),
-    );
+  testWidgets('a fully-quiet day hides the Needs Attention section entirely', (
+    tester,
+  ) async {
+    await _pump(tester, repo: _Repo(loans: [_onTime()]));
     // No section header, no alert tiles -- nothing to shout about.
     expect(find.text('Needs attention'), findsNothing);
   });
 
-  testWidgets('an overdue loan raises a tappable alert tile',
-      (tester) async {
+  testWidgets('an overdue loan raises a tappable alert tile', (tester) async {
     var tapped = 0;
     await _pump(
       tester,
@@ -199,14 +187,12 @@ void main() {
     );
   });
 
-  testWidgets('holds-ready and pending-fines each raise their own tile',
-      (tester) async {
+  testWidgets('holds-ready and pending-fines each raise their own tile', (
+    tester,
+  ) async {
     await _pump(
       tester,
-      repo: _Repo(
-        ready: [_holdReady()],
-        fines: [_pendingFine()],
-      ),
+      repo: _Repo(ready: [_holdReady()], fines: [_pendingFine()]),
     );
     expect(find.text('Needs attention'), findsOneWidget);
     expect(find.textContaining('hold'), findsOneWidget);

@@ -64,16 +64,12 @@ class _RecordHistorySectionState extends State<RecordHistorySection> {
   }
 
   Future<void> _openAll(AppLocalizations l10n) async {
-    final passed = await showPasswordPrompt(
-      context,
-      title: l10n.enterPassword,
-    );
+    final passed = await showPasswordPrompt(context, title: l10n.enterPassword);
     if (!passed || !mounted) return;
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) =>
-            HistoryScreen(initialSubject: widget.subject),
+        builder: (context) => HistoryScreen(initialSubject: widget.subject),
       ),
     );
   }
@@ -99,11 +95,7 @@ class _RecordHistorySectionState extends State<RecordHistorySection> {
           children: [
             Row(
               children: [
-                Icon(
-                  Icons.history,
-                  size: AppIcon.md,
-                  color: scheme.primary,
-                ),
+                Icon(Icons.history, size: AppIcon.md, color: scheme.primary),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(
@@ -122,10 +114,7 @@ class _RecordHistorySectionState extends State<RecordHistorySection> {
             ),
             const SizedBox(height: AppSpacing.sm),
             for (var i = 0; i < _rows.length; i++)
-              _HistoryRow(
-                entry: _rows[i],
-                isLast: i == _rows.length - 1,
-              ),
+              _HistoryRow(entry: _rows[i], isLast: i == _rows.length - 1),
           ],
         ),
       ),
@@ -149,15 +138,14 @@ class _HistoryRow extends StatelessWidget {
     final txt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
     final ts = tryParseTimestamp(entry['timestamp']);
-    final timeStr =
-        ts == null ? '\u2014' : DateFormat.yMMMd().add_jm().format(ts);
+    final timeStr = ts == null
+        ? '\u2014'
+        : DateFormat.yMMMd().add_jm().format(ts);
     final op = safeText(entry['operation'], fallback: '');
     final details = safeText(entry['details'], fallback: '');
     final color = _opColor(op);
     return Padding(
-      padding: EdgeInsets.only(
-        bottom: isLast ? 0 : AppSpacing.sm,
-      ),
+      padding: EdgeInsets.only(bottom: isLast ? 0 : AppSpacing.sm),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

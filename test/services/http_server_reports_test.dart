@@ -41,19 +41,21 @@ void main() {
   });
 
   Map<String, String> hdr(String? token) => {
-        if (token != null) 'Authorization': 'Bearer $token',
-      };
+    if (token != null) 'Authorization': 'Bearer $token',
+  };
 
   Future<http.Response> get(String path, {String? token}) =>
       client.get(Uri.parse('$base$path'), headers: hdr(token));
 
-  Future<http.Response> postBody(String path, Map<String, dynamic> body,
-          {String? token}) =>
-      client.post(
-        Uri.parse('$base$path'),
-        headers: {'Content-Type': 'application/json', ...hdr(token)},
-        body: jsonEncode(body),
-      );
+  Future<http.Response> postBody(
+    String path,
+    Map<String, dynamic> body, {
+    String? token,
+  }) => client.post(
+    Uri.parse('$base$path'),
+    headers: {'Content-Type': 'application/json', ...hdr(token)},
+    body: jsonEncode(body),
+  );
 
   Future<String> login(String u, String p) async {
     final res = await postBody('/auth/login', {'username': u, 'password': p});
@@ -64,9 +66,11 @@ void main() {
   Future<String> adminToken() => login('admin', 'root-pw');
 
   Future<String> addAndLogin(String name, String pw, String role) async {
-    final r = await postBody('/users',
-        {'username': name, 'password': pw, 'role': role},
-        token: await adminToken());
+    final r = await postBody('/users', {
+      'username': name,
+      'password': pw,
+      'role': role,
+    }, token: await adminToken());
     expect(r.statusCode, 201, reason: 'seed $name: ${r.body}');
     return login(name, pw);
   }
@@ -78,45 +82,49 @@ void main() {
     expect(jsonDecode(res.body)['error'], 'forbidden');
   });
 
-  test('staff and admin can run a report and the kind + window round-trip',
-      () async {
-    final staff = await addAndLogin('libby', 'libby-pw-1', 'staff');
-    final res = await get(
-      '/reports/overdue',
-      token: staff,
-    );
-    expect(res.statusCode, 200, reason: res.body);
-    expect(jsonDecode(res.body)['kind'], 'overdue');
+  test(
+    'staff and admin can run a report and the kind + window round-trip',
+    () async {
+      final staff = await addAndLogin('libby', 'libby-pw-1', 'staff');
+      final res = await get('/reports/overdue', token: staff);
+      expect(res.statusCode, 200, reason: res.body);
+      expect(jsonDecode(res.body)['kind'], 'overdue');
 
-    final admin = await adminToken();
-    final ranged = await get(
-      '/reports/circulation?from=2026-09-01&to=2026-09-30',
-      token: admin,
-    );
-    expect(ranged.statusCode, 200, reason: ranged.body);
-    final body = jsonDecode(ranged.body);
-    expect(body['kind'], 'circulation');
-    expect(body['from'], '2026-09-01');
-    expect(body['to'], '2026-09-30');
-  });
+      final admin = await adminToken();
+      final ranged = await get(
+        '/reports/circulation?from=2026-09-01&to=2026-09-30',
+        token: admin,
+      );
+      expect(ranged.statusCode, 200, reason: ranged.body);
+      final body = jsonDecode(ranged.body);
+      expect(body['kind'], 'circulation');
+      expect(body['from'], '2026-09-01');
+      expect(body['to'], '2026-09-30');
+    },
+  );
 
-  test('an unknown report kind is a 400, not a 500 or a wrong report', () async {
-    final staff = await addAndLogin('libby', 'libby-pw-1', 'staff');
-    final res = await get('/reports/secretsauce', token: staff);
-    expect(res.statusCode, 400, reason: res.body);
-    expect(jsonDecode(res.body)['error'], 'bad_request');
-  });
+  test(
+    'an unknown report kind is a 400, not a 500 or a wrong report',
+    () async {
+      final staff = await addAndLogin('libby', 'libby-pw-1', 'staff');
+      final res = await get('/reports/secretsauce', token: staff);
+      expect(res.statusCode, 400, reason: res.body);
+      expect(jsonDecode(res.body)['error'], 'bad_request');
+    },
+  );
 
-  test('a malformed date bound is refused with a 400 before the engine runs',
-      () async {
-    final staff = await addAndLogin('libby', 'libby-pw-1', 'staff');
-    final res = await get(
-      '/reports/circulation?from=yesterday',
-      token: staff,
-    );
-    expect(res.statusCode, 400, reason: res.body);
-    expect(jsonDecode(res.body)['error'], 'bad_request');
-  });
+  test(
+    'a malformed date bound is refused with a 400 before the engine runs',
+    () async {
+      final staff = await addAndLogin('libby', 'libby-pw-1', 'staff');
+      final res = await get(
+        '/reports/circulation?from=yesterday',
+        token: staff,
+      );
+      expect(res.statusCode, 400, reason: res.body);
+      expect(jsonDecode(res.body)['error'], 'bad_request');
+    },
+  );
 
   test('a reversed date window is refused with a 400', () async {
     final staff = await addAndLogin('libby', 'libby-pw-1', 'staff');

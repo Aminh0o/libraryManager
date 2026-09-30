@@ -158,8 +158,10 @@ class DashboardScreen extends StatelessWidget {
                         // FE2-10: apply the scan as a search AND move to the
                         // inventory view, so the operator lands on the match
                         // instead of staring at an unchanged dashboard.
-                        Provider.of<LibraryProvider>(context, listen: false)
-                            .search(code);
+                        Provider.of<LibraryProvider>(
+                          context,
+                          listen: false,
+                        ).search(code);
                         onOpenInventory?.call();
                       }
                     },
@@ -197,9 +199,7 @@ class DashboardScreen extends StatelessWidget {
                       } catch (e) {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(describeError(l10n, e)),
-                            ),
+                            SnackBar(content: Text(describeError(l10n, e))),
                           );
                         }
                       }
@@ -330,8 +330,7 @@ class _HeaderRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final txt = Theme.of(context).textTheme;
-    final hostColor =
-        provider.isHost ? AppStatus.success : AppStatus.info;
+    final hostColor = provider.isHost ? AppStatus.success : AppStatus.info;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -344,9 +343,7 @@ class _HeaderRow extends StatelessWidget {
             ),
             Text(
               l10n.algerianSystem,
-              style: txt.bodyMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
+              style: txt.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
             ),
           ],
         ),
@@ -420,28 +417,34 @@ class _NeedsAttentionState extends State<_NeedsAttention> {
     if (!_loaded) return const SizedBox.shrink();
     final alerts = <Widget>[];
     if (_overdue > 0) {
-      alerts.add(_AlertTile(
-        icon: Icons.event_busy,
-        label: l10n.notifOverdue(_overdue),
-        color: AppStatus.danger,
-        onTap: widget.onOpenLoans,
-      ));
+      alerts.add(
+        _AlertTile(
+          icon: Icons.event_busy,
+          label: l10n.notifOverdue(_overdue),
+          color: AppStatus.danger,
+          onTap: widget.onOpenLoans,
+        ),
+      );
     }
     if (_holdsReady > 0) {
-      alerts.add(_AlertTile(
-        icon: Icons.bookmark_added,
-        label: l10n.notifHoldsReady(_holdsReady),
-        color: AppStatus.success,
-        onTap: widget.onOpenReservations,
-      ));
+      alerts.add(
+        _AlertTile(
+          icon: Icons.bookmark_added,
+          label: l10n.notifHoldsReady(_holdsReady),
+          color: AppStatus.success,
+          onTap: widget.onOpenReservations,
+        ),
+      );
     }
     if (_pendingFines > 0) {
-      alerts.add(_AlertTile(
-        icon: Icons.receipt_long,
-        label: l10n.notifFinesPending(_pendingFines),
-        color: AppStatus.warning,
-        onTap: widget.onOpenFines,
-      ));
+      alerts.add(
+        _AlertTile(
+          icon: Icons.receipt_long,
+          label: l10n.notifFinesPending(_pendingFines),
+          color: AppStatus.warning,
+          onTap: widget.onOpenFines,
+        ),
+      );
     }
     if (alerts.isEmpty) return const SizedBox.shrink();
     return AppSection(
@@ -481,11 +484,13 @@ class _AlertTile extends StatelessWidget {
       ),
       child: ListTile(
         leading: Icon(icon, color: color),
-        title: Text(label,
-            style: Theme.of(context)
-                .textTheme
-                .bodyMedium
-                ?.copyWith(color: scheme.onSurface, fontWeight: FontWeight.w500)),
+        title: Text(
+          label,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: scheme.onSurface,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
         trailing: Icon(Icons.chevron_right, color: scheme.onSurfaceVariant),
         onTap: onTap,
       ),

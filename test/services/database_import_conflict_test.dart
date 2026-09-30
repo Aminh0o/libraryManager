@@ -28,21 +28,27 @@ void main() {
   late Directory tmp;
   late Database db;
 
-  LibraryItem item(String code,
-          {String designation = 'Title', int quantite = 1}) =>
-      LibraryItem(
-        code: code,
-        codeType: 'LIV',
-        designation: designation,
-        quantite: quantite,
-        emplacement: 'A',
-        taux: 10,
-        emplacementStock: 'S',
-        status: 'Disponible',
-      );
+  LibraryItem item(
+    String code, {
+    String designation = 'Title',
+    int quantite = 1,
+  }) => LibraryItem(
+    code: code,
+    codeType: 'LIV',
+    designation: designation,
+    quantite: quantite,
+    emplacement: 'A',
+    taux: 10,
+    emplacementStock: 'S',
+    status: 'Disponible',
+  );
 
   Future<Map<String, dynamic>?> row(String code) async {
-    final r = await db.query('library_items', where: 'code = ?', whereArgs: [code]);
+    final r = await db.query(
+      'library_items',
+      where: 'code = ?',
+      whereArgs: [code],
+    );
     return r.isEmpty ? null : r.first;
   }
 
@@ -60,33 +66,39 @@ void main() {
   });
 
   group('bulk import never clobbers existing rows (FW-03)', () {
-    test('an existing code is skipped, not overwritten; new rows are seeded',
-        () async {
-      // Seed a pre-existing title with a distinctive designation + 2 copies.
-      await svc.addItem(item('0001', designation: 'Original', quantite: 2));
+    test(
+      'an existing code is skipped, not overwritten; new rows are seeded',
+      () async {
+        // Seed a pre-existing title with a distinctive designation + 2 copies.
+        await svc.addItem(item('0001', designation: 'Original', quantite: 2));
 
-      final res = await svc.batchInsertItems([
-        item('0001', designation: 'CLOBBERED', quantite: 9), // collision
-        item('0002', designation: 'Fresh', quantite: 3), // new
-      ]);
+        final res = await svc.batchInsertItems([
+          item('0001', designation: 'CLOBBERED', quantite: 9), // collision
+          item('0002', designation: 'Fresh', quantite: 3), // new
+        ]);
 
-      expect(res.inserted, 1);
-      expect(res.skippedCodes, contains('0001'));
+        expect(res.inserted, 1);
+        expect(res.skippedCodes, contains('0001'));
 
-      // The existing row is untouched (this is the data-loss the fix prevents).
-      final kept = await row('0001');
-      expect(kept, isNotNull);
-      expect(kept!['designation'], 'Original');
-      expect(kept['quantite'], 2);
-      // Its copies were neither duplicated nor dropped by a delete+reinsert.
-      expect(await db.query('item_copies', where: "item_code = '0001'"),
-          hasLength(2));
+        // The existing row is untouched (this is the data-loss the fix prevents).
+        final kept = await row('0001');
+        expect(kept, isNotNull);
+        expect(kept!['designation'], 'Original');
+        expect(kept['quantite'], 2);
+        // Its copies were neither duplicated nor dropped by a delete+reinsert.
+        expect(
+          await db.query('item_copies', where: "item_code = '0001'"),
+          hasLength(2),
+        );
 
-      // The new row landed and got its per-copy set seeded.
-      expect(await row('0002'), isNotNull);
-      expect(await db.query('item_copies', where: "item_code = '0002'"),
-          hasLength(3));
-    });
+        // The new row landed and got its per-copy set seeded.
+        expect(await row('0002'), isNotNull);
+        expect(
+          await db.query('item_copies', where: "item_code = '0002'"),
+          hasLength(3),
+        );
+      },
+    );
 
     test('a duplicate code within the same file inserts only once', () async {
       final res = await svc.batchInsertItems([
@@ -95,8 +107,10 @@ void main() {
       ]);
       expect(res.inserted, 1);
       expect(res.skippedCodes, contains('0010'));
-      expect(await db.query('library_items', where: "code = '0010'"),
-          hasLength(1));
+      expect(
+        await db.query('library_items', where: "code = '0010'"),
+        hasLength(1),
+      );
       // The surviving row is the FIRST one, not the overwrite.
       expect((await row('0010'))!['designation'], 'First');
     });
@@ -115,8 +129,7 @@ void main() {
       expect(hist.any((h) => h['operation'] == 'IMPORT'), isTrue);
     });
 
-    test('a failing audit write rolls the whole batch back (atomic)',
-        () async {
+    test('a failing audit write rolls the whole batch back (atomic)', () async {
       // The audit row is inserted RAW (server/host-authored). A bogus column
       // makes the history insert throw, which must undo every item insert too
       // -- proving data + audit + version commit or fail as one unit.

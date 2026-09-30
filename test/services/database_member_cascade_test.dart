@@ -36,7 +36,10 @@ void main() {
     // that parent once (per shared file DB) -- otherwise the FK correctly
     // rejects every loan and the fixture is an orphan. The behavior under test
     // (member_id cascade) is unrelated to items and stays fully exercised.
-    await db.insert('library_items', {'code': 'IT1', 'designation': 'Test item'});
+    await db.insert('library_items', {
+      'code': 'IT1',
+      'designation': 'Test item',
+    });
   });
 
   tearDownAll(() async {
@@ -48,15 +51,21 @@ void main() {
   });
 
   Future<int> addMember(String cardId) async {
-    await svc.addMember(Member(
-      firstName: cardId,
-      lastName: 'Doe',
-      memberId: cardId,
-      registeredAt: DateTime(2020),
-    ));
+    await svc.addMember(
+      Member(
+        firstName: cardId,
+        lastName: 'Doe',
+        memberId: cardId,
+        registeredAt: DateTime(2020),
+      ),
+    );
     final db = await svc.database;
-    final r = await db
-        .query('members', columns: ['id'], where: 'member_id = ?', whereArgs: [cardId]);
+    final r = await db.query(
+      'members',
+      columns: ['id'],
+      where: 'member_id = ?',
+      whereArgs: [cardId],
+    );
     return r.first['id'] as int;
   }
 
@@ -75,27 +84,33 @@ void main() {
 
   Future<int> loanCount(String cardId) async {
     final db = await svc.database;
-    final r = await db
-        .rawQuery('SELECT COUNT(*) c FROM loans WHERE member_id = ?', [cardId]);
+    final r = await db.rawQuery(
+      'SELECT COUNT(*) c FROM loans WHERE member_id = ?',
+      [cardId],
+    );
     return r.first['c'] as int;
   }
 
   Future<String?> cardIdOf(int id) async {
     final db = await svc.database;
-    final r = await db
-        .query('members', columns: ['member_id'], where: 'id = ?', whereArgs: [id]);
+    final r = await db.query(
+      'members',
+      columns: ['member_id'],
+      where: 'id = ?',
+      whereArgs: [id],
+    );
     return r.isEmpty ? null : r.first['member_id'] as String?;
   }
 
   Member memberWithCard(int id, String cardId, {String? phone}) => Member(
-        id: id,
-        firstName: cardId,
-        lastName: 'Doe',
-        email: null,
-        phone: phone,
-        memberId: cardId,
-        registeredAt: DateTime(2020),
-      );
+    id: id,
+    firstName: cardId,
+    lastName: 'Doe',
+    email: null,
+    phone: phone,
+    memberId: cardId,
+    registeredAt: DateTime(2020),
+  );
 
   group('updateMember member_id cascade (DB-01 / Phase 4.4)', () {
     test('renaming a card id cascades to the member loans', () async {
@@ -107,28 +122,36 @@ void main() {
       await svc.updateMember(memberWithCard(id, 'AA0099'));
 
       expect(await cardIdOf(id), 'AA0099');
-      expect(await loanCount('AA0099'), 2,
-          reason: 'both loans must follow the renamed member');
-      expect(await loanCount('AA0001'), 0,
-          reason: 'no history may be left on the stale id');
-    });
-
-    test('a rename onto another member is rejected and changes nothing',
-        () async {
-      final a = await addMember('BB0001');
-      await addMember('CC0001');
-      await addLoan('BB0001');
-
-      await expectLater(
-        svc.updateMember(memberWithCard(a, 'CC0001')),
-        throwsA(isA<MemberIdConflictException>()),
+      expect(
+        await loanCount('AA0099'),
+        2,
+        reason: 'both loans must follow the renamed member',
       );
-
-      // Atomic rollback: A keeps its card, its loans are intact, B untouched.
-      expect(await cardIdOf(a), 'BB0001');
-      expect(await loanCount('BB0001'), 1);
-      expect(await loanCount('CC0001'), 0);
+      expect(
+        await loanCount('AA0001'),
+        0,
+        reason: 'no history may be left on the stale id',
+      );
     });
+
+    test(
+      'a rename onto another member is rejected and changes nothing',
+      () async {
+        final a = await addMember('BB0001');
+        await addMember('CC0001');
+        await addLoan('BB0001');
+
+        await expectLater(
+          svc.updateMember(memberWithCard(a, 'CC0001')),
+          throwsA(isA<MemberIdConflictException>()),
+        );
+
+        // Atomic rollback: A keeps its card, its loans are intact, B untouched.
+        expect(await cardIdOf(a), 'BB0001');
+        expect(await loanCount('BB0001'), 1);
+        expect(await loanCount('CC0001'), 0);
+      },
+    );
 
     test('an edit that keeps the card id does not touch loans', () async {
       final id = await addMember('DD0001');
@@ -139,8 +162,12 @@ void main() {
       expect(await cardIdOf(id), 'DD0001');
       expect(await loanCount('DD0001'), 1, reason: 'no spurious cascade');
       final db = await svc.database;
-      final r = await db
-          .query('members', columns: ['phone'], where: 'id = ?', whereArgs: [id]);
+      final r = await db.query(
+        'members',
+        columns: ['phone'],
+        where: 'id = ?',
+        whereArgs: [id],
+      );
       expect(r.first['phone'], '555');
     });
 

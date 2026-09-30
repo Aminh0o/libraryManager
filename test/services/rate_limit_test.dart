@@ -8,7 +8,10 @@ void main() {
     late DateTime now;
     RateLimiter build({int capacity = 3, double refillPerMinute = 60}) =>
         RateLimiter(
-            capacity: capacity, refillPerMinute: refillPerMinute, clock: () => now);
+          capacity: capacity,
+          refillPerMinute: refillPerMinute,
+          clock: () => now,
+        );
 
     setUp(() => now = DateTime(2026, 1, 1, 12));
 
@@ -34,19 +37,27 @@ void main() {
       expect(rl.tryAcquire('a'), isNull);
       expect(rl.tryAcquire('a'), isNotNull);
       now = now.add(const Duration(seconds: 30)); // ~0.5 token accrued
-      expect(rl.tryAcquire('a'), isNotNull,
-          reason: 'half a token must not admit a write');
+      expect(
+        rl.tryAcquire('a'),
+        isNotNull,
+        reason: 'half a token must not admit a write',
+      );
       now = now.add(const Duration(seconds: 30)); // ~1.0 token total
       expect(rl.tryAcquire('a'), isNull);
     });
 
     test('an idle refill never exceeds capacity (bounded burst)', () {
       final rl = build(capacity: 2, refillPerMinute: 600);
-      now = now.add(const Duration(minutes: 10)); // would add 6000 -> clamps to 2
+      now = now.add(
+        const Duration(minutes: 10),
+      ); // would add 6000 -> clamps to 2
       expect(rl.tryAcquire('a'), isNull);
       expect(rl.tryAcquire('a'), isNull);
-      expect(rl.tryAcquire('a'), isNotNull,
-          reason: 'burst stays capped at capacity despite long idleness');
+      expect(
+        rl.tryAcquire('a'),
+        isNotNull,
+        reason: 'burst stays capped at capacity despite long idleness',
+      );
     });
   });
 }

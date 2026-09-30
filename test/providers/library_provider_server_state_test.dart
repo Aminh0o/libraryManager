@@ -65,20 +65,21 @@ class _LazyStartStub extends HttpServerService {
 
 void main() {
   group('Provider reflects real LAN-server state (BE-01 / Phase 8.1)', () {
-    test('a bind failure is NOT reported as connected and surfaces an error',
-        () async {
-      final provider = LibraryProvider.forTesting(repository: _NullRepo());
-      provider.serverForTesting = _FailingServer();
+    test(
+      'a bind failure is NOT reported as connected and surfaces an error',
+      () async {
+        final provider = LibraryProvider.forTesting(repository: _NullRepo());
+        provider.serverForTesting = _FailingServer();
 
-      await provider.startHostServerForTesting();
+        await provider.startHostServerForTesting();
 
-      expect(provider.isConnected, isFalse);
-      expect(provider.serverRunning, isFalse);
-      expect(provider.serverError(), isNotNull);
-      // P22: the failure kind is reported independently of any translation.
-      expect(
-          provider.serverErrorKind, LanServerErrorKind.startFailed);
-    });
+        expect(provider.isConnected, isFalse);
+        expect(provider.serverRunning, isFalse);
+        expect(provider.serverError(), isNotNull);
+        // P22: the failure kind is reported independently of any translation.
+        expect(provider.serverErrorKind, LanServerErrorKind.startFailed);
+      },
+    );
 
     test('an already-running server reports connected with no error', () async {
       final provider = LibraryProvider.forTesting(repository: _NullRepo());
@@ -92,45 +93,53 @@ void main() {
       expect(provider.serverErrorKind, isNull);
     });
 
-    test('a successful start flips connected only after it is listening',
-        () async {
-      final provider = LibraryProvider.forTesting(repository: _NullRepo());
-      final stub = _LazyStartStub();
-      provider.serverForTesting = stub;
-      expect(provider.serverRunning, isFalse);
+    test(
+      'a successful start flips connected only after it is listening',
+      () async {
+        final provider = LibraryProvider.forTesting(repository: _NullRepo());
+        final stub = _LazyStartStub();
+        provider.serverForTesting = stub;
+        expect(provider.serverRunning, isFalse);
 
-      await provider.startHostServerForTesting();
+        await provider.startHostServerForTesting();
 
-      expect(provider.isConnected, isTrue);
-      expect(provider.serverRunning, isTrue);
-      expect(provider.serverError(), isNull);
-    });
+        expect(provider.isConnected, isTrue);
+        expect(provider.serverRunning, isTrue);
+        expect(provider.serverError(), isNull);
+      },
+    );
   });
 
   group('HttpServerService propagates a real bind conflict (BE-01)', () {
-    test('startServer throws on an occupied port and stays not-running',
-        () async {
-      // Occupy an ephemeral port, then try to start the server on the same one.
-      final probe = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
-      final takenPort = probe.port;
-      final service = HttpServerService(repository: _NullRepo());
+    test(
+      'startServer throws on an occupied port and stays not-running',
+      () async {
+        // Occupy an ephemeral port, then try to start the server on the same one.
+        final probe = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+        final takenPort = probe.port;
+        final service = HttpServerService(repository: _NullRepo());
 
-      expect(service.isRunning, isFalse);
-      await expectLater(
-        service.startServer(
-            host: InternetAddress.loopbackIPv4.address, port: takenPort),
-        throwsA(isA<SocketException>()),
-      );
-      // A failed bind must leave the service reporting it is NOT running.
-      expect(service.isRunning, isFalse);
+        expect(service.isRunning, isFalse);
+        await expectLater(
+          service.startServer(
+            host: InternetAddress.loopbackIPv4.address,
+            port: takenPort,
+          ),
+          throwsA(isA<SocketException>()),
+        );
+        // A failed bind must leave the service reporting it is NOT running.
+        expect(service.isRunning, isFalse);
 
-      await probe.close();
-    });
+        await probe.close();
+      },
+    );
 
     test('a successful bind makes isRunning true with a real port', () async {
       final service = HttpServerService(repository: _NullRepo());
-      await service
-          .startServer(host: InternetAddress.loopbackIPv4.address, port: 0);
+      await service.startServer(
+        host: InternetAddress.loopbackIPv4.address,
+        port: 0,
+      );
       expect(service.isRunning, isTrue);
       expect(service.port, greaterThan(0));
       await service.stopServer();

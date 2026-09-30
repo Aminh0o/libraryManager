@@ -40,26 +40,34 @@ void main() {
   });
 
   Map<String, String> hdr(String? token) => {
-        if (token != null) 'Authorization': 'Bearer $token',
-      };
+    if (token != null) 'Authorization': 'Bearer $token',
+  };
 
   Future<http.Response> get(String path, {String? token}) =>
       client.get(Uri.parse('$base$path'), headers: hdr(token));
 
-  Future<http.Response> postBody(String path, Map<String, dynamic> body,
-          {String? token}) =>
-      client.post(Uri.parse('$base$path'),
-          headers: {'Content-Type': 'application/json', ...hdr(token)},
-          body: jsonEncode(body));
+  Future<http.Response> postBody(
+    String path,
+    Map<String, dynamic> body, {
+    String? token,
+  }) => client.post(
+    Uri.parse('$base$path'),
+    headers: {'Content-Type': 'application/json', ...hdr(token)},
+    body: jsonEncode(body),
+  );
 
   Future<http.Response> postEmpty(String path, {String? token}) =>
       client.post(Uri.parse('$base$path'), headers: hdr(token));
 
-  Future<http.Response> putBody(String path, Map<String, dynamic> body,
-          {String? token}) =>
-      client.put(Uri.parse('$base$path'),
-          headers: {'Content-Type': 'application/json', ...hdr(token)},
-          body: jsonEncode(body));
+  Future<http.Response> putBody(
+    String path,
+    Map<String, dynamic> body, {
+    String? token,
+  }) => client.put(
+    Uri.parse('$base$path'),
+    headers: {'Content-Type': 'application/json', ...hdr(token)},
+    body: jsonEncode(body),
+  );
 
   Future<String> login(String u, String p) async {
     final res = await postBody('/auth/login', {'username': u, 'password': p});
@@ -70,9 +78,11 @@ void main() {
   Future<String> adminToken() => login('admin', 'root-pw');
 
   Future<String> addAndLogin(String name, String pw, String role) async {
-    final r = await postBody('/users',
-        {'username': name, 'password': pw, 'role': role},
-        token: await adminToken());
+    final r = await postBody('/users', {
+      'username': name,
+      'password': pw,
+      'role': role,
+    }, token: await adminToken());
     expect(r.statusCode, 201, reason: 'seed $name: ${r.body}');
     return login(name, pw);
   }
@@ -149,17 +159,22 @@ void main() {
       expect((await repo.getFines()).single.status, FineStatus.waived);
     });
 
-    test('double-settling is a 409 conflict, never a second collection',
-        () async {
-      final staff = await addAndLogin('libby', 'libby-pw-1', 'staff');
-      final id = repo.seedFine('M1', 5);
-      expect((await postEmpty('/fines/$id/pay', token: staff)).statusCode, 200);
+    test(
+      'double-settling is a 409 conflict, never a second collection',
+      () async {
+        final staff = await addAndLogin('libby', 'libby-pw-1', 'staff');
+        final id = repo.seedFine('M1', 5);
+        expect(
+          (await postEmpty('/fines/$id/pay', token: staff)).statusCode,
+          200,
+        );
 
-      final again = await postEmpty('/fines/$id/pay', token: staff);
-      expect(again.statusCode, 409);
-      expect(jsonDecode(again.body)['error'], 'conflict');
-      expect((await repo.getFines()).single.status, FineStatus.paid);
-    });
+        final again = await postEmpty('/fines/$id/pay', token: staff);
+        expect(again.statusCode, 409);
+        expect(jsonDecode(again.body)['error'], 'conflict');
+        expect((await repo.getFines()).single.status, FineStatus.paid);
+      },
+    );
 
     test('settling an unknown fine is a 409', () async {
       final staff = await addAndLogin('libby', 'libby-pw-1', 'staff');
@@ -180,7 +195,8 @@ void main() {
       final staff = await addAndLogin('libby', 'libby-pw-1', 'staff');
       expect((await get('/settings/fines', token: staff)).statusCode, 200);
       expectForbidden(
-          await putBody('/settings/fines', {'rate_per_day': 3}, token: staff));
+        await putBody('/settings/fines', {'rate_per_day': 3}, token: staff),
+      );
     });
 
     test('an admin sets the rate; a viewer may not even read it', () async {
@@ -188,20 +204,24 @@ void main() {
       expectForbidden(await get('/settings/fines', token: viewer));
 
       final admin = await adminToken();
-      final put = await putBody(
-          '/settings/fines', {'rate_per_day': 2.5, 'currency': 'DZD'},
-          token: admin);
+      final put = await putBody('/settings/fines', {
+        'rate_per_day': 2.5,
+        'currency': 'DZD',
+      }, token: admin);
       expect(put.statusCode, 200, reason: put.body);
 
-      final read = jsonDecode((await get('/settings/fines', token: admin)).body);
+      final read = jsonDecode(
+        (await get('/settings/fines', token: admin)).body,
+      );
       expect(read['rate_per_day'], 2.5);
       expect(read['currency'], 'DZD');
     });
 
     test('a negative rate is rejected with 400', () async {
       final admin = await adminToken();
-      final res =
-          await putBody('/settings/fines', {'rate_per_day': -1}, token: admin);
+      final res = await putBody('/settings/fines', {
+        'rate_per_day': -1,
+      }, token: admin);
       expect(res.statusCode, 400);
     });
   });

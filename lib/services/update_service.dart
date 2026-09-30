@@ -45,8 +45,7 @@ class UpdateService {
   /// Left unset (the honest default for a self-hosted deployment that has no
   /// public feed) the check reports [UpdateStatus.notConfigured] instead of
   /// pretending the app is up to date.
-  static const String _updateApiUrl =
-      String.fromEnvironment('UPDATE_FEED_URL');
+  static const String _updateApiUrl = String.fromEnvironment('UPDATE_FEED_URL');
 
   static Future<UpdateCheckResult> checkForUpdate() async {
     if (_updateApiUrl.isEmpty) {
@@ -55,9 +54,10 @@ class UpdateService {
     try {
       final packageInfo = await PackageInfo.fromPlatform();
       final response = await http
-          .get(Uri.parse(_updateApiUrl), headers: const {
-        'Accept': 'application/json',
-      })
+          .get(
+            Uri.parse(_updateApiUrl),
+            headers: const {'Accept': 'application/json'},
+          )
           .timeout(const Duration(seconds: 15));
       if (response.statusCode != 200) {
         return const UpdateCheckResult(UpdateStatus.failed);
@@ -100,14 +100,16 @@ class UpdateService {
 
   @visibleForTesting
   static bool isNewer(String latest, String current) {
-    final latestParts =
-        latest.split('.').map((e) => int.tryParse(e) ?? 0).toList();
-    final currentParts =
-        current.split('.').map((e) => int.tryParse(e) ?? 0).toList();
+    final latestParts = latest
+        .split('.')
+        .map((e) => int.tryParse(e) ?? 0)
+        .toList();
+    final currentParts = current
+        .split('.')
+        .map((e) => int.tryParse(e) ?? 0)
+        .toList();
 
-    for (var i = 0;
-        i < latestParts.length && i < currentParts.length;
-        i++) {
+    for (var i = 0; i < latestParts.length && i < currentParts.length; i++) {
       if (latestParts[i] > currentParts[i]) return true;
       if (latestParts[i] < currentParts[i]) return false;
     }

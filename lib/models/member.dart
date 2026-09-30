@@ -6,6 +6,7 @@ class Member {
   final String? phone;
   final String memberId; // Unique Card ID or Student ID
   final DateTime registeredAt;
+
   /// Per-row optimistic-concurrency token (TX-06). Advanced by the server on
   /// every successful member edit; surfaced on reads so a client can send it
   /// back (as `X-Expected-Version`) and have a stale whole-row edit REJECTED

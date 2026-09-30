@@ -50,14 +50,18 @@ void main() {
   });
 
   Map<String, String> hdr(String? token) => {
-        if (token != null) 'Authorization': 'Bearer $token',
-      };
+    if (token != null) 'Authorization': 'Bearer $token',
+  };
 
-  Future<http.Response> postBody(String path, Map<String, dynamic> body,
-          {String? token}) =>
-      client.post(Uri.parse('$base$path'),
-          headers: {'Content-Type': 'application/json', ...hdr(token)},
-          body: jsonEncode(body));
+  Future<http.Response> postBody(
+    String path,
+    Map<String, dynamic> body, {
+    String? token,
+  }) => client.post(
+    Uri.parse('$base$path'),
+    headers: {'Content-Type': 'application/json', ...hdr(token)},
+    body: jsonEncode(body),
+  );
 
   Future<String> login(String u, String p) async {
     final res = await postBody('/auth/login', {'username': u, 'password': p});
@@ -68,9 +72,11 @@ void main() {
   Future<String> adminToken() => login('admin', 'root-pw');
 
   Future<String> addAndLogin(String name, String pw, String role) async {
-    final r = await postBody('/users',
-        {'username': name, 'password': pw, 'role': role},
-        token: await adminToken());
+    final r = await postBody('/users', {
+      'username': name,
+      'password': pw,
+      'role': role,
+    }, token: await adminToken());
     expect(r.statusCode, 201, reason: 'seed $name: ${r.body}');
     return login(name, pw);
   }
@@ -84,9 +90,9 @@ void main() {
     test('a viewer is refused before the queue is touched', () async {
       final viewer = await addAndLogin('kiosk', 'kiosk-pw-1', 'viewer');
       final id = repo.seedHold('0001', 'M1');
-      final res =
-          await postBody('/reservations/$id/move', {'direction': 'up'},
-              token: viewer);
+      final res = await postBody('/reservations/$id/move', {
+        'direction': 'up',
+      }, token: viewer);
       expectForbidden(res);
       // The route denies BEFORE reading or writing anything: the hold is
       // still queued with the same rank (untouched).
@@ -99,9 +105,9 @@ void main() {
       final staff = await addAndLogin('libby', 'libby-pw-1', 'staff');
       repo.seedHold('0001', 'M1');
       final second = repo.seedHold('0001', 'M2');
-      final res = await postBody(
-          '/reservations/$second/move', {'direction': 'up'},
-          token: staff);
+      final res = await postBody('/reservations/$second/move', {
+        'direction': 'up',
+      }, token: staff);
       expect(res.statusCode, 200, reason: res.body);
       expect(jsonDecode(res.body)['ok'], isTrue);
     });
@@ -110,46 +116,50 @@ void main() {
       final staff = await addAndLogin('libby', 'libby-pw-1', 'staff');
       final first = repo.seedHold('0001', 'M1');
       repo.seedHold('0001', 'M2');
-      final res = await postBody(
-          '/reservations/$first/move', {'direction': 'down'},
-          token: staff);
+      final res = await postBody('/reservations/$first/move', {
+        'direction': 'down',
+      }, token: staff);
       expect(res.statusCode, 200, reason: res.body);
     });
 
-    test('a missing direction is a 400 (not a 500, not a silent default)',
-        () async {
-      final staff = await addAndLogin('libby', 'libby-pw-1', 'staff');
-      final id = repo.seedHold('0001', 'M1');
-      final res =
-          await postBody('/reservations/$id/move', <String, dynamic>{},
-              token: staff);
-      expect(res.statusCode, 400, reason: res.body);
-      expect(jsonDecode(res.body)['error'], 'bad_request');
-    });
+    test(
+      'a missing direction is a 400 (not a 500, not a silent default)',
+      () async {
+        final staff = await addAndLogin('libby', 'libby-pw-1', 'staff');
+        final id = repo.seedHold('0001', 'M1');
+        final res = await postBody(
+          '/reservations/$id/move',
+          <String, dynamic>{},
+          token: staff,
+        );
+        expect(res.statusCode, 400, reason: res.body);
+        expect(jsonDecode(res.body)['error'], 'bad_request');
+      },
+    );
 
     test('a garbage direction is a 400', () async {
       final staff = await addAndLogin('libby', 'libby-pw-1', 'staff');
       final id = repo.seedHold('0001', 'M1');
-      final res = await postBody(
-          '/reservations/$id/move', {'direction': 'sideways'},
-          token: staff);
+      final res = await postBody('/reservations/$id/move', {
+        'direction': 'sideways',
+      }, token: staff);
       expect(res.statusCode, 400, reason: res.body);
       expect(jsonDecode(res.body)['error'], 'bad_request');
     });
 
     test('a non-integer id is a 400', () async {
       final staff = await addAndLogin('libby', 'libby-pw-1', 'staff');
-      final res =
-          await postBody('/reservations/abc/move', {'direction': 'up'},
-              token: staff);
+      final res = await postBody('/reservations/abc/move', {
+        'direction': 'up',
+      }, token: staff);
       expect(res.statusCode, 400, reason: res.body);
     });
 
     test('moving an unknown hold is a 409 conflict', () async {
       final staff = await addAndLogin('libby', 'libby-pw-1', 'staff');
-      final res = await postBody('/reservations/99999/move',
-          {'direction': 'up'},
-          token: staff);
+      final res = await postBody('/reservations/99999/move', {
+        'direction': 'up',
+      }, token: staff);
       expect(res.statusCode, 409, reason: res.body);
       expect(jsonDecode(res.body)['error'], 'conflict');
     });
@@ -158,14 +168,17 @@ void main() {
       // A promoted hold is server-owned: its position IS the shelf, not the
       // queue. The route must refuse BEFORE any rank write happens.
       final staff = await addAndLogin('libby', 'libby-pw-1', 'staff');
-      final id = repo.seedHold('0001', 'M1',
-          status: ReservationStatus.available,
-          availableUntil: DateTime.now()
-              .add(const Duration(days: 7))
-              .toIso8601String());
-      final res = await postBody('/reservations/$id/move',
-          {'direction': 'up'},
-          token: staff);
+      final id = repo.seedHold(
+        '0001',
+        'M1',
+        status: ReservationStatus.available,
+        availableUntil: DateTime.now()
+            .add(const Duration(days: 7))
+            .toIso8601String(),
+      );
+      final res = await postBody('/reservations/$id/move', {
+        'direction': 'up',
+      }, token: staff);
       expect(res.statusCode, 409, reason: res.body);
       // The row is unchanged -- the FakeRepo throws StateError before
       // touching anything, mirroring the real transaction's early exit.
@@ -174,15 +187,17 @@ void main() {
       expect(row.rank, isNull);
     });
 
-    test('an unauthenticated call is refused before the queue is read',
-        () async {
-      final id = repo.seedHold('0001', 'M1');
-      final res = await client.post(
-        Uri.parse('$base/reservations/$id/move'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'direction': 'up'}),
-      );
-      expect(res.statusCode, anyOf(401, 403), reason: res.body);
-    });
+    test(
+      'an unauthenticated call is refused before the queue is read',
+      () async {
+        final id = repo.seedHold('0001', 'M1');
+        final res = await client.post(
+          Uri.parse('$base/reservations/$id/move'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'direction': 'up'}),
+        );
+        expect(res.statusCode, anyOf(401, 403), reason: res.body);
+      },
+    );
   });
 }

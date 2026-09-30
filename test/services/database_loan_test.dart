@@ -22,23 +22,23 @@ void main() {
   }
 
   LibraryItem item(String code, {String status = 'Disponible'}) => LibraryItem(
-        code: code,
-        codeType: 'LIV',
-        designation: 'Designation $code',
-        quantite: 1,
-        emplacement: 'A',
-        taux: 10,
-        emplacementStock: 'S',
-        status: status,
-      );
+    code: code,
+    codeType: 'LIV',
+    designation: 'Designation $code',
+    quantite: 1,
+    emplacement: 'A',
+    taux: 10,
+    emplacementStock: 'S',
+    status: status,
+  );
 
   Loan loanFor(String code) => LoanTransitions.checkOut(
-        itemCode: code,
-        memberId: '250001',
-        memberName: 'Alice',
-        itemTitle: 'Designation $code',
-        now: now,
-      );
+    itemCode: code,
+    memberId: '250001',
+    memberName: 'Alice',
+    itemTitle: 'Designation $code',
+    now: now,
+  );
 
   setUp(() async {
     db = await databaseFactoryFfi.openDatabase(inMemoryDatabasePath);
@@ -63,7 +63,8 @@ void main() {
         note TEXT, acquired_at TEXT)
     ''');
     await db.execute(
-        'CREATE TABLE members(member_id TEXT PRIMARY KEY, name TEXT)');
+      'CREATE TABLE members(member_id TEXT PRIMARY KEY, name TEXT)',
+    );
     // Phase 10.3: every borrow/return now touches the hold queue (walk-up
     // guards inside the txn + a post-commit promotion sweep), so the
     // reservations table is part of the schema a real v21 database always has.
@@ -103,37 +104,54 @@ void main() {
     expect(() => svc.addLoan(loanFor('missing')), throwsA(isA<Exception>()));
   });
 
-  test('cannot lend an item that is not available (status preserved)', () async {
-    await seedItem(item('0003', status: 'Archivé'));
-    expect(() => svc.addLoan(loanFor('0003')), throwsA(isA<Exception>()));
-    final loaded = await db.query('library_items', where: "code = '0003'");
-    expect(loaded.first['status'], 'Archivé',
-        reason: 'a rejected loan must not clobber a custom status');
-  });
+  test(
+    'cannot lend an item that is not available (status preserved)',
+    () async {
+      await seedItem(item('0003', status: 'Archivé'));
+      expect(() => svc.addLoan(loanFor('0003')), throwsA(isA<Exception>()));
+      final loaded = await db.query('library_items', where: "code = '0003'");
+      expect(
+        loaded.first['status'],
+        'Archivé',
+        reason: 'a rejected loan must not clobber a custom status',
+      );
+    },
+  );
 
   test('checkout -> return restores availability', () async {
     await seedItem(item('0004'));
     await svc.addLoan(loanFor('0004'));
     final active = (await svc.getLoans(activeOnly: true)).first;
 
-    await svc.updateLoan(LoanTransitions.returnLoan(active, when: now.add(const Duration(days: 2))));
+    await svc.updateLoan(
+      LoanTransitions.returnLoan(
+        active,
+        when: now.add(const Duration(days: 2)),
+      ),
+    );
 
     final loaded = await db.query('library_items', where: "code = '0004'");
     expect(loaded.first['status'], 'Disponible');
     expect(await svc.getLoans(activeOnly: true), isEmpty);
   });
 
-  test('BL-02: reactivating a returned loan via updateLoan is rejected', () async {
-    await seedItem(item('0005'));
-    await svc.addLoan(loanFor('0005'));
-    final active = (await svc.getLoans(activeOnly: true)).first;
-    final returned = LoanTransitions.returnLoan(active, when: now);
-    await svc.updateLoan(returned);
+  test(
+    'BL-02: reactivating a returned loan via updateLoan is rejected',
+    () async {
+      await seedItem(item('0005'));
+      await svc.addLoan(loanFor('0005'));
+      final active = (await svc.getLoans(activeOnly: true)).first;
+      final returned = LoanTransitions.returnLoan(active, when: now);
+      await svc.updateLoan(returned);
 
-    final resurrect = returned.copyWith(status: 'Active', returnDate: null);
-    expect(() => svc.updateLoan(resurrect), throwsA(isA<Exception>()),
-        reason: 'server must refuse to reactivate a returned loan');
-  });
+      final resurrect = returned.copyWith(status: 'Active', returnDate: null);
+      expect(
+        () => svc.updateLoan(resurrect),
+        throwsA(isA<Exception>()),
+        reason: 'server must refuse to reactivate a returned loan',
+      );
+    },
+  );
 
   test('updateLoan on an unknown loan id is rejected', () async {
     final ghost = loanFor('0006').copyWith(id: 9999);
@@ -152,7 +170,11 @@ void main() {
     }
 
     Future<String> statusOf(String code) async {
-      final r = await db.query('library_items', where: 'code = ?', whereArgs: [code]);
+      final r = await db.query(
+        'library_items',
+        where: 'code = ?',
+        whereArgs: [code],
+      );
       return r.first['status'] as String;
     }
 
@@ -176,8 +198,9 @@ void main() {
       await svc.addLoan(loanFor('1002').copyWith(copyId: ids[1]));
       expect(await svc.getLoans(activeOnly: true), hasLength(2));
 
-      final firstOut = (await svc.getLoans(activeOnly: true))
-          .firstWhere((l) => l.copyId == ids[0]);
+      final firstOut = (await svc.getLoans(
+        activeOnly: true,
+      )).firstWhere((l) => l.copyId == ids[0]);
       await svc.updateLoan(LoanTransitions.returnLoan(firstOut, when: now));
 
       // The other copy is STILL on loan — a per-copy return must not resurrect
@@ -226,106 +249,138 @@ void main() {
     });
 
     test('addItem seeds one copy per declared quantity', () async {
-      await svc.addItem(LibraryItem(
-        code: '1006',
-        codeType: 'LIV',
-        designation: 'Seeded',
-        quantite: 3,
-        emplacement: 'A',
-        taux: 10,
-        emplacementStock: 'S',
-      ));
+      await svc.addItem(
+        LibraryItem(
+          code: '1006',
+          codeType: 'LIV',
+          designation: 'Seeded',
+          quantite: 3,
+          emplacement: 'A',
+          taux: 10,
+          emplacementStock: 'S',
+        ),
+      );
       final copies = await svc.getCopies('1006');
       expect(copies, hasLength(3));
       expect(copies.every((c) => c.isAvailable), isTrue);
     });
 
     test('shrinking quantity never removes an on-loan copy', () async {
-      await svc.addItem(LibraryItem(
-        code: '1007',
-        codeType: 'LIV',
-        designation: 'Reconcile',
-        quantite: 3,
-        emplacement: 'A',
-        taux: 10,
-        emplacementStock: 'S',
-      ));
+      await svc.addItem(
+        LibraryItem(
+          code: '1007',
+          codeType: 'LIV',
+          designation: 'Reconcile',
+          quantite: 3,
+          emplacement: 'A',
+          taux: 10,
+          emplacementStock: 'S',
+        ),
+      );
       final copies = await svc.getCopies('1007');
       await svc.addLoan(loanFor('1007').copyWith(copyId: copies.first.id));
 
       // Request to shrink to 1 copy, but 1 is on loan => keep at least that.
-      await svc.updateItem(LibraryItem(
-        code: '1007',
-        codeType: 'LIV',
-        designation: 'Reconcile',
-        quantite: 1,
-        emplacement: 'A',
-        taux: 10,
-        emplacementStock: 'S',
-      ));
+      await svc.updateItem(
+        LibraryItem(
+          code: '1007',
+          codeType: 'LIV',
+          designation: 'Reconcile',
+          quantite: 1,
+          emplacement: 'A',
+          taux: 10,
+          emplacementStock: 'S',
+        ),
+      );
       final after = await svc.getCopies('1007');
-      expect(after.where((c) => c.isOnLoan), hasLength(1),
-          reason: 'an on-loan copy cannot be discarded');
+      expect(
+        after.where((c) => c.isOnLoan),
+        hasLength(1),
+        reason: 'an on-loan copy cannot be discarded',
+      );
     });
 
-    test('concurrent auto-pick checkouts never exceed the copy count (BL-01)',
-        () async {
-      await seedItem(item('3001'));
-      await addCopies('3001', 2); // only 2 physical copies
+    test(
+      'concurrent auto-pick checkouts never exceed the copy count (BL-01)',
+      () async {
+        await seedItem(item('3001'));
+        await addCopies('3001', 2); // only 2 physical copies
 
-      // Fire 5 simultaneous checkouts for the same title (server auto-picks a
-      // copy each). Exactly 2 may win; the rest must be refused.
-      final results = await Future.wait(List.generate(
-        5,
-        (_) => svc
-            .addLoan(loanFor('3001'))
-            .then((_) => true)
-            .catchError((_) => false),
-      ));
+        // Fire 5 simultaneous checkouts for the same title (server auto-picks a
+        // copy each). Exactly 2 may win; the rest must be refused.
+        final results = await Future.wait(
+          List.generate(
+            5,
+            (_) => svc
+                .addLoan(loanFor('3001'))
+                .then((_) => true)
+                .catchError((_) => false),
+          ),
+        );
 
-      expect(results.where((r) => r).length, 2,
-          reason: 'no more copies than physically exist can be lent');
-      final copies = await svc.getCopies('3001');
-      expect(copies.where((c) => c.isOnLoan), hasLength(2));
-      expect(copies.where((c) => c.isAvailable), isEmpty);
-      expect(await svc.getLoans(activeOnly: true), hasLength(2));
-      // Each loan is bound to a distinct copy (no double-booked physical item).
-      final loanedCopyIds =
-          (await svc.getLoans(activeOnly: true)).map((l) => l.copyId).toSet();
-      expect(loanedCopyIds, hasLength(2));
-      expect(await statusOf('3001'), 'Emprunté');
-    });
+        expect(
+          results.where((r) => r).length,
+          2,
+          reason: 'no more copies than physically exist can be lent',
+        );
+        final copies = await svc.getCopies('3001');
+        expect(copies.where((c) => c.isOnLoan), hasLength(2));
+        expect(copies.where((c) => c.isAvailable), isEmpty);
+        expect(await svc.getLoans(activeOnly: true), hasLength(2));
+        // Each loan is bound to a distinct copy (no double-booked physical item).
+        final loanedCopyIds = (await svc.getLoans(
+          activeOnly: true,
+        )).map((l) => l.copyId).toSet();
+        expect(loanedCopyIds, hasLength(2));
+        expect(await statusOf('3001'), 'Emprunté');
+      },
+    );
 
-    test('concurrent legacy per-title checkouts allow exactly one loan (BL-01)',
-        () async {
-      await seedItem(item('3002')); // no copies -> legacy per-title path
+    test(
+      'concurrent legacy per-title checkouts allow exactly one loan (BL-01)',
+      () async {
+        await seedItem(item('3002')); // no copies -> legacy per-title path
 
-      final results = await Future.wait(List.generate(
-        5,
-        (_) => svc
-            .addLoan(loanFor('3002'))
-            .then((_) => true)
-            .catchError((_) => false),
-      ));
+        final results = await Future.wait(
+          List.generate(
+            5,
+            (_) => svc
+                .addLoan(loanFor('3002'))
+                .then((_) => true)
+                .catchError((_) => false),
+          ),
+        );
 
-      expect(results.where((r) => r).length, 1,
-          reason: 'the status compare-and-swap lets only one checkout win');
-      expect(await svc.getLoans(activeOnly: true), hasLength(1));
-      expect(await statusOf('3002'), 'Emprunté');
-    });
+        expect(
+          results.where((r) => r).length,
+          1,
+          reason: 'the status compare-and-swap lets only one checkout win',
+        );
+        expect(await svc.getLoans(activeOnly: true), hasLength(1));
+        expect(await statusOf('3002'), 'Emprunté');
+      },
+    );
   });
 
   group('scan-to-return resolution (BL-03)', () {
     Future<void> seedWithIsbn(String code, String isbn) async {
       await seedItem(item(code));
-      await db.update('library_items', {'barcode': isbn},
-          where: 'code = ?', whereArgs: [code]);
+      await db.update(
+        'library_items',
+        {'barcode': isbn},
+        where: 'code = ?',
+        whereArgs: [code],
+      );
     }
 
     test('resolves by item code, title ISBN, and per-copy barcode', () async {
       await seedWithIsbn('2001', 'ISBN-2001');
-      final idA = await svc.addCopy(ItemCopy(itemCode: '2001', barcode: 'COPY-A'));
-      final idB = await svc.addCopy(ItemCopy(itemCode: '2001', barcode: 'COPY-B'));
+      final idA = await svc.addCopy(
+        ItemCopy(itemCode: '2001', barcode: 'COPY-A'),
+      );
+      final idB = await svc.addCopy(
+        ItemCopy(itemCode: '2001', barcode: 'COPY-B'),
+      );
       await svc.addLoan(loanFor('2001').copyWith(copyId: idA));
       await svc.addLoan(loanFor('2001').copyWith(copyId: idB));
 
@@ -345,19 +400,23 @@ void main() {
       expect(byCode!.itemCode, '2001');
     });
 
-    test('returns null for an unknown code or a fully-returned title', () async {
-      await seedWithIsbn('2002', 'ISBN-2002');
-      final id = await svc.addCopy(ItemCopy(itemCode: '2002'));
-      final loan = await svc.findActiveLoanByScan('nope');
-      expect(loan, isNull);
+    test(
+      'returns null for an unknown code or a fully-returned title',
+      () async {
+        await seedWithIsbn('2002', 'ISBN-2002');
+        final id = await svc.addCopy(ItemCopy(itemCode: '2002'));
+        final loan = await svc.findActiveLoanByScan('nope');
+        expect(loan, isNull);
 
-      await svc.addLoan(loanFor('2002').copyWith(copyId: id));
-      final active = (await svc.getLoans(activeOnly: true))
-          .firstWhere((l) => l.copyId == id);
-      await svc.updateLoan(LoanTransitions.returnLoan(active, when: now));
-      // No active loan remains -> null.
-      expect(await svc.findActiveLoanByScan('ISBN-2002'), isNull);
-    });
+        await svc.addLoan(loanFor('2002').copyWith(copyId: id));
+        final active = (await svc.getLoans(
+          activeOnly: true,
+        )).firstWhere((l) => l.copyId == id);
+        await svc.updateLoan(LoanTransitions.returnLoan(active, when: now));
+        // No active loan remains -> null.
+        expect(await svc.findActiveLoanByScan('ISBN-2002'), isNull);
+      },
+    );
   });
 
   group('referential delete guards (BL-04)', () {
@@ -369,54 +428,77 @@ void main() {
       }
     }
 
-    test('deleting an item with a legacy active loan is blocked, then allowed',
-        () async {
-      await seedItem(item('4001'));
-      await svc.addLoan(loanFor('4001')); // no copies -> legacy active loan
+    test(
+      'deleting an item with a legacy active loan is blocked, then allowed',
+      () async {
+        await seedItem(item('4001'));
+        await svc.addLoan(loanFor('4001')); // no copies -> legacy active loan
 
-      await expectLater(svc.deleteItem('4001'),
-          throwsA(isA<ActiveLoanConflictException>()));
-      expect(await db.query('library_items', where: "code = '4001'"),
-          hasLength(1)); // item preserved, not deleted
+        await expectLater(
+          svc.deleteItem('4001'),
+          throwsA(isA<ActiveLoanConflictException>()),
+        );
+        expect(
+          await db.query('library_items', where: "code = '4001'"),
+          hasLength(1),
+        ); // item preserved, not deleted
 
-      await returnAllLoansOf('4001');
-      await svc.deleteItem('4001'); // now permitted
-      expect(await db.query('library_items', where: "code = '4001'"), isEmpty);
-    });
+        await returnAllLoansOf('4001');
+        await svc.deleteItem('4001'); // now permitted
+        expect(
+          await db.query('library_items', where: "code = '4001'"),
+          isEmpty,
+        );
+      },
+    );
 
     test('deleting an item whose copy is on loan is blocked', () async {
       await seedItem(item('4002'));
       final id = await svc.addCopy(ItemCopy(itemCode: '4002'));
       await svc.addLoan(loanFor('4002').copyWith(copyId: id));
 
-      await expectLater(svc.deleteItem('4002'),
-          throwsA(isA<ActiveLoanConflictException>()));
+      await expectLater(
+        svc.deleteItem('4002'),
+        throwsA(isA<ActiveLoanConflictException>()),
+      );
       expect(
-          await db.query('item_copies', where: "item_code = '4002'"),
-          hasLength(1)); // copies untouched while on loan
+        await db.query('item_copies', where: "item_code = '4002'"),
+        hasLength(1),
+      ); // copies untouched while on loan
 
       await returnAllLoansOf('4002');
       await svc.deleteItem('4002');
       expect(await db.query('library_items', where: "code = '4002'"), isEmpty);
-      expect(await db.query('item_copies', where: "item_code = '4002'"),
-          isEmpty); // copies cleaned with the item
+      expect(
+        await db.query('item_copies', where: "item_code = '4002'"),
+        isEmpty,
+      ); // copies cleaned with the item
     });
 
-    test('deleting a member with an active loan is blocked, then allowed',
-        () async {
-      await db.insert('members', {'member_id': '250001', 'name': 'Alice'});
-      await seedItem(item('4003'));
-      await svc.addLoan(loanFor('4003')); // memberId = 250001
+    test(
+      'deleting a member with an active loan is blocked, then allowed',
+      () async {
+        await db.insert('members', {'member_id': '250001', 'name': 'Alice'});
+        await seedItem(item('4003'));
+        await svc.addLoan(loanFor('4003')); // memberId = 250001
 
-      await expectLater(svc.deleteMember('250001'),
-          throwsA(isA<ActiveLoanConflictException>()));
-      expect(await db.query('members', where: "member_id = '250001'"),
-          hasLength(1));
+        await expectLater(
+          svc.deleteMember('250001'),
+          throwsA(isA<ActiveLoanConflictException>()),
+        );
+        expect(
+          await db.query('members', where: "member_id = '250001'"),
+          hasLength(1),
+        );
 
-      await returnAllLoansOf('4003');
-      await svc.deleteMember('250001');
-      expect(await db.query('members', where: "member_id = '250001'"), isEmpty);
-    });
+        await returnAllLoansOf('4003');
+        await svc.deleteMember('250001');
+        expect(
+          await db.query('members', where: "member_id = '250001'"),
+          isEmpty,
+        );
+      },
+    );
 
     test('an item / member with no loans deletes normally', () async {
       await seedItem(item('4004'));

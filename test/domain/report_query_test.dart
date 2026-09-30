@@ -68,15 +68,24 @@ void main() {
     final now = DateTime(2026, 9, 21, 13, 45); // mid-afternoon
 
     test('a windowless kind returns null regardless of inputs', () {
-      expect(ReportQuery.window(ReportKind.overdue, from: '2026-01-01'), isNull);
-      expect(ReportQuery.window(ReportKind.inventory, to: '2026-12-31'), isNull);
+      expect(
+        ReportQuery.window(ReportKind.overdue, from: '2026-01-01'),
+        isNull,
+      );
+      expect(
+        ReportQuery.window(ReportKind.inventory, to: '2026-12-31'),
+        isNull,
+      );
     });
 
-    test('defaults to the last 30 days ending today (time-of-day stripped)', () {
-      final w = ReportQuery.window(ReportKind.circulation, now: now)!;
-      expect(w.toDay, '2026-09-21');
-      expect(w.fromDay, '2026-08-22');
-    });
+    test(
+      'defaults to the last 30 days ending today (time-of-day stripped)',
+      () {
+        final w = ReportQuery.window(ReportKind.circulation, now: now)!;
+        expect(w.toDay, '2026-09-21');
+        expect(w.fromDay, '2026-08-22');
+      },
+    );
 
     test('honours an explicit inclusive window', () {
       final w = ReportQuery.window(
@@ -103,7 +112,11 @@ void main() {
 
     test('a malformed bound is refused before any defaulting', () {
       expect(
-        () => ReportQuery.window(ReportKind.circulation, from: 'yesterday', now: now),
+        () => ReportQuery.window(
+          ReportKind.circulation,
+          from: 'yesterday',
+          now: now,
+        ),
         throwsFormatException,
       );
     });

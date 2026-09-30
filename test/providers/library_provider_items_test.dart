@@ -15,7 +15,8 @@ class _FakeRepo implements LibraryRepository {
   final List<Map<String, Object?>> countCalls = [];
 
   List<LibraryItem> _match(String? s, String? st, String? ct) => all.where((i) {
-    final ms = s == null ||
+    final ms =
+        s == null ||
         s.isEmpty ||
         i.designation.toLowerCase().contains(s.toLowerCase()) ||
         i.code.toLowerCase().contains(s.toLowerCase()) ||
@@ -54,11 +55,7 @@ class _FakeRepo implements LibraryRepository {
     String? sort,
     bool ascending = true,
   }) async {
-    countCalls.add({
-      'search': search,
-      'status': status,
-      'codeType': codeType,
-    });
+    countCalls.add({'search': search, 'status': status, 'codeType': codeType});
     return _match(search, status, codeType).length;
   }
 
@@ -66,8 +63,9 @@ class _FakeRepo implements LibraryRepository {
   Future<List<Map<String, dynamic>>> getCodeDefinitions() async => const [];
 
   @override
-  Future<List<Map<String, dynamic>>> getAttributeDefinitions(String? type) async =>
-      const [];
+  Future<List<Map<String, dynamic>>> getAttributeDefinitions(
+    String? type,
+  ) async => const [];
 
   @override
   Future<Map<String, dynamic>> getStats() async => const {};
@@ -80,18 +78,19 @@ String _statusFor(int i) =>
     i <= 40 ? 'Disponible' : (i <= 50 ? 'Emprunté' : 'Reliure');
 
 LibraryItem _mk(int i) => LibraryItem(
-      code: i.toString().padLeft(4, '0'),
-      codeType: i % 10 == 0 ? 'REV' : 'LIV',
-      designation: 'Book $i',
-      quantite: 1,
-      emplacement: 'R$i',
-      taux: 10,
-      emplacementStock: 'S$i',
-      status: _statusFor(i),
-    );
+  code: i.toString().padLeft(4, '0'),
+  codeType: i % 10 == 0 ? 'REV' : 'LIV',
+  designation: 'Book $i',
+  quantite: 1,
+  emplacement: 'R$i',
+  taux: 10,
+  emplacementStock: 'S$i',
+  status: _statusFor(i),
+);
 
 /// Long enough for a microtask-resolved fake load to finish.
-Future<void> _settle() => Future<void>.delayed(const Duration(milliseconds: 20));
+Future<void> _settle() =>
+    Future<void>.delayed(const Duration(milliseconds: 20));
 
 /// Longer than the provider's 300 ms search debounce.
 Future<void> _settleSearch() =>
@@ -121,8 +120,7 @@ void main() {
       expect(repo.getItemCalls.last['codeType'], isNull);
     });
 
-    test('loadMoreItems accumulates pages across the WHOLE catalogue',
-        () async {
+    test('loadMoreItems accumulates pages across the WHOLE catalogue', () async {
       await provider.reload();
       await provider.loadMoreItems();
       await provider.loadMoreItems();

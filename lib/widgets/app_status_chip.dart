@@ -10,11 +10,7 @@ import '../ui/app_tokens.dart';
 /// operators and in dark mode. The tinted-background construction lived twice
 /// (ItemStatusCell here, ad-hoc Containers in screens); it now lives once.
 class AppStatusChip extends StatelessWidget {
-  const AppStatusChip({
-    super.key,
-    required this.label,
-    required this.color,
-  });
+  const AppStatusChip({super.key, required this.label, required this.color});
 
   /// Already-localized status text; the chip never colours-meaning-without-text.
   final String label;
@@ -37,7 +33,10 @@ class AppStatusChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: txt.labelMedium?.copyWith(color: color, fontWeight: FontWeight.w600),
+        style: txt.labelMedium?.copyWith(
+          color: color,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }

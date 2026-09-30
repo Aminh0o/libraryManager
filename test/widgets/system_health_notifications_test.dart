@@ -25,25 +25,29 @@ import 'package:library_manager/screens/system_health_screen.dart';
 
 class _EmptyRepo implements LibraryRepository {
   @override
-  Future<List<LibraryItem>> getItems(
-          {int limit = 1000,
-          int offset = 0,
-          String? search,
-          String? status,
-          String? codeType,
+  Future<List<LibraryItem>> getItems({
+    int limit = 1000,
+    int offset = 0,
+    String? search,
+    String? status,
+    String? codeType,
     String? sort,
     bool ascending = true,
-  }) async =>
-      const [];
+  }) async => const [];
   @override
-  Future<int> countItems({String? search, String? status, String? codeType,
+  Future<int> countItems({
+    String? search,
+    String? status,
+    String? codeType,
     String? sort,
     bool ascending = true,
   }) async => 0;
   @override
   Future<List<Map<String, dynamic>>> getCodeDefinitions() async => const [];
   @override
-  Future<List<Map<String, dynamic>>> getAttributeDefinitions(String? type) async => const [];
+  Future<List<Map<String, dynamic>>> getAttributeDefinitions(
+    String? type,
+  ) async => const [];
   @override
   Future<Map<String, dynamic>> getStats() async => const {};
   @override
@@ -53,8 +57,7 @@ class _EmptyRepo implements LibraryRepository {
   @override
   Future<List<Reservation>> readyForPickup() async => const [];
   @override
-  Future<List<Fine>> getFines(
-      {String? memberId, FineStatus? status}) async =>
+  Future<List<Fine>> getFines({String? memberId, FineStatus? status}) async =>
       const [];
 
   @override
@@ -66,8 +69,10 @@ Future<void> _pumpHealth(WidgetTester tester, {required bool isHost}) async {
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
   SharedPreferences.setMockInitialValues({});
-  final provider =
-      LibraryProvider.forTesting(repository: _EmptyRepo(), isHost: isHost);
+  final provider = LibraryProvider.forTesting(
+    repository: _EmptyRepo(),
+    isHost: isHost,
+  );
   final appearance = await AppearanceController.load();
   final flags = await FeatureFlags.load();
   await tester.pumpWidget(
@@ -87,6 +92,7 @@ Future<void> _pumpHealth(WidgetTester tester, {required bool isHost}) async {
   );
   await tester.pumpAndSettle();
 }
+
 Future<void> _pumpHome(
   WidgetTester tester, {
   required bool isHost,
@@ -98,8 +104,10 @@ Future<void> _pumpHome(
   SharedPreferences.setMockInitialValues({
     'feature.flag.notificationCenter': notificationOn,
   });
-  final provider =
-      LibraryProvider.forTesting(repository: _EmptyRepo(), isHost: isHost);
+  final provider = LibraryProvider.forTesting(
+    repository: _EmptyRepo(),
+    isHost: isHost,
+  );
   final flags = await FeatureFlags.load();
   final appearance = await AppearanceController.load();
   await tester.pumpWidget(
@@ -122,8 +130,9 @@ Future<void> _pumpHome(
 
 void main() {
   group('System-health center', () {
-    testWidgets('shows the real app version and never-faked "Never" backup',
-        (tester) async {
+    testWidgets('shows the real app version and never-faked "Never" backup', (
+      tester,
+    ) async {
       await _pumpHealth(tester, isHost: true);
 
       expect(find.text('System health'), findsOneWidget);
@@ -140,8 +149,9 @@ void main() {
       expect(find.text('LAN server'), findsOneWidget);
     });
 
-    testWidgets('client mode reports itself honestly (no host internals)',
-        (tester) async {
+    testWidgets('client mode reports itself honestly (no host internals)', (
+      tester,
+    ) async {
       await _pumpHealth(tester, isHost: false);
 
       expect(find.text('Client'), findsOneWidget);
@@ -153,8 +163,9 @@ void main() {
   });
 
   group('Notification center', () {
-    testWidgets('the bell appears for staff only while the flag is on',
-        (tester) async {
+    testWidgets('the bell appears for staff only while the flag is on', (
+      tester,
+    ) async {
       await _pumpHome(tester, isHost: true, notificationOn: true);
       expect(find.byTooltip('Notifications'), findsOneWidget);
 
@@ -166,16 +177,18 @@ void main() {
       expect(find.byTooltip('Notifications'), findsNothing);
     });
 
-    testWidgets('opening the bell reports honestly when nothing needs attention',
-        (tester) async {
-      await _pumpHome(tester, isHost: true, notificationOn: true);
-      await tester.tap(find.byTooltip('Notifications'));
-      await tester.pumpAndSettle();
+    testWidgets(
+      'opening the bell reports honestly when nothing needs attention',
+      (tester) async {
+        await _pumpHome(tester, isHost: true, notificationOn: true);
+        await tester.tap(find.byTooltip('Notifications'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Notifications'), findsWidgets);
-      // An empty operational state shows the honest "nothing needs attention",
-      // never a fabricated count.
-      expect(find.text('Nothing needs attention'), findsOneWidget);
-    });
+        expect(find.text('Notifications'), findsWidgets);
+        // An empty operational state shows the honest "nothing needs attention",
+        // never a fabricated count.
+        expect(find.text('Nothing needs attention'), findsOneWidget);
+      },
+    );
   });
 }

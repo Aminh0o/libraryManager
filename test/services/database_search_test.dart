@@ -14,12 +14,14 @@ void main() {
   late Database db;
   late DatabaseService svc;
 
-  LibraryItem mk(String code,
-      {String type = 'LIV',
-      String status = 'Disponible',
-      String? designation,
-      String? barcode,
-      String emplacement = 'A'}) {
+  LibraryItem mk(
+    String code, {
+    String type = 'LIV',
+    String status = 'Disponible',
+    String? designation,
+    String? barcode,
+    String emplacement = 'A',
+  }) {
     return LibraryItem(
       code: code,
       codeType: type,
@@ -69,26 +71,30 @@ void main() {
   });
 
   group('pagination over the whole catalogue', () {
-    test('pages are disjoint slices of the ordered set (find #1/#21/#40/#60)',
-        () async {
-      final p1 = await svc.getItems(limit: 20, offset: 0);
-      final p2 = await svc.getItems(limit: 20, offset: 20);
-      final p3 = await svc.getItems(limit: 20, offset: 40);
-      expect(p1.first.code, '0001'); // #1
-      expect(p1.length, 20);
-      expect(p2.first.code, '0021'); // #21
-      expect(p3.first.code, '0041'); // #41
-      // The last LIV page ends right before the REVs; walk to #60 explicitly.
-      final all = await svc.getItems(limit: 1000);
-      expect(all.map((e) => e.code).toList()[59], '0060'); // #60
-    });
+    test(
+      'pages are disjoint slices of the ordered set (find #1/#21/#40/#60)',
+      () async {
+        final p1 = await svc.getItems(limit: 20, offset: 0);
+        final p2 = await svc.getItems(limit: 20, offset: 20);
+        final p3 = await svc.getItems(limit: 20, offset: 40);
+        expect(p1.first.code, '0001'); // #1
+        expect(p1.length, 20);
+        expect(p2.first.code, '0021'); // #21
+        expect(p3.first.code, '0041'); // #41
+        // The last LIV page ends right before the REVs; walk to #60 explicitly.
+        final all = await svc.getItems(limit: 1000);
+        expect(all.map((e) => e.code).toList()[59], '0060'); // #60
+      },
+    );
 
-    test('a page deep in the list returns rows the ≤20 cache could not',
-        () async {
-      final page = await svc.getItems(limit: 20, offset: 45);
-      final codes = page.map((e) => e.code).toList();
-      expect(codes, containsAll(<String>['0046', '0055', '0060']));
-    });
+    test(
+      'a page deep in the list returns rows the ≤20 cache could not',
+      () async {
+        final page = await svc.getItems(limit: 20, offset: 45);
+        final codes = page.map((e) => e.code).toList();
+        expect(codes, containsAll(<String>['0046', '0055', '0060']));
+      },
+    );
   });
 
   group('count agrees with the page', () {
@@ -96,19 +102,21 @@ void main() {
       expect(await svc.countItems(), 72); // 60 LIV + 10 REV + 2 wildcard-name
     });
 
-    test('count matches the length of an unbounded query for every filter',
-        () async {
-      for (final status in ['Disponible', 'Emprunté']) {
-        final c = await svc.countItems(status: status);
-        final rows = await svc.getItems(limit: 1000, status: status);
-        expect(c, rows.length, reason: 'status=$status');
-      }
-      for (final type in ['LIV', 'REV']) {
-        final c = await svc.countItems(codeType: type);
-        final rows = await svc.getItems(limit: 1000, codeType: type);
-        expect(c, rows.length, reason: 'codeType=$type');
-      }
-    });
+    test(
+      'count matches the length of an unbounded query for every filter',
+      () async {
+        for (final status in ['Disponible', 'Emprunté']) {
+          final c = await svc.countItems(status: status);
+          final rows = await svc.getItems(limit: 1000, status: status);
+          expect(c, rows.length, reason: 'status=$status');
+        }
+        for (final type in ['LIV', 'REV']) {
+          final c = await svc.countItems(codeType: type);
+          final rows = await svc.getItems(limit: 1000, codeType: type);
+          expect(c, rows.length, reason: 'codeType=$type');
+        }
+      },
+    );
   });
 
   group('server-side filters', () {
@@ -136,12 +144,23 @@ void main() {
 
     test('combined search + status + codeType filters intersect', () async {
       final page = await svc.getItems(
-          limit: 1000, search: 'Titre 00', status: 'Emprunté', codeType: 'LIV');
-      expect(page.every((e) => e.status == 'Emprunté' && e.codeType == 'LIV'),
-          isTrue);
-      expect(await svc.countItems(
-          search: 'Titre 00', status: 'Emprunté', codeType: 'LIV'),
-          page.length);
+        limit: 1000,
+        search: 'Titre 00',
+        status: 'Emprunté',
+        codeType: 'LIV',
+      );
+      expect(
+        page.every((e) => e.status == 'Emprunté' && e.codeType == 'LIV'),
+        isTrue,
+      );
+      expect(
+        await svc.countItems(
+          search: 'Titre 00',
+          status: 'Emprunté',
+          codeType: 'LIV',
+        ),
+        page.length,
+      );
     });
 
     test('search is case-insensitive (ASCII)', () async {
@@ -149,16 +168,18 @@ void main() {
       expect(await svc.countItems(search: 'TITRE 0007'), 1);
     });
 
-    test('LIKE wildcards in the term are treated literally (escaping)',
-        () async {
-      // '50%' must match only the item literally containing "50%", not all.
-      final pct = await svc.getItems(search: '50%');
-      expect(pct.map((e) => e.code).toList(), ['0100']);
-      // '_' is a single-char wildcard in LIKE; escaping keeps it literal.
-      final underscore = await svc.getItems(search: 'off_now');
-      expect(underscore.map((e) => e.code).toList(), ['0100']);
-      // A bare '%' is a wildcard; escaped, it must NOT match everything.
-      expect(await svc.countItems(search: '%'), 1);
-    });
+    test(
+      'LIKE wildcards in the term are treated literally (escaping)',
+      () async {
+        // '50%' must match only the item literally containing "50%", not all.
+        final pct = await svc.getItems(search: '50%');
+        expect(pct.map((e) => e.code).toList(), ['0100']);
+        // '_' is a single-char wildcard in LIKE; escaping keeps it literal.
+        final underscore = await svc.getItems(search: 'off_now');
+        expect(underscore.map((e) => e.code).toList(), ['0100']);
+        // A bare '%' is a wildcard; escaped, it must NOT match everything.
+        expect(await svc.countItems(search: '%'), 1);
+      },
+    );
   });
 }

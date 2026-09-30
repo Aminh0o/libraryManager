@@ -22,7 +22,8 @@ class _ExportFakeRepo implements LibraryRepository {
   final List<Map<String, Object?>> countCalls = [];
 
   List<LibraryItem> _match(String? s, String? st, String? ct) => all.where((i) {
-    final ms = s == null ||
+    final ms =
+        s == null ||
         s.isEmpty ||
         i.designation.toLowerCase().contains(s.toLowerCase()) ||
         i.code.toLowerCase().contains(s.toLowerCase());
@@ -67,8 +68,9 @@ class _ExportFakeRepo implements LibraryRepository {
   Future<List<Map<String, dynamic>>> getCodeDefinitions() async => const [];
 
   @override
-  Future<List<Map<String, dynamic>>> getAttributeDefinitions(String? type) async =>
-      const [];
+  Future<List<Map<String, dynamic>>> getAttributeDefinitions(
+    String? type,
+  ) async => const [];
 
   @override
   Future<Map<String, dynamic>> getStats() async => const {};
@@ -81,17 +83,18 @@ String _statusFor(int i) =>
     i <= 40 ? 'Disponible' : (i <= 50 ? 'Emprunté' : 'Reliure');
 
 LibraryItem _mk(int i, {String? designation}) => LibraryItem(
-      code: i.toString().padLeft(4, '0'),
-      codeType: i % 10 == 0 ? 'REV' : 'LIV',
-      designation: designation ?? 'Book $i',
-      quantite: 1,
-      emplacement: 'R$i',
-      taux: 10,
-      emplacementStock: 'S$i',
-      status: _statusFor(i),
-    );
+  code: i.toString().padLeft(4, '0'),
+  codeType: i % 10 == 0 ? 'REV' : 'LIV',
+  designation: designation ?? 'Book $i',
+  quantite: 1,
+  emplacement: 'R$i',
+  taux: 10,
+  emplacementStock: 'S$i',
+  status: _statusFor(i),
+);
 
-Future<void> _settle() => Future<void>.delayed(const Duration(milliseconds: 20));
+Future<void> _settle() =>
+    Future<void>.delayed(const Duration(milliseconds: 20));
 
 /// Stands in for a working desktop save dialog: [result] is the path the user
 /// "picked", or null to simulate cancelling.
@@ -107,8 +110,7 @@ class _FakeFilePicker extends FilePicker {
     List<String>? allowedExtensions,
     Uint8List? bytes,
     bool lockParentWindow = false,
-  }) async =>
-      result;
+  }) async => result;
 }
 
 void main() {
@@ -176,8 +178,10 @@ void main() {
       );
       final csv = provider.csvContent([tricky]);
       final lines = csv.trimRight().split('\n');
-      expect(lines.first,
-          'Code,Barre,Type,Designation,Quantite,Emplacement,Prix,Stock,Statut');
+      expect(
+        lines.first,
+        'Code,Barre,Type,Designation,Quantite,Emplacement,Prix,Stock,Statut',
+      );
       // Designation with a comma + embedded quotes is wrapped and doubled.
       expect(csv, contains('"Sold, 50% ""off"""'));
       // Barcode containing a comma and a quote is quoted too.
@@ -213,34 +217,38 @@ void main() {
           ],
       ];
 
-      test('byte-identical to csvContent, quoting included (BL-09 preserved)',
-          () async {
-        final items = [
-          _mk(1),
-          LibraryItem(
-            code: '0002',
-            barcode: 'B,1"2',
-            codeType: 'LIV',
-            designation: 'Sold, 50% "off"',
-            quantite: 2,
-            emplacement: 'A\nB',
-            taux: 3.5,
-            emplacementStock: 'S1',
-            status: 'Emprunt\u00e9',
-          ),
-        ];
-        expect(
-          await buildInventoryCsvOffIsolate(cells(items)),
-          provider.csvContent(items),
-        );
-      });
+      test(
+        'byte-identical to csvContent, quoting included (BL-09 preserved)',
+        () async {
+          final items = [
+            _mk(1),
+            LibraryItem(
+              code: '0002',
+              barcode: 'B,1"2',
+              codeType: 'LIV',
+              designation: 'Sold, 50% "off"',
+              quantite: 2,
+              emplacement: 'A\nB',
+              taux: 3.5,
+              emplacementStock: 'S1',
+              status: 'Emprunt\u00e9',
+            ),
+          ];
+          expect(
+            await buildInventoryCsvOffIsolate(cells(items)),
+            provider.csvContent(items),
+          );
+        },
+      );
 
       test('builds a whole-catalogue export off-isolate', () async {
         final many = [for (int i = 1; i <= 2000; i++) _mk(i)];
         final csv = await buildInventoryCsvOffIsolate(cells(many));
         final lines = const LineSplitter().convert(csv);
-        expect(lines.first,
-            'Code,Barre,Type,Designation,Quantite,Emplacement,Prix,Stock,Statut');
+        expect(
+          lines.first,
+          'Code,Barre,Type,Designation,Quantite,Emplacement,Prix,Stock,Statut',
+        );
         // One line per record plus the header (LineSplitter emits no trailing
         // empty line for the final writeln terminator).
         expect(lines.length, many.length + 1);
@@ -268,51 +276,61 @@ void main() {
       } catch (_) {}
     });
 
-    test('admin bundle carries version + schema + mode + scrubbed log lines',
-        () async {
-      appLog
-          .info('auth', 'diag-marker login password=hunter2supersecret ok');
-      await appLog.flush();
+    test(
+      'admin bundle carries version + schema + mode + scrubbed log lines',
+      () async {
+        appLog.info('auth', 'diag-marker login password=hunter2supersecret ok');
+        await appLog.flush();
 
-      final chosen = p.join(tmp.path, 'picked_diagnostics.txt');
-      FilePicker.platform = _FakeFilePicker(chosen);
-      addTearDown(() => FilePicker.platform = _UnavailableFilePicker());
+        final chosen = p.join(tmp.path, 'picked_diagnostics.txt');
+        FilePicker.platform = _FakeFilePicker(chosen);
+        addTearDown(() => FilePicker.platform = _UnavailableFilePicker());
 
-      final provider =
-          LibraryProvider.forTesting(repository: _ExportFakeRepo(const []));
-      final path = await provider.exportDiagnostics();
+        final provider = LibraryProvider.forTesting(
+          repository: _ExportFakeRepo(const []),
+        );
+        final path = await provider.exportDiagnostics();
 
-      expect(path, chosen);
-      final text = File(chosen).readAsStringSync();
-      // Header carries the diagnostic context the plan requires.
-      expect(text, contains('app_version: $kAppVersion'));
-      expect(text, contains('db_version: ${DatabaseService.currentSchemaVersion}'));
-      expect(text, contains('mode: host'));
-      // A real log line survived into the bundle...
-      expect(text, contains('diag-marker'));
-      // ...but the credential was scrubbed, never leaked verbatim.
-      expect(text, isNot(contains('hunter2supersecret')));
-      expect(text, contains('password=[redacted]'));
-    });
+        expect(path, chosen);
+        final text = File(chosen).readAsStringSync();
+        // Header carries the diagnostic context the plan requires.
+        expect(text, contains('app_version: $kAppVersion'));
+        expect(
+          text,
+          contains('db_version: ${DatabaseService.currentSchemaVersion}'),
+        );
+        expect(text, contains('mode: host'));
+        // A real log line survived into the bundle...
+        expect(text, contains('diag-marker'));
+        // ...but the credential was scrubbed, never leaked verbatim.
+        expect(text, isNot(contains('hunter2supersecret')));
+        expect(text, contains('password=[redacted]'));
+      },
+    );
 
-    test('cancelling the save dialog writes nothing and returns null',
-        () async {
-      appLog.info('r', 'should-not-be-exported');
-      await appLog.flush();
-      FilePicker.platform = _FakeFilePicker(null); // user cancelled
-      addTearDown(() => FilePicker.platform = _UnavailableFilePicker());
+    test(
+      'cancelling the save dialog writes nothing and returns null',
+      () async {
+        appLog.info('r', 'should-not-be-exported');
+        await appLog.flush();
+        FilePicker.platform = _FakeFilePicker(null); // user cancelled
+        addTearDown(() => FilePicker.platform = _UnavailableFilePicker());
 
-      final provider =
-          LibraryProvider.forTesting(repository: _ExportFakeRepo(const []));
-      final path = await provider.exportDiagnostics();
-      expect(path, isNull);
-      // No diagnostics file was dropped anywhere under the temp dir.
-      final strays = tmp
-          .listSync(recursive: true)
-          .whereType<File>()
-          .where((f) => p.basename(f.path).startsWith('library_diagnostics_'));
-      expect(strays, isEmpty);
-    });
+        final provider = LibraryProvider.forTesting(
+          repository: _ExportFakeRepo(const []),
+        );
+        final path = await provider.exportDiagnostics();
+        expect(path, isNull);
+        // No diagnostics file was dropped anywhere under the temp dir.
+        final strays = tmp
+            .listSync(recursive: true)
+            .whereType<File>()
+            .where(
+              (f) => p.basename(f.path).startsWith('library_diagnostics_'),
+            );
+        expect(strays, isEmpty);
+      },
+    );
 
     test('a non-admin is refused before anything is written', () async {
       final chosen = p.join(tmp.path, 'should_not_exist.txt');
@@ -321,10 +339,14 @@ void main() {
 
       // isHost: false with a plain repository reads as viewer (not admin).
       final provider = LibraryProvider.forTesting(
-          repository: _ExportFakeRepo(const []), isHost: false);
+        repository: _ExportFakeRepo(const []),
+        isHost: false,
+      );
       expect(provider.canAdminister, isFalse);
       await expectLater(
-          provider.exportDiagnostics(), throwsA(isA<StateError>()));
+        provider.exportDiagnostics(),
+        throwsA(isA<StateError>()),
+      );
       expect(File(chosen).existsSync(), isFalse);
     });
   });

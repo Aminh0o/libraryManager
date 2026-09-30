@@ -65,8 +65,7 @@ class _ReorderRepo implements LibraryRepository {
     String? codeType,
     String? sort,
     bool ascending = true,
-  }) async =>
-      const [];
+  }) async => const [];
 
   @override
   Future<int> countItems({
@@ -75,8 +74,7 @@ class _ReorderRepo implements LibraryRepository {
     String? codeType,
     String? sort,
     bool ascending = true,
-  }) async =>
-      0;
+  }) async => 0;
 
   @override
   Future<List<Member>> getMembers() async => const [];
@@ -90,8 +88,7 @@ class _ReorderRepo implements LibraryRepository {
   @override
   Future<List<Map<String, dynamic>>> getAttributeDefinitions(
     String? type,
-  ) async =>
-      const [];
+  ) async => const [];
 
   @override
   Future<Map<String, dynamic>> getStats() async => const {};
@@ -102,15 +99,14 @@ class _ReorderRepo implements LibraryRepository {
     String? memberId,
     ReservationStatus? status,
     bool liveOnly = false,
-  }) async =>
-      [
-        for (final h in holds)
-          if ((itemCode == null || h.itemCode == itemCode) &&
-              (memberId == null || h.memberId == memberId) &&
-              (status == null || h.status == status) &&
-              (!liveOnly || h.isLive))
-            h,
-      ];
+  }) async => [
+    for (final h in holds)
+      if ((itemCode == null || h.itemCode == itemCode) &&
+          (memberId == null || h.memberId == memberId) &&
+          (status == null || h.status == status) &&
+          (!liveOnly || h.isLive))
+        h,
+  ];
 
   @override
   Future<List<Reservation>> readyForPickup() async => const [];
@@ -163,33 +159,30 @@ class _ReorderRepo implements LibraryRepository {
 }
 
 Reservation _queued(int id, String item, String member) => Reservation(
-      id: id,
-      itemCode: item,
-      memberId: member,
-      status: ReservationStatus.queued,
-      createdAt: '2026-09-20T08:00:00Z',
-    );
+  id: id,
+  itemCode: item,
+  memberId: member,
+  status: ReservationStatus.queued,
+  createdAt: '2026-09-20T08:00:00Z',
+);
 
 Reservation _ready(int id, String item, String member) => Reservation(
-      id: id,
-      itemCode: item,
-      memberId: member,
-      copyId: 5,
-      status: ReservationStatus.available,
-      createdAt: '2026-09-19T08:00:00Z',
-      availableAt: '2026-09-21T08:00:00Z',
-      availableUntil: '2099-01-01T08:00:00Z',
-    );
+  id: id,
+  itemCode: item,
+  memberId: member,
+  copyId: 5,
+  status: ReservationStatus.available,
+  createdAt: '2026-09-19T08:00:00Z',
+  availableAt: '2026-09-21T08:00:00Z',
+  availableUntil: '2099-01-01T08:00:00Z',
+);
 
 Future<void> _pump(WidgetTester tester, _ReorderRepo repo) async {
   tester.view.physicalSize = const Size(1280, 1024);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
 
-  final provider = LibraryProvider.forTesting(
-    repository: repo,
-    isHost: true,
-  );
+  final provider = LibraryProvider.forTesting(repository: repo, isHost: true);
 
   await tester.pumpWidget(
     ChangeNotifierProvider<LibraryProvider>.value(
@@ -219,8 +212,9 @@ Future<void> _filterTo(WidgetTester tester, String code) async {
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  testWidgets('no item filter selected -> no reorder arrows on any row',
-      (tester) async {
+  testWidgets('no item filter selected -> no reorder arrows on any row', (
+    tester,
+  ) async {
     final repo = _ReorderRepo([
       _queued(1, 'ALG1', 'M-1'),
       _queued(2, 'ALG1', 'M-2'),
@@ -282,12 +276,10 @@ void main() {
     await _pump(tester, repo);
     await _filterTo(tester, 'ALG1');
 
-    IconButton upBtn(int id) => tester.widget<IconButton>(
-          find.byKey(Key('hold-up-$id')),
-        );
-    IconButton downBtn(int id) => tester.widget<IconButton>(
-          find.byKey(Key('hold-down-$id')),
-        );
+    IconButton upBtn(int id) =>
+        tester.widget<IconButton>(find.byKey(Key('hold-up-$id')));
+    IconButton downBtn(int id) =>
+        tester.widget<IconButton>(find.byKey(Key('hold-down-$id')));
 
     // Top of the line: `up` is greyed out, `down` is live.
     expect(upBtn(1).onPressed, isNull, reason: 'row 1 is at the head');
@@ -328,8 +320,10 @@ void main() {
     // Make the source refuse with a concrete reason; the screen must show
     // it (not a generic "failed"), leave the queue unchanged and re-render
     // the arrows so the operator can retry.
-    repo.failNextMove = StateError('Another operator just reordered this '
-        'line. Reloaded -- try again.');
+    repo.failNextMove = StateError(
+      'Another operator just reordered this '
+      'line. Reloaded -- try again.',
+    );
 
     await tester.tap(find.byKey(const Key('hold-up-21')));
     await tester.pumpAndSettle();

@@ -34,19 +34,21 @@ class _LoanRepo implements LibraryRepository {
 
   // Empty catalogue / members are fine — the active-loans tab reads _loans only.
   @override
-  Future<List<LibraryItem>> getItems(
-          {int limit = 1000,
-          int offset = 0,
-          String? search,
-          String? status,
-          String? codeType,
+  Future<List<LibraryItem>> getItems({
+    int limit = 1000,
+    int offset = 0,
+    String? search,
+    String? status,
+    String? codeType,
     String? sort,
     bool ascending = true,
-  }) async =>
-      const [];
+  }) async => const [];
 
   @override
-  Future<int> countItems({String? search, String? status, String? codeType,
+  Future<int> countItems({
+    String? search,
+    String? status,
+    String? codeType,
     String? sort,
     bool ascending = true,
   }) async => 0;
@@ -92,8 +94,9 @@ Loan _mk({required int id, required String member, required DateTime due}) {
 }
 
 void main() {
-  testWidgets('active-loans tab lists loans and flags the overdue one',
-      (tester) async {
+  testWidgets('active-loans tab lists loans and flags the overdue one', (
+    tester,
+  ) async {
     final repo = _LoanRepo([
       _mk(id: 1, member: 'Alice', due: DateTime(2099)), // on time
       _mk(id: 2, member: 'Bob', due: DateTime(2000)), // overdue
@@ -113,11 +116,10 @@ void main() {
     expect(find.byKey(const Key('renew_2')), findsOneWidget);
   });
 
-  testWidgets('renewing a loan calls the provider and confirms success',
-      (tester) async {
-    final repo = _LoanRepo([
-      _mk(id: 1, member: 'Alice', due: DateTime(2099)),
-    ]);
+  testWidgets('renewing a loan calls the provider and confirms success', (
+    tester,
+  ) async {
+    final repo = _LoanRepo([_mk(id: 1, member: 'Alice', due: DateTime(2099))]);
     final provider = await _pump(tester, repo);
     final before = provider.activeLoans.single.dueDate;
 
@@ -132,11 +134,15 @@ void main() {
     expect(repo.lastUpdated!.dueDate, before.add(const Duration(days: 15)));
     expect(find.text('Loan renewed successfully'), findsOneWidget);
     // The list reflects the extended due date after the internal reload.
-    expect(provider.activeLoans.single.dueDate, before.add(const Duration(days: 15)));
+    expect(
+      provider.activeLoans.single.dueDate,
+      before.add(const Duration(days: 15)),
+    );
   });
 
-  testWidgets('empty state shows when there are no active loans',
-      (tester) async {
+  testWidgets('empty state shows when there are no active loans', (
+    tester,
+  ) async {
     final repo = _LoanRepo([]);
     await _pump(tester, repo);
 

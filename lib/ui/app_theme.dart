@@ -54,7 +54,10 @@ class AppTheme {
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: AppRadius.card,
-          side: BorderSide(color: scheme.outlineVariant, width: AppBorder.width),
+          side: BorderSide(
+            color: scheme.outlineVariant,
+            width: AppBorder.width,
+          ),
         ),
       ),
       dialogTheme: DialogThemeData(
@@ -66,11 +69,15 @@ class AppTheme {
           fontWeight: FontWeight.w600,
           color: scheme.onSurface,
         ),
-        contentTextStyle: textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+        contentTextStyle: textTheme.bodyMedium?.copyWith(
+          color: scheme.onSurfaceVariant,
+        ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: isDark ? scheme.surfaceContainerHigh : scheme.surfaceContainerLow,
+        fillColor: isDark
+            ? scheme.surfaceContainerHigh
+            : scheme.surfaceContainerLow,
         isDense: true,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg,
@@ -102,7 +109,9 @@ class AppTheme {
           shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
           minimumSize: const Size(0, 40),
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-          textStyle: textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+          textStyle: textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -185,7 +194,9 @@ class AppTheme {
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        backgroundColor: isDark ? scheme.surfaceContainerHighest : const Color(0xFF323232),
+        backgroundColor: isDark
+            ? scheme.surfaceContainerHighest
+            : const Color(0xFF323232),
         contentTextStyle: textTheme.bodyMedium?.copyWith(
           color: isDark ? scheme.onSurface : Colors.white,
         ),
@@ -202,17 +213,21 @@ class AppTheme {
           color: scheme.inverseSurface,
           borderRadius: AppRadius.tile,
         ),
-        textStyle: textTheme.bodySmall?.copyWith(color: scheme.onInverseSurface),
+        textStyle: textTheme.bodySmall?.copyWith(
+          color: scheme.onInverseSurface,
+        ),
         waitDuration: const Duration(milliseconds: 500),
       ),
     );
   }
 
-  static OutlineInputBorder _outline(Color color, {double width = AppBorder.width}) =>
-      OutlineInputBorder(
-        borderRadius: AppRadius.field,
-        borderSide: BorderSide(color: color, width: width),
-      );
+  static OutlineInputBorder _outline(
+    Color color, {
+    double width = AppBorder.width,
+  }) => OutlineInputBorder(
+    borderRadius: AppRadius.field,
+    borderSide: BorderSide(color: color, width: width),
+  );
 
   /// Nudge the M3 default scale into the app's controlled roles: page titles
   /// semibold, a readable desktop body size, tightened labels. Everything keeps
@@ -225,8 +240,14 @@ class AppTheme {
         height: 1.25,
         color: s.onSurface,
       ),
-      titleLarge: t.titleLarge?.copyWith(fontWeight: FontWeight.w600, color: s.onSurface),
-      titleMedium: t.titleMedium?.copyWith(fontWeight: FontWeight.w600, color: s.onSurface),
+      titleLarge: t.titleLarge?.copyWith(
+        fontWeight: FontWeight.w600,
+        color: s.onSurface,
+      ),
+      titleMedium: t.titleMedium?.copyWith(
+        fontWeight: FontWeight.w600,
+        color: s.onSurface,
+      ),
       bodyLarge: t.bodyLarge?.copyWith(height: 1.4, color: s.onSurface),
       bodyMedium: t.bodyMedium?.copyWith(height: 1.4, color: s.onSurface),
       bodySmall: t.bodySmall?.copyWith(color: s.onSurfaceVariant),
@@ -246,7 +267,8 @@ extension AppTypography on BuildContext {
   TextStyle? get caption => text.bodySmall;
 
   /// A large metric figure (dashboards, stat tiles).
-  TextStyle get metric => text.headlineMedium?.copyWith(
+  TextStyle get metric =>
+      text.headlineMedium?.copyWith(
         fontWeight: FontWeight.bold,
         color: colors.onSurface,
       ) ??

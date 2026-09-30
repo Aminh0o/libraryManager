@@ -21,7 +21,10 @@ void main() {
   group('selectBackupsToDelete policy (pure, BR-05)', () {
     final now = DateTime(2026, 9, 21, 12);
     BackupEntry e(String path, {int daysAgo = 0, int secondsAgo = 0}) =>
-        BackupEntry(path, now.subtract(Duration(days: daysAgo, seconds: secondsAgo)));
+        BackupEntry(
+          path,
+          now.subtract(Duration(days: daysAgo, seconds: secondsAgo)),
+        );
 
     test('nothing deleted while at or under keepCount', () {
       final backups = [for (var i = 0; i < 10; i++) e('b$i', secondsAgo: i)];
@@ -46,15 +49,17 @@ void main() {
         e('day9', daysAgo: 9),
       ];
       final del = selectBackupsToDelete(backups, now: now);
-      expect(del, isNot(contains('day5')),
-          reason: 'BR-05: the newest backup of a recent day is always kept');
+      expect(
+        del,
+        isNot(contains('day5')),
+        reason: 'BR-05: the newest backup of a recent day is always kept',
+      );
       expect(del, contains('day9'), reason: 'beyond the daily horizon');
       expect(del, contains('today10'), reason: 'the extra same-day one goes');
       expect(del.length, 2);
     });
 
-    test('exactly one per recent day is kept even when many days are full',
-        () {
+    test('exactly one per recent day is kept even when many days are full', () {
       // Two backups on each of 3 recent days plus 12 today -> the older days'
       // newest must survive though they fall outside the newest 10.
       final backups = <BackupEntry>[
@@ -66,7 +71,11 @@ void main() {
       final del = selectBackupsToDelete(backups, now: now);
       expect(del, isNot(contains('d2a')), reason: 'day-2 newest kept');
       expect(del, isNot(contains('d4')), reason: 'day-4 kept');
-      expect(del, contains('d2b'), reason: 'the redundant same-day older one goes');
+      expect(
+        del,
+        contains('d2b'),
+        reason: 'the redundant same-day older one goes',
+      );
     });
   });
 
@@ -105,28 +114,39 @@ void main() {
       return f;
     }
 
-    test('an older daily backup survives a same-day burst through the real path',
-        () async {
-      final now = DateTime.now();
-      final old = touch('library_backup_old.db', now.subtract(const Duration(days: 5)));
-      // A burst of 11 "today" rotating backups: with the newest backup that
-      // createAutoBackup is about to add, that is 12 today, pushing the old one
-      // past a naive keep-last-10 cut.
-      for (var i = 0; i < 11; i++) {
-        touch('library_backup_burst$i.db', now.subtract(Duration(seconds: i)));
-      }
+    test(
+      'an older daily backup survives a same-day burst through the real path',
+      () async {
+        final now = DateTime.now();
+        final old = touch(
+          'library_backup_old.db',
+          now.subtract(const Duration(days: 5)),
+        );
+        // A burst of 11 "today" rotating backups: with the newest backup that
+        // createAutoBackup is about to add, that is 12 today, pushing the old one
+        // past a naive keep-last-10 cut.
+        for (var i = 0; i < 11; i++) {
+          touch(
+            'library_backup_burst$i.db',
+            now.subtract(Duration(seconds: i)),
+          );
+        }
 
-      await svc.createAutoBackup();
+        await svc.createAutoBackup();
 
-      expect(old.existsSync(), isTrue,
-          reason: 'BR-05: the 5-day-old daily point must not be rotated out');
-      final remaining = backups
-          .listSync()
-          .whereType<File>()
-          .where((f) => p.basename(f.path).startsWith('library_backup_'))
-          .length;
-      // keepCount(10) + one extra recent-day floor (the old one) == 11 kept.
-      expect(remaining, 11);
-    });
+        expect(
+          old.existsSync(),
+          isTrue,
+          reason: 'BR-05: the 5-day-old daily point must not be rotated out',
+        );
+        final remaining = backups
+            .listSync()
+            .whereType<File>()
+            .where((f) => p.basename(f.path).startsWith('library_backup_'))
+            .length;
+        // keepCount(10) + one extra recent-day floor (the old one) == 11 kept.
+        expect(remaining, 11);
+      },
+    );
   });
 }

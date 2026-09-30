@@ -3,18 +3,10 @@ class AttributeDefinition {
   final String type; // 'LOCATION', 'STATUS', 'STOCK'
   final String value;
 
-  AttributeDefinition({
-    this.id,
-    required this.type,
-    required this.value,
-  });
+  AttributeDefinition({this.id, required this.type, required this.value});
 
   Map<String, dynamic> toMap() {
-    return {
-      if (id != null) 'id': id,
-      'type': type,
-      'value': value,
-    };
+    return {if (id != null) 'id': id, 'type': type, 'value': value};
   }
 
   factory AttributeDefinition.fromMap(Map<String, dynamic> map) {

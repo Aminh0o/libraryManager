@@ -45,8 +45,9 @@ Future<void> _pump(WidgetTester tester, LibraryProvider provider) async {
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  testWidgets('a read-only (viewer) session is offered no management surface',
-      (tester) async {
+  testWidgets('a read-only (viewer) session is offered no management surface', (
+    tester,
+  ) async {
     // A client whose repository is not an ApiService resolves to the least
     // privileged role, so the screen must hide the list AND the create button.
     final provider = LibraryProvider.forTesting(
@@ -62,8 +63,9 @@ void main() {
     expect(find.byKey(const Key('createAccountButton')), findsNothing);
   });
 
-  testWidgets('a host administrator sees exactly the named accounts',
-      (tester) async {
+  testWidgets('a host administrator sees exactly the named accounts', (
+    tester,
+  ) async {
     final auth = AuthService(store: InMemoryAuthStore());
     await auth.addUser('librarian', 'password123', UserRole.staff);
     await auth.addUser('kiosk', 'password123', UserRole.viewer);
@@ -79,8 +81,9 @@ void main() {
     expect(find.byKey(const Key('createAccountButton')), findsOneWidget);
   });
 
-  testWidgets('the create dialog writes through the real auth core',
-      (tester) async {
+  testWidgets('the create dialog writes through the real auth core', (
+    tester,
+  ) async {
     final auth = AuthService(store: InMemoryAuthStore());
     await auth.addUser('librarian', 'password123', UserRole.staff);
     final provider = LibraryProvider.forTesting(
@@ -94,7 +97,9 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('createUsername')), 'counter2');
     await tester.enterText(
-        find.byKey(const Key('createPassword')), 'password123');
+      find.byKey(const Key('createPassword')),
+      'password123',
+    );
     await tester.tap(find.byKey(const Key('createSubmit')));
     await tester.pumpAndSettle();
 
@@ -103,8 +108,9 @@ void main() {
     expect(find.byKey(const Key('user-counter2')), findsOneWidget);
   });
 
-  testWidgets('a too-short password is refused before any write happens',
-      (tester) async {
+  testWidgets('a too-short password is refused before any write happens', (
+    tester,
+  ) async {
     final auth = AuthService(store: InMemoryAuthStore());
     await auth.addUser('librarian', 'password123', UserRole.staff);
     final provider = LibraryProvider.forTesting(

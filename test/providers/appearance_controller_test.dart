@@ -12,8 +12,7 @@ void main() {
 
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  test('load() falls back to the historical defaults on a first run',
-      () async {
+  test('load() falls back to the historical defaults on a first run', () async {
     final a = await AppearanceController.load();
     expect(a.themeMode, ThemeMode.system);
     expect(a.seedValue, AppearanceController.defaultSeedValue);
@@ -50,8 +49,11 @@ void main() {
     expect(a.brandName, 'City Library');
 
     await a.setBrandName('   ');
-    expect(a.brandName, AppearanceController.defaultBrandName,
-        reason: 'the title bar must never render empty');
+    expect(
+      a.brandName,
+      AppearanceController.defaultBrandName,
+      reason: 'the title bar must never render empty',
+    );
   });
 
   test('colorSchemeFor honours the requested brightness + seed', () async {
@@ -68,7 +70,9 @@ void main() {
   });
 
   test('preset seeds carry unique values and cover the default', () {
-    final values = AppearanceController.presetSeeds.map((e) => e.value).toList();
+    final values = AppearanceController.presetSeeds
+        .map((e) => e.value)
+        .toList();
     expect(values.toSet().length, values.length);
     expect(values, contains(AppearanceController.defaultSeedValue));
   });

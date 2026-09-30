@@ -51,10 +51,10 @@ class LoginSession {
   final UserRole role;
 
   factory LoginSession.fromJson(Map<String, dynamic> json) => LoginSession(
-        token: (json['token'] ?? '').toString(),
-        username: (json['username'] ?? '').toString(),
-        role: UserRole.tryParse(json['role']) ?? UserRole.viewer,
-      );
+    token: (json['token'] ?? '').toString(),
+    username: (json['username'] ?? '').toString(),
+    role: UserRole.tryParse(json['role']) ?? UserRole.viewer,
+  );
 
   bool get isValid => token.isNotEmpty;
 }

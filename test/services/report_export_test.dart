@@ -24,7 +24,9 @@ void main() {
 
   group('toCsv', () {
     test('emits metadata block, summary, header and rows verbatim', () {
-      final lines = const LineSplitter().convert(ReportExport.toCsv(circulation()));
+      final lines = const LineSplitter().convert(
+        ReportExport.toCsv(circulation()),
+      );
       expect(lines.first, 'Circulation report');
       expect(lines[1], 'From,2026-09-01,To,2026-09-22');
       expect(lines[2], 'Generated,2026-09-22T10:00:00');
@@ -59,7 +61,9 @@ void main() {
         title: 'Overdue',
         generatedAt: '2026-09-22T10:00:00',
         columns: ['Member'],
-        rows: [['Amina']],
+        rows: [
+          ['Amina'],
+        ],
       );
       final lines = const LineSplitter().convert(ReportExport.toCsv(r));
       expect(lines[1], 'From,,To,');
@@ -67,11 +71,14 @@ void main() {
   });
 
   group('toPdfBytes', () {
-    test('produces a real PDF byte stream beginning with the %PDF magic', () async {
-      final bytes = await ReportExport.toPdfBytes(circulation());
-      expect(bytes, isNotEmpty);
-      expect(String.fromCharCodes(bytes.take(4)), '%PDF');
-    });
+    test(
+      'produces a real PDF byte stream beginning with the %PDF magic',
+      () async {
+        final bytes = await ReportExport.toPdfBytes(circulation());
+        expect(bytes, isNotEmpty);
+        expect(String.fromCharCodes(bytes.take(4)), '%PDF');
+      },
+    );
 
     test('renders a table-less (empty) report without throwing', () async {
       const r = Report(
@@ -94,19 +101,21 @@ void main() {
   // off-isolate build yields a real PDF -- including for a large result set, the
   // exact case whose synchronous CPU used to freeze the desktop.
   group('buildReportPdfOffIsolate (NET-11)', () {
-    test('Report.toMap -> fromMap round-trips losslessly (safe isolate crossing)',
-        () {
-      final original = circulation();
-      final rebuilt = Report.fromMap(original.toMap());
-      expect(rebuilt.kind, original.kind);
-      expect(rebuilt.title, original.title);
-      expect(rebuilt.generatedAt, original.generatedAt);
-      expect(rebuilt.from, original.from);
-      expect(rebuilt.to, original.to);
-      expect(rebuilt.columns, original.columns);
-      expect(rebuilt.rows, original.rows);
-      expect(rebuilt.summary, original.summary);
-    });
+    test(
+      'Report.toMap -> fromMap round-trips losslessly (safe isolate crossing)',
+      () {
+        final original = circulation();
+        final rebuilt = Report.fromMap(original.toMap());
+        expect(rebuilt.kind, original.kind);
+        expect(rebuilt.title, original.title);
+        expect(rebuilt.generatedAt, original.generatedAt);
+        expect(rebuilt.from, original.from);
+        expect(rebuilt.to, original.to);
+        expect(rebuilt.columns, original.columns);
+        expect(rebuilt.rows, original.rows);
+        expect(rebuilt.summary, original.summary);
+      },
+    );
 
     test('produces a real PDF off-isolate for a normal report', () async {
       final bytes = await buildReportPdfOffIsolate(circulation().toMap());
@@ -114,20 +123,23 @@ void main() {
       expect(String.fromCharCodes(bytes.take(4)), '%PDF');
     });
 
-    test('off-isolate build succeeds for a large report (the heavy case)',
-        () async {
-      final r = Report(
-        kind: ReportKind.circulation,
-        title: 'Big circulation',
-        generatedAt: '2026-09-22T10:00:00',
-        columns: ['Date', 'Borrowed', 'Returned'],
-        rows: [
-          for (int i = 0; i < 2000; i++) ['2026-01-${i % 28 + 1}', '$i', '$i'],
-        ],
-      );
-      final bytes = await buildReportPdfOffIsolate(r.toMap());
-      expect(String.fromCharCodes(bytes.take(4)), '%PDF');
-    });
+    test(
+      'off-isolate build succeeds for a large report (the heavy case)',
+      () async {
+        final r = Report(
+          kind: ReportKind.circulation,
+          title: 'Big circulation',
+          generatedAt: '2026-09-22T10:00:00',
+          columns: ['Date', 'Borrowed', 'Returned'],
+          rows: [
+            for (int i = 0; i < 2000; i++)
+              ['2026-01-${i % 28 + 1}', '$i', '$i'],
+          ],
+        );
+        final bytes = await buildReportPdfOffIsolate(r.toMap());
+        expect(String.fromCharCodes(bytes.take(4)), '%PDF');
+      },
+    );
   });
 
   group('baseName', () {
@@ -153,23 +165,20 @@ void main() {
   // English defaults remain when no map is supplied (host/client parity).
   group('localized export chrome (ARC-07)', () {
     test('CSV chrome uses supplied labels', () {
-      final lines = const LineSplitter().convert(ReportExport.toCsv(
-        circulation(),
-        labels: const {
-          'from': 'Du',
-          'to': 'Au',
-          'generated': 'Généré',
-        },
-      ));
+      final lines = const LineSplitter().convert(
+        ReportExport.toCsv(
+          circulation(),
+          labels: const {'from': 'Du', 'to': 'Au', 'generated': 'Généré'},
+        ),
+      );
       expect(lines[1], 'Du,2026-09-01,Au,2026-09-22');
       expect(lines[2], 'Généré,2026-09-22T10:00:00');
     });
 
     test('a partial label map overrides only the supplied keys', () {
-      final lines = const LineSplitter().convert(ReportExport.toCsv(
-        circulation(),
-        labels: const {'from': 'Från'},
-      ));
+      final lines = const LineSplitter().convert(
+        ReportExport.toCsv(circulation(), labels: const {'from': 'Från'}),
+      );
       // 'from' localized; 'to'/'generated' fall back to the English defaults.
       expect(lines[1], 'Från,2026-09-01,To,2026-09-22');
       expect(lines[2], 'Generated,2026-09-22T10:00:00');
@@ -181,7 +190,9 @@ void main() {
       expect(ReportExport.defaultLabels['generated'], 'Generated');
       expect(ReportExport.defaultLabels['period'], 'Period');
       expect(
-          ReportExport.defaultLabels['noRecords'], 'No records for this report.');
+        ReportExport.defaultLabels['noRecords'],
+        'No records for this report.',
+      );
     });
 
     test('off-isolate PDF accepts localized labels without throwing', () async {

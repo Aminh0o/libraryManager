@@ -22,7 +22,9 @@ TokenPrincipal? principalOf(Request request) =>
 bool authorizedFor(Request request, UserRole minimum) {
   final p = principalOf(request);
   if (p == null) return true; // bootstrap-open: no roles configured yet
-  if (!p.isNamed) return true; // legacy shared token: keeps its historical rights
+  if (!p.isNamed) {
+    return true; // legacy shared token: keeps its historical rights
+  }
   return p.role.atLeast(minimum);
 }
 
@@ -56,7 +58,8 @@ Middleware requireAuth(AuthService auth, {Set<String> openPaths = const {}}) {
       if (await auth.isAuthorized(token)) {
         final principal = await auth.principalFor(token!);
         return innerHandler(
-            request.change(context: {principalContextKey: principal}));
+          request.change(context: {principalContextKey: principal}),
+        );
       }
 
       return Response(

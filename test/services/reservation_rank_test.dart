@@ -86,7 +86,8 @@ void main() {
 
   Future<List<int>> queueOrder(String code) async {
     final rows = await svc.getReservations(itemCode: code);
-    return rows.where((r) => r.status == ReservationStatus.queued)
+    return rows
+        .where((r) => r.status == ReservationStatus.queued)
         .map((r) => r.id!)
         .toList();
   }
@@ -103,81 +104,91 @@ void main() {
   });
 
   group('v23 schema / COALESCE(rank, id) ordering', () {
-    test('a queue of NULL-rank rows preserves id ASC (pre-Pass-6 corpus)',
-        () async {
-      // No backfill required: existing 723+30 rows are all NULL and must
-      // look identical to what the previous `id ASC` query produced.
-      final a = await insertQueued('BK-001', 'M1');
-      final b = await insertQueued('BK-001', 'M2');
-      final c = await insertQueued('BK-001', 'M3');
-      expect(a, lessThan(b));
-      expect(b, lessThan(c));
-      expect(await queueOrder('BK-001'), [a, b, c]);
-    });
+    test(
+      'a queue of NULL-rank rows preserves id ASC (pre-Pass-6 corpus)',
+      () async {
+        // No backfill required: existing 723+30 rows are all NULL and must
+        // look identical to what the previous `id ASC` query produced.
+        final a = await insertQueued('BK-001', 'M1');
+        final b = await insertQueued('BK-001', 'M2');
+        final c = await insertQueued('BK-001', 'M3');
+        expect(a, lessThan(b));
+        expect(b, lessThan(c));
+        expect(await queueOrder('BK-001'), [a, b, c]);
+      },
+    );
 
-    test('an explicit rank on one row wins over its id-based position',
-        () async {
-      // Simulates an operator having already moved id=<high> to the front.
-      final a = await insertQueued('BK-001', 'M1'); // rank NULL -> eff=a
-      final b = await insertQueued('BK-001', 'M2'); // rank NULL -> eff=b
-      final c = await insertQueued('BK-001', 'M3', rank: 0); // eff=0
-      expect(await queueOrder('BK-001'), [c, a, b]);
-    });
+    test(
+      'an explicit rank on one row wins over its id-based position',
+      () async {
+        // Simulates an operator having already moved id=<high> to the front.
+        final a = await insertQueued('BK-001', 'M1'); // rank NULL -> eff=a
+        final b = await insertQueued('BK-001', 'M2'); // rank NULL -> eff=b
+        final c = await insertQueued('BK-001', 'M3', rank: 0); // eff=0
+        expect(await queueOrder('BK-001'), [c, a, b]);
+      },
+    );
 
-    test('rank is per-item; a same rank on a different item does not cross',
-        () async {
-      final x1 = await insertQueued('BK-001', 'M1');
-      final x2 = await insertQueued('BK-001', 'M2', rank: 999);
-      final y1 = await insertQueued('BK-002', 'M3');
-      final y2 = await insertQueued('BK-002', 'M4', rank: 0);
-      expect(await queueOrder('BK-001'), [x1, x2]);
-      expect(await queueOrder('BK-002'), [y2, y1]);
-    });
+    test(
+      'rank is per-item; a same rank on a different item does not cross',
+      () async {
+        final x1 = await insertQueued('BK-001', 'M1');
+        final x2 = await insertQueued('BK-001', 'M2', rank: 999);
+        final y1 = await insertQueued('BK-002', 'M3');
+        final y2 = await insertQueued('BK-002', 'M4', rank: 0);
+        expect(await queueOrder('BK-001'), [x1, x2]);
+        expect(await queueOrder('BK-002'), [y2, y1]);
+      },
+    );
   });
 
   group('moveReservation', () {
-    test('a single up-swap exchanges the caller with its predecessor',
-        () async {
-      final a = await insertQueued('BK-001', 'M1');
-      final b = await insertQueued('BK-001', 'M2');
-      final c = await insertQueued('BK-001', 'M3');
-      final d = await insertQueued('BK-001', 'M4');
-      expect(await queueOrder('BK-001'), [a, b, c, d]);
+    test(
+      'a single up-swap exchanges the caller with its predecessor',
+      () async {
+        final a = await insertQueued('BK-001', 'M1');
+        final b = await insertQueued('BK-001', 'M2');
+        final c = await insertQueued('BK-001', 'M3');
+        final d = await insertQueued('BK-001', 'M4');
+        expect(await queueOrder('BK-001'), [a, b, c, d]);
 
-      await svc.moveReservation(d, up: true);
-      // d swaps with c: effective becomes (c, d, ...) -> order [a, b, d, c].
-      expect(await queueOrder('BK-001'), [a, b, d, c]);
+        await svc.moveReservation(d, up: true);
+        // d swaps with c: effective becomes (c, d, ...) -> order [a, b, d, c].
+        expect(await queueOrder('BK-001'), [a, b, d, c]);
 
-      // The rank column is materialised for the two rows that moved, so
-      // future reads do not need to re-derive from id.
-      final rows = await db.rawQuery(
-        'SELECT id, rank FROM reservations WHERE item_code = ?',
-        ['BK-001'],
-      );
-      final byId = {for (final r in rows) r['id'] as int: r['rank'] as int?};
-      expect(byId[a], isNull); // untouched
-      expect(byId[b], isNull); // untouched
-      expect(byId[c], d); // c now carries d's old effective position
-      expect(byId[d], c); // d now carries c's old effective position
-    });
+        // The rank column is materialised for the two rows that moved, so
+        // future reads do not need to re-derive from id.
+        final rows = await db.rawQuery(
+          'SELECT id, rank FROM reservations WHERE item_code = ?',
+          ['BK-001'],
+        );
+        final byId = {for (final r in rows) r['id'] as int: r['rank'] as int?};
+        expect(byId[a], isNull); // untouched
+        expect(byId[b], isNull); // untouched
+        expect(byId[c], d); // c now carries d's old effective position
+        expect(byId[d], c); // d now carries c's old effective position
+      },
+    );
 
-    test('repeated up-calls bubble a row from last to first (walk-in to front)',
-        () async {
-      final a = await insertQueued('BK-001', 'M1');
-      final b = await insertQueued('BK-001', 'M2');
-      final c = await insertQueued('BK-001', 'M3');
-      final d = await insertQueued('BK-001', 'M4');
+    test(
+      'repeated up-calls bubble a row from last to first (walk-in to front)',
+      () async {
+        final a = await insertQueued('BK-001', 'M1');
+        final b = await insertQueued('BK-001', 'M2');
+        final c = await insertQueued('BK-001', 'M3');
+        final d = await insertQueued('BK-001', 'M4');
 
-      await svc.moveReservation(d, up: true);
-      expect(await queueOrder('BK-001'), [a, b, d, c]);
-      await svc.moveReservation(d, up: true);
-      expect(await queueOrder('BK-001'), [a, d, b, c]);
-      await svc.moveReservation(d, up: true);
-      expect(await queueOrder('BK-001'), [d, a, b, c]);
-      // A fourth up-call is now at the head of the line: silent no-op.
-      await svc.moveReservation(d, up: true);
-      expect(await queueOrder('BK-001'), [d, a, b, c]);
-    });
+        await svc.moveReservation(d, up: true);
+        expect(await queueOrder('BK-001'), [a, b, d, c]);
+        await svc.moveReservation(d, up: true);
+        expect(await queueOrder('BK-001'), [a, d, b, c]);
+        await svc.moveReservation(d, up: true);
+        expect(await queueOrder('BK-001'), [d, a, b, c]);
+        // A fourth up-call is now at the head of the line: silent no-op.
+        await svc.moveReservation(d, up: true);
+        expect(await queueOrder('BK-001'), [d, a, b, c]);
+      },
+    );
 
     test('a down-swap exchanges the caller with its successor', () async {
       final a = await insertQueued('BK-001', 'M1');
@@ -227,8 +238,7 @@ void main() {
         columns: ['rank'],
         where: 'id = ?',
         whereArgs: [a],
-      ))
-          .single;
+      )).single;
       expect(row['rank'], isNull);
     });
 

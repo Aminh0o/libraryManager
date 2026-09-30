@@ -9,6 +9,7 @@ class LibraryItem {
   final double taux; // Price in DZD
   final String emplacementStock;
   final String status;
+
   /// Per-row optimistic-concurrency token (TX-06). Advanced by the server on
   /// every successful update; surfaced on reads so a client can send it back as
   /// `X-Expected-Version` and have a stale whole-row write REJECTED (409) rather
@@ -71,4 +72,3 @@ class ItemStatus {
 
   static const List<String> all = [disponible, emprunte, reserve, endommage];
 }
-

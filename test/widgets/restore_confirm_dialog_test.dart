@@ -8,7 +8,9 @@ import 'package:library_manager/widgets/restore_confirm_dialog.dart';
 // the restore operation is NOT run merely by opening the dialog, is run exactly
 // once on confirm, and never on cancel.
 Future<void> _show(
-    WidgetTester tester, Future<void> Function() onConfirm) async {
+  WidgetTester tester,
+  Future<void> Function() onConfirm,
+) async {
   await tester.pumpWidget(
     MaterialApp(
       locale: const Locale('fr'),
@@ -41,18 +43,23 @@ Future<void> _show(
 }
 
 void main() {
-  testWidgets('merely opening the gate does NOT restore (FE2-03)',
-      (tester) async {
+  testWidgets('merely opening the gate does NOT restore (FE2-03)', (
+    tester,
+  ) async {
     var calls = 0;
     await _show(tester, () async {
       calls++;
     });
-    expect(calls, 0,
-        reason: 'a picked file must not overwrite the DB until confirmed');
+    expect(
+      calls,
+      0,
+      reason: 'a picked file must not overwrite the DB until confirmed',
+    );
   });
 
-  testWidgets('confirming runs the restore exactly once and closes (FE2-03)',
-      (tester) async {
+  testWidgets('confirming runs the restore exactly once and closes (FE2-03)', (
+    tester,
+  ) async {
     var calls = 0;
     await _show(tester, () async {
       calls++;

@@ -26,14 +26,16 @@ void main() {
       // no filter option can ever match zero rows by construction.
       ItemCopy c(CopyState s) => ItemCopy(itemCode: 'X', state: s.storage);
       final derivable = {
-        for (final s in CopyState.values)
-          CopyLedger.deriveTitleStatus([c(s)]),
+        for (final s in CopyState.values) CopyLedger.deriveTitleStatus([c(s)]),
         // An empty ledger also derives to Disponible (documented behavior).
         CopyLedger.deriveTitleStatus(const []),
       };
       for (final opt in statusFilterOptions()) {
-        expect(derivable, contains(opt),
-            reason: 'filter offers "$opt" but the rollup can never produce it');
+        expect(
+          derivable,
+          contains(opt),
+          reason: 'filter offers "$opt" but the rollup can never produce it',
+        );
       }
     });
 
@@ -48,16 +50,20 @@ void main() {
       // The prior ItemStatus.all omitted these even though copies DO derive to
       // them; the narrowed vocabulary now includes them.
       expect(ItemStatus.all, isNot(contains('En Réparation')));
-      expect(statusFilterOptions(),
-          containsAll(['En Réparation', 'Perdu', 'Archivé']));
+      expect(
+        statusFilterOptions(),
+        containsAll(['En Réparation', 'Perdu', 'Archivé']),
+      );
     });
 
     test('is a closed set (no arbitrary DB string can be appended)', () {
       // The signature takes no argument, so the filter can never be widened by
       // stray catalogue values, and the vocabulary carries no duplicates.
-      expect(statusFilterOptions().toSet().length,
-          statusFilterOptions().length,
-          reason: 'vocabulary must not contain duplicates');
+      expect(
+        statusFilterOptions().toSet().length,
+        statusFilterOptions().length,
+        reason: 'vocabulary must not contain duplicates',
+      );
     });
   });
 }

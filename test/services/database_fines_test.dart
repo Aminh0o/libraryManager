@@ -18,37 +18,39 @@ void main() {
   late DatabaseService svc;
 
   LibraryItem item(String code) => LibraryItem(
-        code: code,
-        codeType: 'LIV',
-        designation: 'Designation $code',
-        quantite: 1,
-        emplacement: 'A',
-        taux: 10,
-        emplacementStock: 'S',
-        status: 'Disponible',
-      );
+    code: code,
+    codeType: 'LIV',
+    designation: 'Designation $code',
+    quantite: 1,
+    emplacement: 'A',
+    taux: 10,
+    emplacementStock: 'S',
+    status: 'Disponible',
+  );
 
   Loan activeLoan(String code, {required DateTime due}) => Loan(
-        itemCode: code,
-        memberId: '250001',
-        memberName: 'Alice',
-        itemTitle: 'Designation $code',
-        loanDate: due.subtract(const Duration(days: 14)),
-        dueDate: due,
-        status: 'Active',
-      );
+    itemCode: code,
+    memberId: '250001',
+    memberName: 'Alice',
+    itemTitle: 'Designation $code',
+    loanDate: due.subtract(const Duration(days: 14)),
+    dueDate: due,
+    status: 'Active',
+  );
 
   /// Borrow [code], then return it at [returned]; the active loan is refetched
   /// so its persisted id flows into updateLoan exactly as the UI does.
-  Future<void> borrowAndReturn(String code,
-      {required DateTime due, required DateTime returned}) async {
+  Future<void> borrowAndReturn(
+    String code, {
+    required DateTime due,
+    required DateTime returned,
+  }) async {
     await db.insert('library_items', item(code).toMap());
     await svc.addLoan(activeLoan(code, due: due));
     final out = (await svc.getLoans(activeOnly: true)).single;
-    await svc.updateLoan(out.copyWith(
-      status: 'Returned',
-      returnDate: returned,
-    ));
+    await svc.updateLoan(
+      out.copyWith(status: 'Returned', returnDate: returned),
+    );
   }
 
   setUp(() async {
@@ -74,7 +76,8 @@ void main() {
         note TEXT, acquired_at TEXT)
     ''');
     await db.execute(
-        'CREATE TABLE members(member_id TEXT PRIMARY KEY, name TEXT)');
+      'CREATE TABLE members(member_id TEXT PRIMARY KEY, name TEXT)',
+    );
     await db.execute('''
       CREATE TABLE fines(
         id INTEGER PRIMARY KEY AUTOINCREMENT, loan_id INTEGER,
@@ -104,68 +107,88 @@ void main() {
     await db.close();
   });
 
-  test('the default fine policy is DISABLED (never retroactively charges)',
-      () async {
-    final s = await svc.getFineSettings();
-    expect(s.ratePerDay, 0);
-    expect(s.enabled, isFalse);
-  });
+  test(
+    'the default fine policy is DISABLED (never retroactively charges)',
+    () async {
+      final s = await svc.getFineSettings();
+      expect(s.ratePerDay, 0);
+      expect(s.enabled, isFalse);
+    },
+  );
 
-  test('a malformed stored rate degrades to the safe disabled default',
-      () async {
-    await db.insert('metadata', {'key': 'fine_rate_per_day', 'value': 'abc'});
-    final s = await svc.getFineSettings();
-    expect(s.ratePerDay, 0);
-    expect(s.enabled, isFalse);
-  });
+  test(
+    'a malformed stored rate degrades to the safe disabled default',
+    () async {
+      await db.insert('metadata', {'key': 'fine_rate_per_day', 'value': 'abc'});
+      final s = await svc.getFineSettings();
+      expect(s.ratePerDay, 0);
+      expect(s.enabled, isFalse);
+    },
+  );
 
   test('setFineSettings persists and reads back', () async {
-    await svc.setFineSettings(const FineSettings(ratePerDay: 2, currency: 'DZD'));
+    await svc.setFineSettings(
+      const FineSettings(ratePerDay: 2, currency: 'DZD'),
+    );
     final s = await svc.getFineSettings();
     expect(s.ratePerDay, 2);
     expect(s.currency, 'DZD');
     expect(s.enabled, isTrue);
   });
 
-  test('an overdue return accrues ONE pending fine of rate * whole days',
-      () async {
-    await svc.setFineSettings(const FineSettings(ratePerDay: 2));
-    final due = DateTime(2026, 5, 1, 12);
-    await borrowAndReturn('0001',
-        due: due, returned: due.add(const Duration(days: 3)));
+  test(
+    'an overdue return accrues ONE pending fine of rate * whole days',
+    () async {
+      await svc.setFineSettings(const FineSettings(ratePerDay: 2));
+      final due = DateTime(2026, 5, 1, 12);
+      await borrowAndReturn(
+        '0001',
+        due: due,
+        returned: due.add(const Duration(days: 3)),
+      );
 
-    final fines = await svc.getFines();
-    expect(fines, hasLength(1));
-    final f = fines.single;
-    expect(f.status, FineStatus.pending);
-    expect(f.isOpen, isTrue);
-    expect(f.amount, closeTo(6.0, 1e-9)); // 3 days * 2
-    expect(f.memberId, '250001');
-    expect(f.loanId, isNotNull);
-    expect(f.reason, 'Overdue 3 days');
-  });
+      final fines = await svc.getFines();
+      expect(fines, hasLength(1));
+      final f = fines.single;
+      expect(f.status, FineStatus.pending);
+      expect(f.isOpen, isTrue);
+      expect(f.amount, closeTo(6.0, 1e-9)); // 3 days * 2
+      expect(f.memberId, '250001');
+      expect(f.loanId, isNotNull);
+      expect(f.reason, 'Overdue 3 days');
+    },
+  );
 
   test('an on-time return accrues NOTHING', () async {
     await svc.setFineSettings(const FineSettings(ratePerDay: 2));
     final due = DateTime(2026, 5, 1, 12);
-    await borrowAndReturn('0002',
-        due: due, returned: due.subtract(const Duration(days: 1)));
+    await borrowAndReturn(
+      '0002',
+      due: due,
+      returned: due.subtract(const Duration(days: 1)),
+    );
     expect(await svc.getFines(), isEmpty);
   });
 
   test('with the policy disabled, an overdue return accrues NOTHING', () async {
     // rate left at 0 (default).
     final due = DateTime(2026, 5, 1, 12);
-    await borrowAndReturn('0003',
-        due: due, returned: due.add(const Duration(days: 10)));
+    await borrowAndReturn(
+      '0003',
+      due: due,
+      returned: due.add(const Duration(days: 10)),
+    );
     expect(await svc.getFines(), isEmpty);
   });
 
   test('a settle records the operator and cannot be applied twice', () async {
     await svc.setFineSettings(const FineSettings(ratePerDay: 1));
     final due = DateTime(2026, 5, 1);
-    await borrowAndReturn('0004',
-        due: due, returned: due.add(const Duration(days: 2)));
+    await borrowAndReturn(
+      '0004',
+      due: due,
+      returned: due.add(const Duration(days: 2)),
+    );
     final fine = (await svc.getFines()).single;
 
     await svc.payFine(fine.id!, operatorName: 'admin');
@@ -185,8 +208,11 @@ void main() {
   test('waive resolves a pending fine and blocks a later pay', () async {
     await svc.setFineSettings(const FineSettings(ratePerDay: 5));
     final due = DateTime(2026, 5, 1);
-    await borrowAndReturn('0005',
-        due: due, returned: due.add(const Duration(days: 2)));
+    await borrowAndReturn(
+      '0005',
+      due: due,
+      returned: due.add(const Duration(days: 2)),
+    );
     final fine = (await svc.getFines()).single;
 
     await svc.waiveFine(fine.id!, operatorName: 'clerk');
@@ -209,10 +235,16 @@ void main() {
   test('outstandingBalance sums only pending fines', () async {
     await svc.setFineSettings(const FineSettings(ratePerDay: 2));
     final due = DateTime(2026, 5, 1);
-    await borrowAndReturn('0006',
-        due: due, returned: due.add(const Duration(days: 3))); // 6
-    await borrowAndReturn('0007',
-        due: due, returned: due.add(const Duration(days: 2))); // 4
+    await borrowAndReturn(
+      '0006',
+      due: due,
+      returned: due.add(const Duration(days: 3)),
+    ); // 6
+    await borrowAndReturn(
+      '0007',
+      due: due,
+      returned: due.add(const Duration(days: 2)),
+    ); // 4
 
     expect(await svc.outstandingBalance('250001'), closeTo(10.0, 1e-9));
 
@@ -230,8 +262,11 @@ void main() {
   test('getFines filters by member', () async {
     await svc.setFineSettings(const FineSettings(ratePerDay: 1));
     final due = DateTime(2026, 5, 1);
-    await borrowAndReturn('0008',
-        due: due, returned: due.add(const Duration(days: 1)));
+    await borrowAndReturn(
+      '0008',
+      due: due,
+      returned: due.add(const Duration(days: 1)),
+    );
     expect(await svc.getFines(memberId: '250001'), hasLength(1));
     expect(await svc.getFines(memberId: '999999'), isEmpty);
   });

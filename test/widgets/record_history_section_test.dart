@@ -43,8 +43,7 @@ class _Repo implements LibraryRepository {
     String? codeType,
     String? sort,
     bool ascending = true,
-  }) async =>
-      const [];
+  }) async => const [];
 
   @override
   dynamic noSuchMethod(Invocation invocation) => null;
@@ -74,19 +73,27 @@ Future<void> _pump(
   await tester.pumpAndSettle();
 }
 
-Map<String, dynamic> _row(String details, {String stamp = '2026-01-01T10:00:00.000'}) => {
-      'timestamp': stamp,
-      'operation': 'UPDATE',
-      'details': details,
-      'user': 'Host',
-    };
+Map<String, dynamic> _row(
+  String details, {
+  String stamp = '2026-01-01T10:00:00.000',
+}) => {
+  'timestamp': stamp,
+  'operation': 'UPDATE',
+  'details': details,
+  'user': 'Host',
+};
 
 void main() {
   testWidgets('renders each matching audit row verbatim', (tester) async {
-    final repo = _Repo(rows: [
-      _row('Copie #1 de BK-001 -> available', stamp: '2026-01-03T10:00:00.000'),
-      _row('Emprunt: BK-001 par Amira', stamp: '2026-01-02T10:00:00.000'),
-    ]);
+    final repo = _Repo(
+      rows: [
+        _row(
+          'Copie #1 de BK-001 -> available',
+          stamp: '2026-01-03T10:00:00.000',
+        ),
+        _row('Emprunt: BK-001 par Amira', stamp: '2026-01-02T10:00:00.000'),
+      ],
+    );
     await _pump(
       tester,
       repo: repo,
@@ -123,10 +130,7 @@ void main() {
     await _pump(
       tester,
       repo: _Repo(rows: const []),
-      child: const RecordHistorySection(
-        subject: 'BK-999',
-        title: 'History',
-      ),
+      child: const RecordHistorySection(subject: 'BK-999', title: 'History'),
     );
     // The plan's honest-omission principle: an ancillary timeline does not
     // shout empty-state copy at the operator.
@@ -134,15 +138,13 @@ void main() {
     expect(find.text('No recent activity for this record.'), findsNothing);
   });
 
-  testWidgets('a repo failure hides the section (honest-omission)',
-      (tester) async {
+  testWidgets('a repo failure hides the section (honest-omission)', (
+    tester,
+  ) async {
     await _pump(
       tester,
       repo: _Repo(throwOnRead: true),
-      child: const RecordHistorySection(
-        subject: 'BK-001',
-        title: 'History',
-      ),
+      child: const RecordHistorySection(subject: 'BK-001', title: 'History'),
     );
     // The whole card is absent: no crash, no error banner, no ghost chrome.
     expect(find.text('History'), findsNothing);

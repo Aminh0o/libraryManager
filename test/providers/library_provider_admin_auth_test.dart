@@ -19,49 +19,58 @@ class _FakeRepo implements LibraryRepository {
 /// password is actually configured.
 void main() {
   group('LibraryProvider.verifyAdminPassword (FE2-11)', () {
-    test('host with a configured password rejects wrong/blank, accepts real', () async {
-      final auth = AuthService(store: InMemoryAuthStore());
-      await auth.setPassword('s3cret');
-      final provider = LibraryProvider.forTesting(
-        repository: _FakeRepo(),
-        isHost: true,
-        authService: auth,
-      );
+    test(
+      'host with a configured password rejects wrong/blank, accepts real',
+      () async {
+        final auth = AuthService(store: InMemoryAuthStore());
+        await auth.setPassword('s3cret');
+        final provider = LibraryProvider.forTesting(
+          repository: _FakeRepo(),
+          isHost: true,
+          authService: auth,
+        );
 
-      // The old hole is still demonstrably weak: with no LOCAL password stored,
-      // checkPassword accepts everything...
-      expect(provider.checkPassword(''), isTrue);
-      expect(provider.checkPassword('guess'), isTrue);
+        // The old hole is still demonstrably weak: with no LOCAL password stored,
+        // checkPassword accepts everything...
+        expect(provider.checkPassword(''), isTrue);
+        expect(provider.checkPassword('guess'), isTrue);
 
-      // ...but the authoritative gate now demands the real server credential.
-      expect(await provider.verifyAdminPassword('wrong'), isFalse);
-      expect(await provider.verifyAdminPassword(''), isFalse);
-      expect(await provider.verifyAdminPassword('s3cret'), isTrue);
-    });
+        // ...but the authoritative gate now demands the real server credential.
+        expect(await provider.verifyAdminPassword('wrong'), isFalse);
+        expect(await provider.verifyAdminPassword(''), isFalse);
+        expect(await provider.verifyAdminPassword('s3cret'), isTrue);
+      },
+    );
 
-    test('host with NO credential runs bootstrap-open (operator not locked out)', () async {
-      final auth = AuthService(store: InMemoryAuthStore());
-      final provider = LibraryProvider.forTesting(
-        repository: _FakeRepo(),
-        isHost: true,
-        authService: auth,
-      );
+    test(
+      'host with NO credential runs bootstrap-open (operator not locked out)',
+      () async {
+        final auth = AuthService(store: InMemoryAuthStore());
+        final provider = LibraryProvider.forTesting(
+          repository: _FakeRepo(),
+          isHost: true,
+          authService: auth,
+        );
 
-      // Nothing is protected until a password is set — matches the LAN server's
-      // own enforcement-off default, so an unconfigured host is never bricked.
-      expect(await provider.verifyAdminPassword('anything'), isTrue);
-    });
+        // Nothing is protected until a password is set — matches the LAN server's
+        // own enforcement-off default, so an unconfigured host is never bricked.
+        expect(await provider.verifyAdminPassword('anything'), isTrue);
+      },
+    );
 
-    test('client delegates to the local gate and never consults the server', () async {
-      // No authService injected: if the client path reached _hostAuthService it
-      // would build a real DB-backed service and throw. Returning the local
-      // result proves it stays client-side (server routes are token-guarded).
-      final provider = LibraryProvider.forTesting(
-        repository: _FakeRepo(),
-        isHost: false,
-      );
-      expect(await provider.verifyAdminPassword('whatever'), isTrue);
-    });
+    test(
+      'client delegates to the local gate and never consults the server',
+      () async {
+        // No authService injected: if the client path reached _hostAuthService it
+        // would build a real DB-backed service and throw. Returning the local
+        // result proves it stays client-side (server routes are token-guarded).
+        final provider = LibraryProvider.forTesting(
+          repository: _FakeRepo(),
+          isHost: false,
+        );
+        expect(await provider.verifyAdminPassword('whatever'), isTrue);
+      },
+    );
   });
 
   // FE2-11 (change-password leg): the old-password step must be driven by the

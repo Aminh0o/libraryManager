@@ -249,7 +249,8 @@ class DatabaseService implements LibraryRepository {
   static int get currentSchemaVersion => _dbVersion;
 
   Future<Database> _initDatabase() async {
-    final Directory documentsDirectory = await getApplicationDocumentsDirectory();
+    final Directory documentsDirectory =
+        await getApplicationDocumentsDirectory();
     final String path = join(documentsDirectory.path, 'library_manager.db');
     return openDatabaseAt(path);
   }
@@ -260,12 +261,12 @@ class DatabaseService implements LibraryRepository {
   /// the `useDatabaseForTesting` seam cannot exercise).
   @visibleForTesting
   Future<Database> openDatabaseAt(String path) => openDatabase(
-        path,
-        version: _dbVersion,
-        onCreate: _onCreate,
-        onUpgrade: _onUpgrade,
-        onConfigure: _onConfigure,
-      );
+    path,
+    version: _dbVersion,
+    onCreate: _onCreate,
+    onUpgrade: _onUpgrade,
+    onConfigure: _onConfigure,
+  );
 
   /// Runs on every open. Enables foreign-key enforcement (DB-01). A no-op for
   /// the current schema (no FKs declared yet) and correct once they are.
@@ -275,48 +276,65 @@ class DatabaseService implements LibraryRepository {
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
-          await _addColumnSafe(db, 'library_items', 'status',
-              "ALTER TABLE library_items ADD COLUMN status TEXT DEFAULT 'Disponible'");
-        }
-        if (oldVersion < 3) {
-          await _addColumnSafe(db, 'library_items', 'code_type',
-              "ALTER TABLE library_items ADD COLUMN code_type TEXT DEFAULT 'LIV'");
-          // Update existing status values to French. Guarded: a partial legacy
-          // install may lack library_items entirely (DB-08).
-          if (await _tableExists(db, 'library_items')) {
-            await _runSafe(db, 'status i18n backfill', () async {
-              await db.execute("UPDATE library_items SET status = 'Disponible' WHERE status = 'Available'");
-              await db.execute("UPDATE library_items SET status = 'Emprunté' WHERE status = 'Borrowed'");
-              await db.execute("UPDATE library_items SET status = 'Payé' WHERE status = 'Paid'");
-            });
-          }
-        }
-        if (oldVersion < 4) {
-          await db.execute('''
+      await _addColumnSafe(
+        db,
+        'library_items',
+        'status',
+        "ALTER TABLE library_items ADD COLUMN status TEXT DEFAULT 'Disponible'",
+      );
+    }
+    if (oldVersion < 3) {
+      await _addColumnSafe(
+        db,
+        'library_items',
+        'code_type',
+        "ALTER TABLE library_items ADD COLUMN code_type TEXT DEFAULT 'LIV'",
+      );
+      // Update existing status values to French. Guarded: a partial legacy
+      // install may lack library_items entirely (DB-08).
+      if (await _tableExists(db, 'library_items')) {
+        await _runSafe(db, 'status i18n backfill', () async {
+          await db.execute(
+            "UPDATE library_items SET status = 'Disponible' WHERE status = 'Available'",
+          );
+          await db.execute(
+            "UPDATE library_items SET status = 'Emprunté' WHERE status = 'Borrowed'",
+          );
+          await db.execute(
+            "UPDATE library_items SET status = 'Payé' WHERE status = 'Paid'",
+          );
+        });
+      }
+    }
+    if (oldVersion < 4) {
+      await db.execute('''
             CREATE TABLE IF NOT EXISTS code_definitions(
               prefix TEXT PRIMARY KEY,
               label TEXT
             )
           ''');
-          
-          // Seed defaults. Ignore conflicts so a partial install that already
-          // holds some (or all) of these prefixes never aborts onUpgrade (DB-08).
-          final defaults = [
-            {'prefix': 'LIV', 'label': 'Livre'},
-            {'prefix': 'REV', 'label': 'Revue'},
-            {'prefix': 'THE', 'label': 'Thèse'},
-            {'prefix': 'MEM', 'label': 'Mémoire'},
-            {'prefix': 'PER', 'label': 'Périodique'},
-            {'prefix': 'DOC', 'label': 'Document'},
-          ];
-          
-          for (final def in defaults) {
-            await db.insert('code_definitions', def,
-                conflictAlgorithm: ConflictAlgorithm.ignore);
-          }
-        }
-        if (oldVersion < 5) {
-          await db.execute('''
+
+      // Seed defaults. Ignore conflicts so a partial install that already
+      // holds some (or all) of these prefixes never aborts onUpgrade (DB-08).
+      final defaults = [
+        {'prefix': 'LIV', 'label': 'Livre'},
+        {'prefix': 'REV', 'label': 'Revue'},
+        {'prefix': 'THE', 'label': 'Thèse'},
+        {'prefix': 'MEM', 'label': 'Mémoire'},
+        {'prefix': 'PER', 'label': 'Périodique'},
+        {'prefix': 'DOC', 'label': 'Document'},
+      ];
+
+      for (final def in defaults) {
+        await db.insert(
+          'code_definitions',
+          def,
+          conflictAlgorithm: ConflictAlgorithm.ignore,
+        );
+      }
+    }
+    if (oldVersion < 5) {
+      await db.execute('''
             CREATE TABLE IF NOT EXISTS history(
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               timestamp TEXT,
@@ -325,41 +343,54 @@ class DatabaseService implements LibraryRepository {
               user TEXT
             )
           ''');
-        }
-        if (oldVersion < 6) {
-          await _addColumnSafe(
-              db, 'library_items', 'barcode', 'ALTER TABLE library_items ADD COLUMN barcode TEXT');
-        }
-        if (oldVersion < 7) {
-          await db.execute('''
+    }
+    if (oldVersion < 6) {
+      await _addColumnSafe(
+        db,
+        'library_items',
+        'barcode',
+        'ALTER TABLE library_items ADD COLUMN barcode TEXT',
+      );
+    }
+    if (oldVersion < 7) {
+      await db.execute('''
             CREATE TABLE IF NOT EXISTS metadata(
               key TEXT PRIMARY KEY,
               value TEXT
             )
           ''');
-          await db.insert('metadata',
-              {'key': 'db_version', 'value': DateTime.now().millisecondsSinceEpoch.toString()},
-              conflictAlgorithm: ConflictAlgorithm.ignore);
-        }
-        if (oldVersion < 8) {
-          await db.execute('''
+      await db.insert('metadata', {
+        'key': 'db_version',
+        'value': DateTime.now().millisecondsSinceEpoch.toString(),
+      }, conflictAlgorithm: ConflictAlgorithm.ignore);
+    }
+    if (oldVersion < 8) {
+      await db.execute('''
             CREATE TABLE IF NOT EXISTS attribute_definitions(
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               type TEXT,
               value TEXT
             )
           ''');
-          
-          // Seed default statuses - These are System Enums. Ignore conflicts so
-          // an install that already holds them is not aborted (DB-08).
-          final statuses = ['Disponible', 'Emprunté', 'En Réparation', 'Perdu', 'Archivé'];
-          for (final status in statuses) {
-            await db.insert('attribute_definitions', {'type': 'STATUS', 'value': status},
-                conflictAlgorithm: ConflictAlgorithm.ignore);
-          }
-        }
-        if (oldVersion < 9) {
-          await db.execute('''
+
+      // Seed default statuses - These are System Enums. Ignore conflicts so
+      // an install that already holds them is not aborted (DB-08).
+      final statuses = [
+        'Disponible',
+        'Emprunté',
+        'En Réparation',
+        'Perdu',
+        'Archivé',
+      ];
+      for (final status in statuses) {
+        await db.insert('attribute_definitions', {
+          'type': 'STATUS',
+          'value': status,
+        }, conflictAlgorithm: ConflictAlgorithm.ignore);
+      }
+    }
+    if (oldVersion < 9) {
+      await db.execute('''
             CREATE TABLE IF NOT EXISTS members(
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               first_name TEXT,
@@ -370,8 +401,8 @@ class DatabaseService implements LibraryRepository {
               registered_at TEXT
             )
           ''');
-          
-          await db.execute('''
+
+      await db.execute('''
             CREATE TABLE IF NOT EXISTS loans(
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               item_code TEXT,
@@ -384,28 +415,28 @@ class DatabaseService implements LibraryRepository {
               status TEXT
             )
           ''');
-        }
-        if (oldVersion < 10) {
-          // Server-side auth (SEC-02/SEC-03/NET-01): admin credential hash +
-          // issued bearer tokens. DDL kept identical to SqfliteAuthStore.
-          await db.execute('''
+    }
+    if (oldVersion < 10) {
+      // Server-side auth (SEC-02/SEC-03/NET-01): admin credential hash +
+      // issued bearer tokens. DDL kept identical to SqfliteAuthStore.
+      await db.execute('''
             CREATE TABLE IF NOT EXISTS admin_credentials(
               id TEXT PRIMARY KEY,
               hash TEXT NOT NULL,
               updated_at TEXT
             )
           ''');
-          await db.execute('''
+      await db.execute('''
             CREATE TABLE IF NOT EXISTS client_tokens(
               token TEXT PRIMARY KEY,
               issued_at TEXT
             )
           ''');
-        }
-        if (oldVersion < 11) {
-          // Phase 2 / DB-02: per-copy physical state. Additive — backfill one
-          // copy per existing unit from library_items.quantite.
-          await db.execute('''
+    }
+    if (oldVersion < 11) {
+      // Phase 2 / DB-02: per-copy physical state. Additive — backfill one
+      // copy per existing unit from library_items.quantite.
+      await db.execute('''
             CREATE TABLE IF NOT EXISTS item_copies(
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               item_code TEXT NOT NULL,
@@ -415,95 +446,114 @@ class DatabaseService implements LibraryRepository {
               acquired_at TEXT
             )
           ''');
-          await db.execute(
-            'CREATE INDEX IF NOT EXISTS idx_item_copies_item ON item_copies(item_code)',
-          );
-          await db.execute(
-            'CREATE INDEX IF NOT EXISTS idx_item_copies_barcode ON item_copies(barcode)',
-          );
-          // Defensive (DB-08): the backfill reads library_items, which a
-          // partial legacy install may lack; skip rather than abort onUpgrade.
-          if (await _tableExists(db, 'library_items')) {
-            await _runSafe(db, 'copy backfill', () async {
-              await _backfillCopies(db);
-            });
-          }
-        }
-        if (oldVersion < 12) {
-          // Phase 2 / DB-02: a loan now references the specific physical copy.
-          // Defensive (DB-08): a legacy/partial install may lack `loans`.
-          await _addColumnSafe(db, 'loans', 'copy_id',
-              'ALTER TABLE loans ADD COLUMN copy_id INTEGER');
-        }
-        if (oldVersion < 13) {
-          // Phase 4 / DB-01: add the missing indexes on existing installs
-          // (non-unique, idempotent — no data can violate them).
-          await _createIndexes(db);
-        }
-        if (oldVersion < 14) {
-          // Phase 4 / DB-01 + BL-01: add the UNIQUE constraints defensively.
-          await _applyConstraintsSafely(db);
-        }
-        if (oldVersion < 15) {
-          // P9-9.15 / DB-01: idempotently re-run to pick up the new
-          // attribute_definitions UNIQUE(type,value) index on existing installs
-          // (already-present constraints are IF NOT EXISTS no-ops).
-          await _applyConstraintsSafely(db);
-        }
-        if (oldVersion < 16) {
-          // P9-9.16 / TX-06: per-row optimistic-concurrency token. Additive and
-          // DEFENSIVE (DB-08): an unguarded ALTER on a table that a legacy/partial
-          // install lacks would abort onUpgrade and boot-loop every launch, so
-          // _addRowVersionColumnSafely skips a missing table / already-present
-          // column and swallows any unexpected error, leaving the DB usable.
-          await _addRowVersionColumnSafely(db);
-        }
-        if (oldVersion < 17) {
-          // P9-9.21 / DB-01: real column-level FOREIGN KEYs on loans +
-          // item_copies. SQLite cannot add an FK via ALTER, so the tables are
-          // rebuilt. Fully DEFENSIVE (DB-08): the rebuild is skipped-with-log
-          // when a prerequisite table is missing, when FKs already exist, or
-          // when the existing data has orphan rows that would violate the new
-          // constraints -- an app whose legacy DB has orphans must still open,
-          // not boot-loop. App-level guards (BL-04 delete guards, TX-02 CAS)
-          // remain the authoritative enforcement path regardless.
-          await _applyForeignKeysSafely(db);
-        }
-        if (oldVersion < 18) {
-          // P9-9.48 / TX-06: per-row optimistic-concurrency token on `members`,
-          // mirroring `library_items.row_version` (v16). Additive and DEFENSIVE
-          // (DB-08): `_addColumnSafe` skips a missing table / already-present
-          // column and swallows any error, so a legacy/partial install can never
-          // abort onUpgrade and boot-loop. Existing rows default 0.
-          await _addColumnSafe(db, 'members', 'row_version',
-              'ALTER TABLE members ADD COLUMN row_version INTEGER NOT NULL DEFAULT 0');
-        }
-        if (oldVersion < 19) {
-          // Phase 10.1 / USERS-ROLES: named accounts + per-token attribution.
-          // The `users` table is additive (CREATE IF NOT EXISTS via _runSafe,
-          // which can never abort onUpgrade -- DB-08); `client_tokens.username`
-          // attributes newly-minted bearer tokens to their owner, NULL for
-          // pre-10.1 rows which AuthService resolves to the legacy admin so
-          // already-paired clients are never stranded by this upgrade.
-          await _runSafe(db, 'create users table', () => db.execute('''
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_item_copies_item ON item_copies(item_code)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_item_copies_barcode ON item_copies(barcode)',
+      );
+      // Defensive (DB-08): the backfill reads library_items, which a
+      // partial legacy install may lack; skip rather than abort onUpgrade.
+      if (await _tableExists(db, 'library_items')) {
+        await _runSafe(db, 'copy backfill', () async {
+          await _backfillCopies(db);
+        });
+      }
+    }
+    if (oldVersion < 12) {
+      // Phase 2 / DB-02: a loan now references the specific physical copy.
+      // Defensive (DB-08): a legacy/partial install may lack `loans`.
+      await _addColumnSafe(
+        db,
+        'loans',
+        'copy_id',
+        'ALTER TABLE loans ADD COLUMN copy_id INTEGER',
+      );
+    }
+    if (oldVersion < 13) {
+      // Phase 4 / DB-01: add the missing indexes on existing installs
+      // (non-unique, idempotent — no data can violate them).
+      await _createIndexes(db);
+    }
+    if (oldVersion < 14) {
+      // Phase 4 / DB-01 + BL-01: add the UNIQUE constraints defensively.
+      await _applyConstraintsSafely(db);
+    }
+    if (oldVersion < 15) {
+      // P9-9.15 / DB-01: idempotently re-run to pick up the new
+      // attribute_definitions UNIQUE(type,value) index on existing installs
+      // (already-present constraints are IF NOT EXISTS no-ops).
+      await _applyConstraintsSafely(db);
+    }
+    if (oldVersion < 16) {
+      // P9-9.16 / TX-06: per-row optimistic-concurrency token. Additive and
+      // DEFENSIVE (DB-08): an unguarded ALTER on a table that a legacy/partial
+      // install lacks would abort onUpgrade and boot-loop every launch, so
+      // _addRowVersionColumnSafely skips a missing table / already-present
+      // column and swallows any unexpected error, leaving the DB usable.
+      await _addRowVersionColumnSafely(db);
+    }
+    if (oldVersion < 17) {
+      // P9-9.21 / DB-01: real column-level FOREIGN KEYs on loans +
+      // item_copies. SQLite cannot add an FK via ALTER, so the tables are
+      // rebuilt. Fully DEFENSIVE (DB-08): the rebuild is skipped-with-log
+      // when a prerequisite table is missing, when FKs already exist, or
+      // when the existing data has orphan rows that would violate the new
+      // constraints -- an app whose legacy DB has orphans must still open,
+      // not boot-loop. App-level guards (BL-04 delete guards, TX-02 CAS)
+      // remain the authoritative enforcement path regardless.
+      await _applyForeignKeysSafely(db);
+    }
+    if (oldVersion < 18) {
+      // P9-9.48 / TX-06: per-row optimistic-concurrency token on `members`,
+      // mirroring `library_items.row_version` (v16). Additive and DEFENSIVE
+      // (DB-08): `_addColumnSafe` skips a missing table / already-present
+      // column and swallows any error, so a legacy/partial install can never
+      // abort onUpgrade and boot-loop. Existing rows default 0.
+      await _addColumnSafe(
+        db,
+        'members',
+        'row_version',
+        'ALTER TABLE members ADD COLUMN row_version INTEGER NOT NULL DEFAULT 0',
+      );
+    }
+    if (oldVersion < 19) {
+      // Phase 10.1 / USERS-ROLES: named accounts + per-token attribution.
+      // The `users` table is additive (CREATE IF NOT EXISTS via _runSafe,
+      // which can never abort onUpgrade -- DB-08); `client_tokens.username`
+      // attributes newly-minted bearer tokens to their owner, NULL for
+      // pre-10.1 rows which AuthService resolves to the legacy admin so
+      // already-paired clients are never stranded by this upgrade.
+      await _runSafe(
+        db,
+        'create users table',
+        () => db.execute('''
             CREATE TABLE IF NOT EXISTS users(
               username TEXT PRIMARY KEY,
               hash TEXT NOT NULL,
               role TEXT NOT NULL,
               created_at TEXT
             )
-          '''));
-          await _addColumnSafe(db, 'client_tokens', 'username',
-              'ALTER TABLE client_tokens ADD COLUMN username TEXT');
-        }
-        if (oldVersion < 20) {
-          // Phase 10.2 / FINES: an append-mostly ledger of monetary charges.
-          // Additive (CREATE IF NOT EXISTS via _runSafe -> never aborts
-          // onUpgrade, DB-08). No rows are back-filled: enabling fines is an
-          // explicit admin action (a rate in `metadata`) and accrual happens
-          // only on FUTURE overdue returns, so no existing member is ever
-          // retroactively charged by this upgrade.
-          await _runSafe(db, 'create fines table', () => db.execute('''
+          '''),
+      );
+      await _addColumnSafe(
+        db,
+        'client_tokens',
+        'username',
+        'ALTER TABLE client_tokens ADD COLUMN username TEXT',
+      );
+    }
+    if (oldVersion < 20) {
+      // Phase 10.2 / FINES: an append-mostly ledger of monetary charges.
+      // Additive (CREATE IF NOT EXISTS via _runSafe -> never aborts
+      // onUpgrade, DB-08). No rows are back-filled: enabling fines is an
+      // explicit admin action (a rate in `metadata`) and accrual happens
+      // only on FUTURE overdue returns, so no existing member is ever
+      // retroactively charged by this upgrade.
+      await _runSafe(
+        db,
+        'create fines table',
+        () => db.execute('''
             CREATE TABLE IF NOT EXISTS fines(
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               loan_id INTEGER,
@@ -515,24 +565,30 @@ class DatabaseService implements LibraryRepository {
               resolved_at TEXT,
               resolved_by TEXT
             )
-          '''));
-          await _runSafe(db, 'create fines indexes', () async {
-            await db.execute(
-                'CREATE INDEX IF NOT EXISTS idx_fines_member ON fines(member_id)');
-            await db.execute(
-                'CREATE INDEX IF NOT EXISTS idx_fines_status ON fines(status)');
-          });
-        }
-        if (oldVersion < 21) {
-          // Phase 10.3 / RESERVATIONS: the hold queue. Additive (CREATE IF NOT
-          // EXISTS via _runSafe -> never aborts onUpgrade, DB-08). No rows are
-          // back-filled and no copy changes state: a hold only claims a copy
-          // at PROMOTION time, so upgrading can never strand a copy off the
-          // shelf. `copy_id` is intentionally NOT an FK: promoted holds point
-          // at copies, and deleting a copy must not delete queue history --
-          // the promotion/claim paths verify copy existence inside their
-          // transactions instead.
-          await _runSafe(db, 'create reservations table', () => db.execute('''
+          '''),
+      );
+      await _runSafe(db, 'create fines indexes', () async {
+        await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_fines_member ON fines(member_id)',
+        );
+        await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_fines_status ON fines(status)',
+        );
+      });
+    }
+    if (oldVersion < 21) {
+      // Phase 10.3 / RESERVATIONS: the hold queue. Additive (CREATE IF NOT
+      // EXISTS via _runSafe -> never aborts onUpgrade, DB-08). No rows are
+      // back-filled and no copy changes state: a hold only claims a copy
+      // at PROMOTION time, so upgrading can never strand a copy off the
+      // shelf. `copy_id` is intentionally NOT an FK: promoted holds point
+      // at copies, and deleting a copy must not delete queue history --
+      // the promotion/claim paths verify copy existence inside their
+      // transactions instead.
+      await _runSafe(
+        db,
+        'create reservations table',
+        () => db.execute('''
             CREATE TABLE IF NOT EXISTS reservations(
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               item_code TEXT NOT NULL,
@@ -546,59 +602,69 @@ class DatabaseService implements LibraryRepository {
               note TEXT,
               rank INTEGER
             )
-          '''));
-          await _runSafe(db, 'create reservations indexes', () async {
-            await db.execute(
-                'CREATE INDEX IF NOT EXISTS idx_reservations_item ON reservations(item_code)');
-            await db.execute(
-                'CREATE INDEX IF NOT EXISTS idx_reservations_member ON reservations(member_id)');
-            await db.execute(
-                'CREATE INDEX IF NOT EXISTS idx_reservations_status ON reservations(status)');
-          });
-        }
-        if (oldVersion < 22) {
-          // BL-05: make copy state authoritative for every title's status. This
-          // is a DATA migration (no schema change) and, unlike the additive
-          // DDL steps above, it is NOT wrapped in _runSafe: it runs in one
-          // transaction so a genuine failure ABORTS onUpgrade (the version is
-          // not recorded, so the next launch retries it) rather than leaving a
-          // half-reconciled catalogue. A legacy/partial install that lacks the
-          // tables entirely is skipped by the existence guard (DB-08).
-          if (await _tableExists(db, 'library_items') &&
-              await _tableExists(db, 'item_copies')) {
-            await _reconcileStatusesFromCopies(db);
-          }
-        }
-        if (oldVersion < 23) {
-          // Pass 6: manual reorder of the hold queue. A nullable `rank`
-          // column lets an operator pull a walk-in to the front without
-          // cancelling + re-placing (which would lose the original
-          // created_at and write two spurious audit rows). NULL means
-          // "not manually ordered" and every read resolves it via
-          // `COALESCE(rank, id)`, so pre-Pass-6 rows continue to sort in
-          // their original FIFO order without a backfill. Additive +
-          // idempotent via _addColumnSafe (DB-08 boot-loop guard).
-          await _addColumnSafe(
-            db,
-            'reservations',
-            'rank',
-            'ALTER TABLE reservations ADD COLUMN rank INTEGER',
-          );
-        }
+          '''),
+      );
+      await _runSafe(db, 'create reservations indexes', () async {
+        await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_reservations_item ON reservations(item_code)',
+        );
+        await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_reservations_member ON reservations(member_id)',
+        );
+        await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_reservations_status ON reservations(status)',
+        );
+      });
+    }
+    if (oldVersion < 22) {
+      // BL-05: make copy state authoritative for every title's status. This
+      // is a DATA migration (no schema change) and, unlike the additive
+      // DDL steps above, it is NOT wrapped in _runSafe: it runs in one
+      // transaction so a genuine failure ABORTS onUpgrade (the version is
+      // not recorded, so the next launch retries it) rather than leaving a
+      // half-reconciled catalogue. A legacy/partial install that lacks the
+      // tables entirely is skipped by the existence guard (DB-08).
+      if (await _tableExists(db, 'library_items') &&
+          await _tableExists(db, 'item_copies')) {
+        await _reconcileStatusesFromCopies(db);
+      }
+    }
+    if (oldVersion < 23) {
+      // Pass 6: manual reorder of the hold queue. A nullable `rank`
+      // column lets an operator pull a walk-in to the front without
+      // cancelling + re-placing (which would lose the original
+      // created_at and write two spurious audit rows). NULL means
+      // "not manually ordered" and every read resolves it via
+      // `COALESCE(rank, id)`, so pre-Pass-6 rows continue to sort in
+      // their original FIFO order without a backfill. Additive +
+      // idempotent via _addColumnSafe (DB-08 boot-loop guard).
+      await _addColumnSafe(
+        db,
+        'reservations',
+        'rank',
+        'ALTER TABLE reservations ADD COLUMN rank INTEGER',
+      );
+    }
   }
 
   /// True if a table exists in the current schema. Reads sqlite_master's `name`
   /// column (NOT `table_name`, a common mistake that silently matches nothing).
   Future<bool> _tableExists(Database db, String table) async {
     final rows = await db.rawQuery(
-        "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", [table]);
+      "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?",
+      [table],
+    );
     return rows.isNotEmpty;
   }
 
   /// Runs an arbitrary migration statement body, swallowing any error so a
   /// legacy/partial schema can never abort `onUpgrade` (DB-08 boot-loop). Logs
   /// what was skipped so the residual gap is observable, not silent.
-  Future<void> _runSafe(Database db, String label, Future<void> Function() body) async {
+  Future<void> _runSafe(
+    Database db,
+    String label,
+    Future<void> Function() body,
+  ) async {
     try {
       await body();
     } catch (e) {
@@ -614,17 +680,25 @@ class DatabaseService implements LibraryRepository {
   /// [ddl] must be the full `ALTER TABLE <table> ADD COLUMN <column> ...`
   /// statement; [table]/[column] are used purely for the existence guards.
   Future<void> _addColumnSafe(
-      Database db, String table, String column, String ddl) async {
+    Database db,
+    String table,
+    String column,
+    String ddl,
+  ) async {
     try {
       if (!await _tableExists(db, table)) {
-        debugPrint('migration: skipped ADD COLUMN $table.$column (no such table)');
+        debugPrint(
+          'migration: skipped ADD COLUMN $table.$column (no such table)',
+        );
         return;
       }
       final cols = await db.rawQuery('PRAGMA table_info($table)');
       if (cols.any((c) => c['name'] == column)) return;
       await db.execute(ddl);
     } catch (e) {
-      debugPrint('migration: ADD COLUMN $table.$column skipped (non-fatal): $e');
+      debugPrint(
+        'migration: ADD COLUMN $table.$column skipped (non-fatal): $e',
+      );
     }
   }
 
@@ -632,8 +706,12 @@ class DatabaseService implements LibraryRepository {
   /// helper (referenced by the TX-06/DB-08 notes); the guard logic now lives in
   /// the reusable [_addColumnSafe].
   Future<void> _addRowVersionColumnSafely(Database db) async {
-    await _addColumnSafe(db, 'library_items', 'row_version',
-        'ALTER TABLE library_items ADD COLUMN row_version INTEGER NOT NULL DEFAULT 0');
+    await _addColumnSafe(
+      db,
+      'library_items',
+      'row_version',
+      'ALTER TABLE library_items ADD COLUMN row_version INTEGER NOT NULL DEFAULT 0',
+    );
   }
 
   /// DB-01: adds real FOREIGN KEYs to `loans` and `item_copies`, which SQLite
@@ -651,7 +729,9 @@ class DatabaseService implements LibraryRepository {
       if (!await _tableExists(db, 'library_items') ||
           !await _tableExists(db, 'loans') ||
           !await _tableExists(db, 'item_copies')) {
-        debugPrint('FK rebuild skipped: prerequisite table(s) missing (partial schema)');
+        debugPrint(
+          'FK rebuild skipped: prerequisite table(s) missing (partial schema)',
+        );
         return;
       }
       // Idempotent: a prior run already rebuilt loans with an FK.
@@ -668,15 +748,20 @@ class DatabaseService implements LibraryRepository {
       // years without FKs) would fail the INSERT..SELECT and, absent this guard,
       // boot-loop. Skip-with-log keeps it open.
       final orphanLoanItem = await scalar(
-          'SELECT COUNT(*) FROM loans WHERE item_code IS NOT NULL AND item_code NOT IN (SELECT code FROM library_items)');
+        'SELECT COUNT(*) FROM loans WHERE item_code IS NOT NULL AND item_code NOT IN (SELECT code FROM library_items)',
+      );
       final orphanLoanCopy = await scalar(
-          'SELECT COUNT(*) FROM loans WHERE copy_id IS NOT NULL AND copy_id NOT IN (SELECT id FROM item_copies)');
+        'SELECT COUNT(*) FROM loans WHERE copy_id IS NOT NULL AND copy_id NOT IN (SELECT id FROM item_copies)',
+      );
       final orphanCopyItem = await scalar(
-          'SELECT COUNT(*) FROM item_copies WHERE item_code NOT IN (SELECT code FROM library_items)');
+        'SELECT COUNT(*) FROM item_copies WHERE item_code NOT IN (SELECT code FROM library_items)',
+      );
       if (orphanLoanItem > 0 || orphanLoanCopy > 0 || orphanCopyItem > 0) {
-        debugPrint('FK rebuild skipped: pre-existing orphans '
-            '(loans.missing_item=$orphanLoanItem loans.missing_copy=$orphanLoanCopy '
-            'copies.missing_item=$orphanCopyItem); app-level guards stay authoritative');
+        debugPrint(
+          'FK rebuild skipped: pre-existing orphans '
+          '(loans.missing_item=$orphanLoanItem loans.missing_copy=$orphanLoanCopy '
+          'copies.missing_item=$orphanCopyItem); app-level guards stay authoritative',
+        );
         return;
       }
 
@@ -684,8 +769,7 @@ class DatabaseService implements LibraryRepository {
       await _rebuildTableWithFk(
         db,
         oldName: 'item_copies',
-        columns:
-            'id, item_code, barcode, state, note, acquired_at',
+        columns: 'id, item_code, barcode, state, note, acquired_at',
         createBody: '''
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           item_code TEXT NOT NULL REFERENCES library_items(code) ON DELETE CASCADE,
@@ -750,15 +834,21 @@ class DatabaseService implements LibraryRepository {
     await db.execute('DROP TABLE IF EXISTS $tmp');
     await db.execute('CREATE TABLE $tmp($createBody)');
     await db.execute(
-        'INSERT INTO $tmp($columns) SELECT $columns FROM $oldName');
+      'INSERT INTO $tmp($columns) SELECT $columns FROM $oldName',
+    );
     // Belt-and-suspenders: refuse to drop the source unless every row landed.
     final oldCount =
-        ((await db.rawQuery('SELECT COUNT(*) FROM $oldName')).first.values.first as int?) ?? 0;
+        ((await db.rawQuery('SELECT COUNT(*) FROM $oldName')).first.values.first
+            as int?) ??
+        0;
     final newCount =
-        ((await db.rawQuery('SELECT COUNT(*) FROM $tmp')).first.values.first as int?) ?? 0;
+        ((await db.rawQuery('SELECT COUNT(*) FROM $tmp')).first.values.first
+            as int?) ??
+        0;
     if (oldCount != newCount) {
       throw StateError(
-          'FK rebuild aborted: $oldName had $oldCount rows but $tmp got $newCount');
+        'FK rebuild aborted: $oldName had $oldCount rows but $tmp got $newCount',
+      );
     }
     await db.execute('DROP TABLE $oldName');
     await db.execute('ALTER TABLE $tmp RENAME TO $oldName');
@@ -770,8 +860,10 @@ class DatabaseService implements LibraryRepository {
       try {
         await db.execute(sql);
       } catch (e) {
-        debugPrint('FK rebuild: unique index skipped (violation): '
-            '${sql.split(RegExp(r'\s+')).take(5).join(' ')} ... -> $e');
+        debugPrint(
+          'FK rebuild: unique index skipped (violation): '
+          '${sql.split(RegExp(r'\s+')).take(5).join(' ')} ... -> $e',
+        );
       }
     }
   }
@@ -788,23 +880,31 @@ class DatabaseService implements LibraryRepository {
       try {
         await db.execute(sql);
       } catch (e) {
-        debugPrint('Index skipped (non-fatal): '
-            '${sql.split(RegExp(r'\s+')).take(6).join(' ')} ... -> $e');
+        debugPrint(
+          'Index skipped (non-fatal): '
+          '${sql.split(RegExp(r'\s+')).take(6).join(' ')} ... -> $e',
+        );
       }
     }
 
     await attempt(
-        'CREATE INDEX IF NOT EXISTS idx_loans_status ON loans(status)');
+      'CREATE INDEX IF NOT EXISTS idx_loans_status ON loans(status)',
+    );
     await attempt(
-        'CREATE INDEX IF NOT EXISTS idx_loans_item ON loans(item_code)');
+      'CREATE INDEX IF NOT EXISTS idx_loans_item ON loans(item_code)',
+    );
     await attempt(
-        'CREATE INDEX IF NOT EXISTS idx_loans_copy ON loans(copy_id)');
+      'CREATE INDEX IF NOT EXISTS idx_loans_copy ON loans(copy_id)',
+    );
     await attempt(
-        'CREATE INDEX IF NOT EXISTS idx_items_status ON library_items(status)');
+      'CREATE INDEX IF NOT EXISTS idx_items_status ON library_items(status)',
+    );
     await attempt(
-        'CREATE INDEX IF NOT EXISTS idx_item_copies_item ON item_copies(item_code)');
+      'CREATE INDEX IF NOT EXISTS idx_item_copies_item ON item_copies(item_code)',
+    );
     await attempt(
-        'CREATE INDEX IF NOT EXISTS idx_item_copies_barcode ON item_copies(barcode)');
+      'CREATE INDEX IF NOT EXISTS idx_item_copies_barcode ON item_copies(barcode)',
+    );
   }
 
   /// Attempt to add the UNIQUE constraints that strengthen DB-01 (barcode
@@ -822,30 +922,40 @@ class DatabaseService implements LibraryRepository {
       try {
         await db.execute(sql);
       } catch (e) {
-        debugPrint('Integrity constraint skipped (pre-existing violation): '
-            '${sql.split(RegExp(r'\s+')).take(5).join(' ')} ... -> $e');
+        debugPrint(
+          'Integrity constraint skipped (pre-existing violation): '
+          '${sql.split(RegExp(r'\s+')).take(5).join(' ')} ... -> $e',
+        );
       }
     }
 
     // BL-01 defense-in-depth: a physical copy can have at most one *active*
     // loan. Partial (WHERE) so returned/historical duplicates stay allowed.
-    await attempt("CREATE UNIQUE INDEX IF NOT EXISTS uq_loans_active_copy "
-        "ON loans(copy_id) "
-        "WHERE status = 'Active' AND copy_id IS NOT NULL");
+    await attempt(
+      "CREATE UNIQUE INDEX IF NOT EXISTS uq_loans_active_copy "
+      "ON loans(copy_id) "
+      "WHERE status = 'Active' AND copy_id IS NOT NULL",
+    );
     // DB-01: a non-empty title barcode must be unique (NULL / '' are exempt so
     // blank barcodes never collide).
-    await attempt('CREATE UNIQUE INDEX IF NOT EXISTS uq_items_barcode '
-        "ON library_items(barcode) "
-        "WHERE barcode IS NOT NULL AND barcode <> ''");
-    await attempt('CREATE UNIQUE INDEX IF NOT EXISTS uq_copies_barcode '
-        "ON item_copies(barcode) "
-        "WHERE barcode IS NOT NULL AND barcode <> ''");
+    await attempt(
+      'CREATE UNIQUE INDEX IF NOT EXISTS uq_items_barcode '
+      "ON library_items(barcode) "
+      "WHERE barcode IS NOT NULL AND barcode <> ''",
+    );
+    await attempt(
+      'CREATE UNIQUE INDEX IF NOT EXISTS uq_copies_barcode '
+      "ON item_copies(barcode) "
+      "WHERE barcode IS NOT NULL AND barcode <> ''",
+    );
     // DB-01: an attribute value must be unique WITHIN its type (the historic
     // "duplicate statuses" defect). A pre-existing install that already holds a
     // duplicate simply skips this index (defensive); the application-level
     // pre-check in addAttributeDefinition still blocks NEW duplicates.
-    await attempt('CREATE UNIQUE INDEX IF NOT EXISTS uq_attr_type_value '
-        'ON attribute_definitions(type, value)');
+    await attempt(
+      'CREATE UNIQUE INDEX IF NOT EXISTS uq_attr_type_value '
+      'ON attribute_definitions(type, value)',
+    );
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -894,9 +1004,18 @@ class DatabaseService implements LibraryRepository {
         ''');
 
     // Seed defaults for attributes
-    final statuses = ['Disponible', 'Emprunté', 'En Réparation', 'Perdu', 'Archivé'];
+    final statuses = [
+      'Disponible',
+      'Emprunté',
+      'En Réparation',
+      'Perdu',
+      'Archivé',
+    ];
     for (final status in statuses) {
-      await db.insert('attribute_definitions', {'type': 'STATUS', 'value': status});
+      await db.insert('attribute_definitions', {
+        'type': 'STATUS',
+        'value': status,
+      });
     }
 
     await db.execute('''
@@ -908,14 +1027,14 @@ class DatabaseService implements LibraryRepository {
             user TEXT
           )
         ''');
-    
+
     await db.execute('''
           CREATE TABLE metadata(
             key TEXT PRIMARY KEY,
             value TEXT
           )
         ''');
-    
+
     await db.execute('''
       CREATE TABLE members(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -928,7 +1047,7 @@ class DatabaseService implements LibraryRepository {
         row_version INTEGER NOT NULL DEFAULT 0
       )
     ''');
-    
+
     await db.execute('''
       CREATE TABLE loans(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1000,12 +1119,8 @@ class DatabaseService implements LibraryRepository {
         resolved_by TEXT
       )
     ''');
-    await db.execute(
-      'CREATE INDEX idx_fines_member ON fines(member_id)',
-    );
-    await db.execute(
-      'CREATE INDEX idx_fines_status ON fines(status)',
-    );
+    await db.execute('CREATE INDEX idx_fines_member ON fines(member_id)');
+    await db.execute('CREATE INDEX idx_fines_status ON fines(status)');
     // Hold queue (Phase 10.3) -- schema-identical to the v21 upgrade step so
     // a fresh install and an upgraded one converge on the same shape.
     await db.execute('''
@@ -1038,7 +1153,10 @@ class DatabaseService implements LibraryRepository {
     // UNIQUE constraints (DB-01 barcode determinism, BL-01 one-active-loan-per-
     // copy). On an empty fresh DB these always succeed.
     await _applyConstraintsSafely(db);
-    await db.insert('metadata', {'key': 'db_version', 'value': DateTime.now().millisecondsSinceEpoch.toString()});
+    await db.insert('metadata', {
+      'key': 'db_version',
+      'value': DateTime.now().millisecondsSinceEpoch.toString(),
+    });
   }
 
   /// Generates the next sequential code for a given code type.
@@ -1074,8 +1192,11 @@ class DatabaseService implements LibraryRepository {
   /// null when [bc] is free. Pass [exceptCode] on updates so a title keeping
   /// its own barcode is not a clash. Blank/null barcodes are always free,
   /// mirroring the partial `uq_items_barcode` index (which exempts them).
-  Future<String?> _barcodeHolder(Transaction txn, String? bc,
-      {String? exceptCode}) async {
+  Future<String?> _barcodeHolder(
+    Transaction txn,
+    String? bc, {
+    String? exceptCode,
+  }) async {
     if (bc == null || bc.isEmpty) return null;
     final rows = await txn.query(
       'library_items',
@@ -1085,7 +1206,7 @@ class DatabaseService implements LibraryRepository {
     );
     return rows.isEmpty ? null : rows.first['code'] as String;
   }
-  
+
   @override
   Future<void> addItem(LibraryItem item, {Map<String, dynamic>? audit}) async {
     final db = await database;
@@ -1096,9 +1217,13 @@ class DatabaseService implements LibraryRepository {
       // transaction, so it fails as a clean typed conflict the server maps to
       // 409 and the whole add rolls back.
       final clash = await txn.rawQuery(
-        'SELECT COUNT(*) FROM library_items WHERE code = ?', [item.code]);
+        'SELECT COUNT(*) FROM library_items WHERE code = ?',
+        [item.code],
+      );
       if (((clash.first.values.first as int?) ?? 0) > 0) {
-        throw ItemCodeConflictException('Item code ${item.code} already exists.');
+        throw ItemCodeConflictException(
+          'Item code ${item.code} already exists.',
+        );
       }
       // DB-01: the partial UNIQUE index `uq_items_barcode` makes a non-empty
       // barcode unique across titles. A repeat used to blow up as a raw
@@ -1108,20 +1233,25 @@ class DatabaseService implements LibraryRepository {
       final bHolder = await _barcodeHolder(txn, item.barcode);
       if (bHolder != null) {
         throw BarcodeConflictException(
-            'Barcode ${item.barcode} is already used by item $bHolder.');
+          'Barcode ${item.barcode} is already used by item $bHolder.',
+        );
       }
       // BL-05: a supplied title status outside the copy-derived vocabulary is a
       // bad value, refused rather than stored-then-clobbered. A *new* title is
       // always born with N physically-present (available) copies, so its stored
       // status is the derived rollup ('Disponible'), never the caller's string.
       if (!CopyState.isTitleStatus(item.status)) {
-        throw InvalidStatusException(
-            'Unknown item status "${item.status}".');
+        throw InvalidStatusException('Unknown item status "${item.status}".');
       }
       final stored = item.toMap()..['status'] = CopyState.available.storage;
       await txn.insert('library_items', stored);
       // A title owns physical copies from birth (Phase 2 / DB-02).
-      await _seedCopies(txn, item.code, item.quantite, CopyState.available.storage);
+      await _seedCopies(
+        txn,
+        item.code,
+        item.quantite,
+        CopyState.available.storage,
+      );
       await _writeAudit(txn, audit);
       await _touchVersion(txn);
     });
@@ -1134,20 +1264,23 @@ class DatabaseService implements LibraryRepository {
   /// inserted with their per-copy set seeded, and the whole batch + audit line +
   /// `db_version` stamp commit atomically (one transaction), closing the import
   /// half of BE-09 / RC-06.
-  Future<ImportResult> batchInsertItems(List<LibraryItem> items,
-      {Map<String, dynamic>? audit}) async {
+  Future<ImportResult> batchInsertItems(
+    List<LibraryItem> items, {
+    Map<String, dynamic>? audit,
+  }) async {
     final db = await database;
     late ImportResult result;
     await db.transaction((txn) async {
       final existing = <String>{
-        for (final r in
-            await txn.query('library_items', columns: ['code']))
+        for (final r in await txn.query('library_items', columns: ['code']))
           r['code'] as String,
       };
       final existingBarcodes = <String>{
-        for (final r in await txn.query('library_items',
-            columns: ['barcode'],
-            where: "barcode IS NOT NULL AND barcode <> ''"))
+        for (final r in await txn.query(
+          'library_items',
+          columns: ['barcode'],
+          where: "barcode IS NOT NULL AND barcode <> ''",
+        ))
           r['barcode'] as String,
       };
       final seen = <String>{};
@@ -1180,21 +1313,28 @@ class DatabaseService implements LibraryRepository {
         if (!CopyState.isTitleStatus(item.status)) {
           invalidStatus.add(item.code);
         }
-        final stored = item.toMap()
-          ..['status'] = CopyState.available.storage;
-        await txn.insert('library_items', stored,
-            conflictAlgorithm: ConflictAlgorithm.abort);
+        final stored = item.toMap()..['status'] = CopyState.available.storage;
+        await txn.insert(
+          'library_items',
+          stored,
+          conflictAlgorithm: ConflictAlgorithm.abort,
+        );
         await _seedCopies(
-            txn, item.code, item.quantite, CopyState.available.storage);
+          txn,
+          item.code,
+          item.quantite,
+          CopyState.available.storage,
+        );
         inserted++;
       }
       await _writeAudit(txn, audit);
       await _touchVersion(txn);
       result = ImportResult(
-          inserted: inserted,
-          skippedCodes: skipped,
-          skippedBarcodes: skippedBarcodes,
-          invalidStatusCodes: invalidStatus);
+        inserted: inserted,
+        skippedCodes: skipped,
+        skippedBarcodes: skippedBarcodes,
+        invalidStatusCodes: invalidStatus,
+      );
     });
     return result;
   }
@@ -1240,17 +1380,20 @@ class DatabaseService implements LibraryRepository {
     // this same (writer-serialized) transaction and guarantee strict
     // monotonicity: never go backwards, always advance by at least 1.
     final now = DateTime.now().millisecondsSinceEpoch;
-    final rows = await txn.query('metadata',
-        columns: ['value'], where: 'key = ?', whereArgs: ['db_version']);
+    final rows = await txn.query(
+      'metadata',
+      columns: ['value'],
+      where: 'key = ?',
+      whereArgs: ['db_version'],
+    );
     final current = rows.isEmpty
         ? 0
         : int.tryParse('${rows.first['value']}') ?? 0;
     final next = now > current ? now : current + 1;
-    await txn.insert(
-      'metadata',
-      {'key': 'db_version', 'value': next.toString()},
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await txn.insert('metadata', {
+      'key': 'db_version',
+      'value': next.toString(),
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   /// Run [op] and the sync-marker bump in a SINGLE transaction. Any throw inside
@@ -1291,7 +1434,8 @@ class DatabaseService implements LibraryRepository {
   /// rolling cap, not an unbounded append-only ledger.
   Future<void> _trimHistory(Transaction txn) async {
     await txn.execute(
-        'DELETE FROM history WHERE id IN (SELECT id FROM history ORDER BY timestamp DESC LIMIT -1 OFFSET $kHistoryRetainRows)');
+      'DELETE FROM history WHERE id IN (SELECT id FROM history ORDER BY timestamp DESC LIMIT -1 OFFSET $kHistoryRetainRows)',
+    );
   }
 
   /// Write the optional audit row **inside** the caller's transaction (before
@@ -1310,7 +1454,11 @@ class DatabaseService implements LibraryRepository {
   @override
   Future<String> getDbVersion() async {
     final db = await database;
-    final results = await db.query('metadata', where: 'key = ?', whereArgs: ['db_version']);
+    final results = await db.query(
+      'metadata',
+      where: 'key = ?',
+      whereArgs: ['db_version'],
+    );
     if (results.isNotEmpty) {
       return results.first['value'] as String;
     }
@@ -1328,7 +1476,11 @@ class DatabaseService implements LibraryRepository {
     bool ascending = true,
   }) async {
     final db = await database;
-    final f = _itemFilterWhere(search: search, status: status, codeType: codeType);
+    final f = _itemFilterWhere(
+      search: search,
+      status: status,
+      codeType: codeType,
+    );
     // Core Workflow Recovery: column sort is applied SERVER-side so a
     // paginated view stays correct across pages (a client-side sort would
     // only reorder the visible page). Whitelist guards against SQL injection:
@@ -1358,13 +1510,22 @@ class DatabaseService implements LibraryRepository {
   }
 
   @override
-  Future<int> countItems({String? search, String? status, String? codeType}) async {
+  Future<int> countItems({
+    String? search,
+    String? status,
+    String? codeType,
+  }) async {
     final db = await database;
-    final f = _itemFilterWhere(search: search, status: status, codeType: codeType);
+    final f = _itemFilterWhere(
+      search: search,
+      status: status,
+      codeType: codeType,
+    );
     final rows = await db.rawQuery(
-        'SELECT COUNT(*) AS c FROM library_items'
-        '${f.where.isEmpty ? '' : ' WHERE ${f.where}'}',
-        f.args);
+      'SELECT COUNT(*) AS c FROM library_items'
+      '${f.where.isEmpty ? '' : ' WHERE ${f.where}'}',
+      f.args,
+    );
     return (rows.first['c'] as int?) ?? 0;
   }
 
@@ -1394,24 +1555,26 @@ class DatabaseService implements LibraryRepository {
           .replaceAll('%', '\\%')
           .replaceAll('_', '\\_');
       final like = '%$escaped%';
-      clauses.add("(designation LIKE ? ESCAPE '\\' "
-          "OR code LIKE ? ESCAPE '\\' "
-          "OR barcode LIKE ? ESCAPE '\\' "
-          "OR emplacement LIKE ? ESCAPE '\\' "
-          "OR (code_type || '-' || code) LIKE ? ESCAPE '\\')");
+      clauses.add(
+        "(designation LIKE ? ESCAPE '\\' "
+        "OR code LIKE ? ESCAPE '\\' "
+        "OR barcode LIKE ? ESCAPE '\\' "
+        "OR emplacement LIKE ? ESCAPE '\\' "
+        "OR (code_type || '-' || code) LIKE ? ESCAPE '\\')",
+      );
       for (var i = 0; i < 5; i++) {
         args.add(like);
       }
     }
-    return (
-      where: clauses.isEmpty ? '' : clauses.join(' AND '),
-      args: args,
-    );
+    return (where: clauses.isEmpty ? '' : clauses.join(' AND '), args: args);
   }
 
   @override
-  Future<void> updateItem(LibraryItem item,
-      {Map<String, dynamic>? audit, int? expectedVersion}) async {
+  Future<void> updateItem(
+    LibraryItem item, {
+    Map<String, dynamic>? audit,
+    int? expectedVersion,
+  }) async {
     final db = await database;
     await db.transaction((txn) async {
       // BL-05: an out-of-vocabulary inbound status is a bad value -- refuse it
@@ -1420,48 +1583,60 @@ class DatabaseService implements LibraryRepository {
       // the copies below, so a stale metadata edit or a hostile client can
       // never persist a title-level status that contradicts the rollup.
       if (!CopyState.isTitleStatus(item.status)) {
-        throw InvalidStatusException(
-            'Unknown item status "${item.status}".');
+        throw InvalidStatusException('Unknown item status "${item.status}".');
       }
       // DB-01: reject a barcode now held by a DIFFERENT title as a typed
       // conflict (409) instead of a raw UNIQUE ConstraintError (500). Ignoring
       // this row's own code lets an edit that keeps its barcode succeed.
-      final bHolder =
-          await _barcodeHolder(txn, item.barcode, exceptCode: item.code);
+      final bHolder = await _barcodeHolder(
+        txn,
+        item.barcode,
+        exceptCode: item.code,
+      );
       if (bHolder != null) {
         throw BarcodeConflictException(
-            'Barcode ${item.barcode} is already used by item $bHolder.');
+          'Barcode ${item.barcode} is already used by item $bHolder.',
+        );
       }
       // TX-06 / BL-05: verify existence + the caller's expected version BEFORE
       // reconciling copies. `item_copies.item_code` has a FK to library_items,
       // so reconciling a row that does not exist would abort on a raw FK error
       // instead of the typed conflict this path must raise. The read and the
       // write share one serialized transaction, so this check is race-free.
-      final cur = await txn.query('library_items',
-          columns: ['row_version'],
-          where: 'code = ?',
-          whereArgs: [item.code],
-          limit: 1);
+      final cur = await txn.query(
+        'library_items',
+        columns: ['row_version'],
+        where: 'code = ?',
+        whereArgs: [item.code],
+        limit: 1,
+      );
       if (cur.isEmpty) {
         throw ConcurrentUpdateConflictException(
-            'Item ${item.code} no longer exists.');
+          'Item ${item.code} no longer exists.',
+        );
       }
       final stored = (cur.first['row_version'] as num?)?.toInt() ?? 0;
       if (expectedVersion != null && expectedVersion != stored) {
         // A stale whole-row write is refused (409) so the caller reloads rather
         // than silently clobbering another client's edit.
         throw ConcurrentUpdateConflictException(
-            'Item ${item.code} was modified by another client (now version '
-            '$stored, expected $expectedVersion).');
+          'Item ${item.code} was modified by another client (now version '
+          '$stored, expected $expectedVersion).',
+        );
       }
       // Copies are authoritative: reconcile the physical set to the declared
       // quantity, then derive the title status from it -- never from the inbound
       // row. `row_version` advances by exactly one from the stored token.
       await _reconcileCopies(txn, item.code, item.quantite);
-      final copyRows = await txn.query('item_copies',
-          where: 'item_code = ?', whereArgs: [item.code], orderBy: 'id');
+      final copyRows = await txn.query(
+        'item_copies',
+        where: 'item_code = ?',
+        whereArgs: [item.code],
+        orderBy: 'id',
+      );
       final derived = CopyLedger.deriveTitleStatus(
-          copyRows.map(ItemCopy.fromMap).toList());
+        copyRows.map(ItemCopy.fromMap).toList(),
+      );
       // row_version is owned by the server, never taken from the inbound row;
       // status is derived from copies, never taken from the inbound row (BL-05).
       final values = item.toMap()
@@ -1482,7 +1657,11 @@ class DatabaseService implements LibraryRepository {
 
   /// Insert `quantity` copies (min 1) for a title, all in the given state.
   Future<void> _seedCopies(
-      Transaction txn, String code, int quantity, String state) async {
+    Transaction txn,
+    String code,
+    int quantity,
+    String state,
+  ) async {
     final n = quantity < 1 ? 1 : quantity;
     for (var i = 0; i < n; i++) {
       await txn.insert('item_copies', {'item_code': code, 'state': state});
@@ -1492,9 +1671,17 @@ class DatabaseService implements LibraryRepository {
   /// Adjust a title's copies to [quantity] (min 1). Adds available copies when
   /// growing; removes only *available* copies when shrinking, never dropping
   /// below the number currently on loan (an on-loan copy cannot vanish).
-  Future<void> _reconcileCopies(Transaction txn, String code, int quantity) async {
-    final rows = await txn.query('item_copies',
-        where: 'item_code = ?', whereArgs: [code], orderBy: 'id');
+  Future<void> _reconcileCopies(
+    Transaction txn,
+    String code,
+    int quantity,
+  ) async {
+    final rows = await txn.query(
+      'item_copies',
+      where: 'item_code = ?',
+      whereArgs: [code],
+      orderBy: 'id',
+    );
     if (rows.isEmpty) {
       await _seedCopies(txn, code, quantity, CopyState.available.storage);
       return;
@@ -1504,14 +1691,20 @@ class DatabaseService implements LibraryRepository {
     final current = copies.length;
     if (target > current) {
       for (var i = 0; i < target - current; i++) {
-        await txn.insert('item_copies',
-            {'item_code': code, 'state': CopyState.available.storage});
+        await txn.insert('item_copies', {
+          'item_code': code,
+          'state': CopyState.available.storage,
+        });
       }
     } else if (target < current) {
       final removable = copies.where((c) => c.isAvailable).toList();
       final drop = current - target;
       for (var i = 0; i < drop && i < removable.length; i++) {
-        await txn.delete('item_copies', where: 'id = ?', whereArgs: [removable[i].id]);
+        await txn.delete(
+          'item_copies',
+          where: 'id = ?',
+          whereArgs: [removable[i].id],
+        );
       }
     }
   }
@@ -1525,8 +1718,12 @@ class DatabaseService implements LibraryRepository {
   /// clobbering the loan-derived status with a stale value. Raw SQL because
   /// sqflite `update` cannot express `col = col + 1`.
   Future<void> _recalcItemStatus(Transaction txn, String code) async {
-    final rows = await txn.query('item_copies',
-        where: 'item_code = ?', whereArgs: [code], orderBy: 'id');
+    final rows = await txn.query(
+      'item_copies',
+      where: 'item_code = ?',
+      whereArgs: [code],
+      orderBy: 'id',
+    );
     if (rows.isEmpty) return;
     final copies = rows.map(ItemCopy.fromMap).toList();
     await txn.rawUpdate(
@@ -1562,7 +1759,8 @@ class DatabaseService implements LibraryRepository {
       final activeLoans = await _activeLoanCountForItem(txn, code);
       if (activeLoans > 0) {
         throw ActiveLoanConflictException(
-            'Cannot delete item $code: it has $activeLoans active loan(s).');
+          'Cannot delete item $code: it has $activeLoans active loan(s).',
+        );
       }
       await txn.delete('library_items', where: 'code = ?', whereArgs: [code]);
       // Deleting the title cascades to its physical copies (item_copies FK,
@@ -1570,8 +1768,11 @@ class DatabaseService implements LibraryRepository {
       // historical loans (BL-04 keeps that audit history). This explicit delete
       // is redundant on FK-enabled installs but still removes copies on the
       // orphaned legacy installs where the FK rebuild was intentionally skipped.
-      await txn.delete('item_copies',
-          where: 'item_code = ?', whereArgs: [code]);
+      await txn.delete(
+        'item_copies',
+        where: 'item_code = ?',
+        whereArgs: [code],
+      );
       await _writeAudit(txn, audit);
       await _touchVersion(txn);
     });
@@ -1618,10 +1819,7 @@ class DatabaseService implements LibraryRepository {
             // Preserve a terminal/non-lendable title signal on every copy.
             state = status;
           }
-          await txn.insert('item_copies', {
-            'item_code': code,
-            'state': state,
-          });
+          await txn.insert('item_copies', {'item_code': code, 'state': state});
           created++;
         }
       });
@@ -1630,7 +1828,8 @@ class DatabaseService implements LibraryRepository {
   }
 
   /// Public wrapper so the backfill can be exercised on an open database.
-  Future<int> backfillCopiesFromItems() async => _backfillCopies(await database);
+  Future<int> backfillCopiesFromItems() async =>
+      _backfillCopies(await database);
 
   /// BL-05 (schema v22): make physical copy state authoritative for every
   /// title's derived status. In ONE transaction it (a) backfills a copy set for
@@ -1686,8 +1885,10 @@ class DatabaseService implements LibraryRepository {
         }
       }
 
-      final titles =
-          await txn.query('library_items', columns: ['code', 'quantite']);
+      final titles = await txn.query(
+        'library_items',
+        columns: ['code', 'quantite'],
+      );
       for (final t in titles) {
         final code = t['code'] as String;
         final qty = (t['quantite'] as int?) ?? 0;
@@ -1695,10 +1896,14 @@ class DatabaseService implements LibraryRepository {
         // `QueryRow`s, and the reconciliation below must reflect each state it
         // writes into the in-memory set it derives the rollup from.
         Future<List<Map<String, dynamic>>> loadCopies() async => [
-              for (final r in await txn.query('item_copies',
-                  where: 'item_code = ?', whereArgs: [code], orderBy: 'id'))
-                Map<String, dynamic>.from(r),
-            ];
+          for (final r in await txn.query(
+            'item_copies',
+            where: 'item_code = ?',
+            whereArgs: [code],
+            orderBy: 'id',
+          ))
+            Map<String, dynamic>.from(r),
+        ];
         var rows = await loadCopies();
 
         // (a) A title with no copies still owns physical units (min 1); seed
@@ -1706,8 +1911,10 @@ class DatabaseService implements LibraryRepository {
         if (rows.isEmpty) {
           final n = qty < 1 ? 1 : qty;
           for (var i = 0; i < n; i++) {
-            await txn.insert('item_copies',
-                {'item_code': code, 'state': CopyState.available.storage});
+            await txn.insert('item_copies', {
+              'item_code': code,
+              'state': CopyState.available.storage,
+            });
           }
           rows = await loadCopies();
         }
@@ -1727,8 +1934,12 @@ class DatabaseService implements LibraryRepository {
             next = CopyState.reserved.storage;
           }
           if (next != null && next != cur) {
-            await txn.update('item_copies', {'state': next},
-                where: 'id = ?', whereArgs: [id]);
+            await txn.update(
+              'item_copies',
+              {'state': next},
+              where: 'id = ?',
+              whereArgs: [id],
+            );
             row['state'] = next;
           }
         }
@@ -1739,9 +1950,12 @@ class DatabaseService implements LibraryRepository {
             !rows.any((c) => c['state'] == CopyState.onLoan.storage)) {
           for (final row in rows) {
             if (row['state'] == CopyState.available.storage) {
-              await txn.update('item_copies',
-                  {'state': CopyState.onLoan.storage},
-                  where: 'id = ?', whereArgs: [(row['id'] as num).toInt()]);
+              await txn.update(
+                'item_copies',
+                {'state': CopyState.onLoan.storage},
+                where: 'id = ?',
+                whereArgs: [(row['id'] as num).toInt()],
+              );
               row['state'] = CopyState.onLoan.storage;
               break;
             }
@@ -1750,14 +1964,19 @@ class DatabaseService implements LibraryRepository {
         // A promoted hold that names only the title: mark one available copy
         // reserved (unless a copy is already reserved/on loan).
         if (promotedItemCodes.contains(code) &&
-            !rows.any((c) =>
-                c['state'] == CopyState.reserved.storage ||
-                c['state'] == CopyState.onLoan.storage)) {
+            !rows.any(
+              (c) =>
+                  c['state'] == CopyState.reserved.storage ||
+                  c['state'] == CopyState.onLoan.storage,
+            )) {
           for (final row in rows) {
             if (row['state'] == CopyState.available.storage) {
-              await txn.update('item_copies',
-                  {'state': CopyState.reserved.storage},
-                  where: 'id = ?', whereArgs: [(row['id'] as num).toInt()]);
+              await txn.update(
+                'item_copies',
+                {'state': CopyState.reserved.storage},
+                where: 'id = ?',
+                whereArgs: [(row['id'] as num).toInt()],
+              );
               row['state'] = CopyState.reserved.storage;
               break;
             }
@@ -1765,8 +1984,9 @@ class DatabaseService implements LibraryRepository {
         }
 
         // (c) Title status := the rollup of its (now evidence-bearing) copies.
-        final derived =
-            CopyLedger.deriveTitleStatus(rows.map(ItemCopy.fromMap).toList());
+        final derived = CopyLedger.deriveTitleStatus(
+          rows.map(ItemCopy.fromMap).toList(),
+        );
         await txn.rawUpdate(
           'UPDATE library_items SET status = ? WHERE code = ?',
           [derived, code],
@@ -1813,15 +2033,22 @@ class DatabaseService implements LibraryRepository {
   Future<int> addCopy(ItemCopy copy) =>
       _atomic((txn) => txn.insert('item_copies', copy.toMap()));
 
-  Future<void> updateCopy(ItemCopy copy) => _atomic((txn) => txn.update(
-        'item_copies',
-        copy.toMap(),
-        where: 'id = ?',
-        whereArgs: [copy.id],
-      ));
+  Future<void> updateCopy(ItemCopy copy) => _atomic(
+    (txn) => txn.update(
+      'item_copies',
+      copy.toMap(),
+      where: 'id = ?',
+      whereArgs: [copy.id],
+    ),
+  );
 
-  Future<void> deleteCopiesForItem(String itemCode) => _atomic((txn) =>
-      txn.delete('item_copies', where: 'item_code = ?', whereArgs: [itemCode]));
+  Future<void> deleteCopiesForItem(String itemCode) => _atomic(
+    (txn) => txn.delete(
+      'item_copies',
+      where: 'item_code = ?',
+      whereArgs: [itemCode],
+    ),
+  );
 
   /// Phase 12 / BL-05 follow-up: set a physical copy's CONDITION to one of the
   /// staff-editable states {available, maintenance, lost, archived}. The
@@ -1890,23 +2117,37 @@ class DatabaseService implements LibraryRepository {
   /// status (BL-05: `quantite` and the copy set must never disagree, or a later
   /// item-form save would silently add/remove copies under the editor). Host-only
   /// by caller policy; returns the new copy id.
-  Future<int> addCopyForItem(String itemCode,
-      {Map<String, dynamic>? audit}) async {
+  Future<int> addCopyForItem(
+    String itemCode, {
+    Map<String, dynamic>? audit,
+  }) async {
     late int newId;
     await _atomic((txn) async {
-      final exists = await txn.query('library_items',
-          columns: ['code'], where: 'code = ?', whereArgs: [itemCode], limit: 1);
+      final exists = await txn.query(
+        'library_items',
+        columns: ['code'],
+        where: 'code = ?',
+        whereArgs: [itemCode],
+        limit: 1,
+      );
       if (exists.isEmpty) {
         throw CopyConflictException('Item $itemCode does not exist.');
       }
-      newId = await txn.insert('item_copies',
-          {'item_code': itemCode, 'state': CopyState.available.storage});
+      newId = await txn.insert('item_copies', {
+        'item_code': itemCode,
+        'state': CopyState.available.storage,
+      });
       final c = await txn.rawQuery(
-          'SELECT COUNT(*) AS c FROM item_copies WHERE item_code = ?',
-          [itemCode]);
+        'SELECT COUNT(*) AS c FROM item_copies WHERE item_code = ?',
+        [itemCode],
+      );
       final count = ((c.first['c'] as num?) ?? 0).toInt();
-      await txn.update('library_items', {'quantite': count},
-          where: 'code = ?', whereArgs: [itemCode]);
+      await txn.update(
+        'library_items',
+        {'quantite': count},
+        where: 'code = ?',
+        whereArgs: [itemCode],
+      );
       await _recalcItemStatus(txn, itemCode);
       await _writeAudit(txn, audit);
     });
@@ -1924,21 +2165,26 @@ class DatabaseService implements LibraryRepository {
   /// Host-only by caller policy.
   Future<void> removeCopy(int copyId, {Map<String, dynamic>? audit}) async {
     await _atomic((txn) async {
-      final rows = await txn.query('item_copies',
-          columns: ['item_code'],
-          where: 'id = ?',
-          whereArgs: [copyId],
-          limit: 1);
+      final rows = await txn.query(
+        'item_copies',
+        columns: ['item_code'],
+        where: 'id = ?',
+        whereArgs: [copyId],
+        limit: 1,
+      );
       if (rows.isEmpty) {
         throw CopyConflictException('Copy $copyId no longer exists.');
       }
       final code = rows.first['item_code'] as String;
       // (1) Keep at least one physical unit for the title.
       final before = await txn.rawQuery(
-          'SELECT COUNT(*) AS c FROM item_copies WHERE item_code = ?', [code]);
+        'SELECT COUNT(*) AS c FROM item_copies WHERE item_code = ?',
+        [code],
+      );
       if ((((before.first['c'] as num?) ?? 0).toInt()) <= 1) {
         throw CopyConflictException(
-            'Cannot remove the last copy of $code. Delete the item instead.');
+          'Cannot remove the last copy of $code. Delete the item instead.',
+        );
       }
       // (2) CAS: never drop a copy that is on loan or reserved.
       final affected = await txn.rawUpdate(
@@ -1947,14 +2193,21 @@ class DatabaseService implements LibraryRepository {
       );
       if (affected == 0) {
         throw CopyConflictException(
-            'Copy $copyId is checked out or reserved and cannot be removed.');
+          'Copy $copyId is checked out or reserved and cannot be removed.',
+        );
       }
       // (3) Re-sync quantite and re-derive the title rollup.
       final after = await txn.rawQuery(
-          'SELECT COUNT(*) AS c FROM item_copies WHERE item_code = ?', [code]);
+        'SELECT COUNT(*) AS c FROM item_copies WHERE item_code = ?',
+        [code],
+      );
       final count = ((after.first['c'] as num?) ?? 0).toInt();
-      await txn.update('library_items', {'quantite': count},
-          where: 'code = ?', whereArgs: [code]);
+      await txn.update(
+        'library_items',
+        {'quantite': count},
+        where: 'code = ?',
+        whereArgs: [code],
+      );
       await _recalcItemStatus(txn, code);
       await _writeAudit(txn, audit);
     });
@@ -1967,29 +2220,44 @@ class DatabaseService implements LibraryRepository {
   /// per-copy barcode may legitimately equal the TITLE's shared ISBN (a
   /// different table). Barcode is not part of the status rollup, so no
   /// re-derivation is needed. Host-only by caller policy.
-  Future<void> setCopyBarcode(int copyId, String? barcode,
-      {Map<String, dynamic>? audit}) async {
+  Future<void> setCopyBarcode(
+    int copyId,
+    String? barcode, {
+    Map<String, dynamic>? audit,
+  }) async {
     final trimmed = barcode?.trim();
     final normalized = (trimmed == null || trimmed.isEmpty) ? null : trimmed;
     await _atomic((txn) async {
-      final rows = await txn.query('item_copies',
-          columns: ['id'], where: 'id = ?', whereArgs: [copyId], limit: 1);
+      final rows = await txn.query(
+        'item_copies',
+        columns: ['id'],
+        where: 'id = ?',
+        whereArgs: [copyId],
+        limit: 1,
+      );
       if (rows.isEmpty) {
         throw CopyConflictException('Copy $copyId no longer exists.');
       }
       if (normalized != null) {
-        final clash = await txn.query('item_copies',
-            columns: ['id'],
-            where: 'barcode = ? AND id <> ?',
-            whereArgs: [normalized, copyId],
-            limit: 1);
+        final clash = await txn.query(
+          'item_copies',
+          columns: ['id'],
+          where: 'barcode = ? AND id <> ?',
+          whereArgs: [normalized, copyId],
+          limit: 1,
+        );
         if (clash.isNotEmpty) {
           throw BarcodeConflictException(
-              'Barcode $normalized is already assigned to another copy.');
+            'Barcode $normalized is already assigned to another copy.',
+          );
         }
       }
-      await txn.update('item_copies', {'barcode': normalized},
-          where: 'id = ?', whereArgs: [copyId]);
+      await txn.update(
+        'item_copies',
+        {'barcode': normalized},
+        where: 'id = ?',
+        whereArgs: [copyId],
+      );
       await _writeAudit(txn, audit);
     });
   }
@@ -2044,14 +2312,18 @@ class DatabaseService implements LibraryRepository {
       LEFT JOIN (SELECT item_code, COUNT(*) cnt FROM item_copies
                  GROUP BY item_code) cb ON cb.item_code = i.code
     ''');
-    final totalValue = await db
-        .rawQuery('SELECT SUM(quantite * taux) as total FROM library_items');
-    final onLoan = await db.rawQuery('''
+    final totalValue = await db.rawQuery(
+      'SELECT SUM(quantite * taux) as total FROM library_items',
+    );
+    final onLoan = await db.rawQuery(
+      '''
       SELECT (SELECT COUNT(*) FROM item_copies WHERE state = ?) +
              (SELECT COALESCE(SUM(i.quantite), 0) FROM library_items i
                 WHERE i.status = ?
                   AND i.code NOT IN (SELECT item_code FROM item_copies)) AS total
-    ''', [CopyState.onLoan.storage, CopyState.onLoan.storage]);
+    ''',
+      [CopyState.onLoan.storage, CopyState.onLoan.storage],
+    );
 
     // Type distributions (copies where present, else declared quantity).
     final typeCounts = await db.rawQuery('''
@@ -2069,7 +2341,7 @@ class DatabaseService implements LibraryRepository {
       'onLoan': onLoan.first['total'] ?? 0,
       'typeDist': {
         for (var row in typeCounts)
-          row['code_type'] as String: row['count'] ?? 0
+          row['code_type'] as String: row['count'] ?? 0,
       },
     };
   }
@@ -2082,17 +2354,22 @@ class DatabaseService implements LibraryRepository {
   }
 
   @override
-  Future<void> addCodeDefinition(String prefix, String label,
-          {Map<String, dynamic>? audit}) =>
-      _atomic((txn) async {
-        await txn.insert(
-            'code_definitions', {'prefix': prefix, 'label': label});
-        await _writeAudit(txn, audit);
-      });
+  Future<void> addCodeDefinition(
+    String prefix,
+    String label, {
+    Map<String, dynamic>? audit,
+  }) => _atomic((txn) async {
+    await txn.insert('code_definitions', {'prefix': prefix, 'label': label});
+    await _writeAudit(txn, audit);
+  });
 
   @override
-  Future<void> updateCodeDefinition(String oldPrefix, String newPrefix,
-      String label, {Map<String, dynamic>? audit}) async {
+  Future<void> updateCodeDefinition(
+    String oldPrefix,
+    String newPrefix,
+    String label, {
+    Map<String, dynamic>? audit,
+  }) async {
     final db = await database;
     await db.transaction((txn) async {
       await txn.update(
@@ -2101,7 +2378,7 @@ class DatabaseService implements LibraryRepository {
         where: 'prefix = ?',
         whereArgs: [oldPrefix],
       );
-      
+
       if (oldPrefix != newPrefix) {
         // TX-06: a prefix rename rewrites `code_type` on every row of the
         // type, so those rows advance their version token too — a form opened
@@ -2117,54 +2394,68 @@ class DatabaseService implements LibraryRepository {
   }
 
   @override
-  Future<void> deleteCodeDefinition(String prefix,
-          {Map<String, dynamic>? audit}) =>
-      _atomic((txn) async {
-        await txn.delete('code_definitions',
-            where: 'prefix = ?', whereArgs: [prefix]);
-        await _writeAudit(txn, audit);
-      });
+  Future<void> deleteCodeDefinition(
+    String prefix, {
+    Map<String, dynamic>? audit,
+  }) => _atomic((txn) async {
+    await txn.delete(
+      'code_definitions',
+      where: 'prefix = ?',
+      whereArgs: [prefix],
+    );
+    await _writeAudit(txn, audit);
+  });
 
   // Attribute Definitions Implementation
   @override
-  Future<List<Map<String, dynamic>>> getAttributeDefinitions(String? type) async {
+  Future<List<Map<String, dynamic>>> getAttributeDefinitions(
+    String? type,
+  ) async {
     final db = await database;
     if (type != null) {
-      return await db.query('attribute_definitions', where: 'type = ?', whereArgs: [type]);
+      return await db.query(
+        'attribute_definitions',
+        where: 'type = ?',
+        whereArgs: [type],
+      );
     }
     return await db.query('attribute_definitions');
   }
 
   @override
-  Future<void> addAttributeDefinition(String type, String value,
-          {Map<String, dynamic>? audit}) =>
-      _atomic((txn) async {
-        // DB-01: reject a (type, value) the catalogue already holds as a typed
-        // conflict (server -> 409) rather than tripping the uq_attr_type_value
-        // UNIQUE index with a raw ConstraintError (500). The whole add rolls
-        // back so no audit line is written for a rejected definition.
-        final clash = await txn.query('attribute_definitions',
-            columns: ['id'],
-            where: 'type = ? AND value = ?',
-            whereArgs: [type, value],
-            limit: 1);
-        if (clash.isNotEmpty) {
-          throw AttributeConflictException(
-              'Attribute ($type, $value) already exists.');
-        }
-        await txn.insert(
-            'attribute_definitions', {'type': type, 'value': value});
-        await _writeAudit(txn, audit);
-      });
+  Future<void> addAttributeDefinition(
+    String type,
+    String value, {
+    Map<String, dynamic>? audit,
+  }) => _atomic((txn) async {
+    // DB-01: reject a (type, value) the catalogue already holds as a typed
+    // conflict (server -> 409) rather than tripping the uq_attr_type_value
+    // UNIQUE index with a raw ConstraintError (500). The whole add rolls
+    // back so no audit line is written for a rejected definition.
+    final clash = await txn.query(
+      'attribute_definitions',
+      columns: ['id'],
+      where: 'type = ? AND value = ?',
+      whereArgs: [type, value],
+      limit: 1,
+    );
+    if (clash.isNotEmpty) {
+      throw AttributeConflictException(
+        'Attribute ($type, $value) already exists.',
+      );
+    }
+    await txn.insert('attribute_definitions', {'type': type, 'value': value});
+    await _writeAudit(txn, audit);
+  });
 
   @override
-  Future<void> deleteAttributeDefinition(int id,
-          {Map<String, dynamic>? audit}) =>
-      _atomic((txn) async {
-        await txn.delete('attribute_definitions',
-            where: 'id = ?', whereArgs: [id]);
-        await _writeAudit(txn, audit);
-      });
+  Future<void> deleteAttributeDefinition(
+    int id, {
+    Map<String, dynamic>? audit,
+  }) => _atomic((txn) async {
+    await txn.delete('attribute_definitions', where: 'id = ?', whereArgs: [id]);
+    await _writeAudit(txn, audit);
+  });
 
   /// Wipes all data and resets to defaults.
   ///
@@ -2193,7 +2484,7 @@ class DatabaseService implements LibraryRepository {
       await txn.delete('history');
       await txn.delete('attribute_definitions');
       await txn.delete('code_definitions');
-      
+
       // Seed defaults
       final defaults = [
         {'prefix': 'LIV', 'label': 'Livre'},
@@ -2203,14 +2494,23 @@ class DatabaseService implements LibraryRepository {
         {'prefix': 'PER', 'label': 'Périodique'},
         {'prefix': 'DOC', 'label': 'Document'},
       ];
-      
+
       for (final def in defaults) {
         await txn.insert('code_definitions', def);
       }
 
-      final statuses = ['Disponible', 'Emprunté', 'En Réparation', 'Perdu', 'Archivé'];
+      final statuses = [
+        'Disponible',
+        'Emprunté',
+        'En Réparation',
+        'Perdu',
+        'Archivé',
+      ];
       for (final status in statuses) {
-        await txn.insert('attribute_definitions', {'type': 'STATUS', 'value': status});
+        await txn.insert('attribute_definitions', {
+          'type': 'STATUS',
+          'value': status,
+        });
       }
       await _writeAudit(txn, audit);
       await _touchVersion(txn);
@@ -2221,9 +2521,9 @@ class DatabaseService implements LibraryRepository {
   Future<Map<String, int>> getCountByCodeType() async {
     final db = await database;
     final result = await db.rawQuery(
-      "SELECT code_type, COUNT(*) as count FROM library_items GROUP BY code_type"
+      "SELECT code_type, COUNT(*) as count FROM library_items GROUP BY code_type",
     );
-    
+
     final Map<String, int> counts = {};
     for (final row in result) {
       counts[row['code_type'] as String] = row['count'] as int;
@@ -2235,9 +2535,9 @@ class DatabaseService implements LibraryRepository {
   Future<Map<String, int>> getCountByStatus() async {
     final db = await database;
     final result = await db.rawQuery(
-      "SELECT status, COUNT(*) as count FROM library_items GROUP BY status"
+      "SELECT status, COUNT(*) as count FROM library_items GROUP BY status",
     );
-    
+
     final Map<String, int> counts = {};
     for (final row in result) {
       counts[row['status'] as String] = row['count'] as int;
@@ -2246,7 +2546,8 @@ class DatabaseService implements LibraryRepository {
   }
 
   Future<String> getDatabasePath() async {
-    final Directory documentsDirectory = await getApplicationDocumentsDirectory();
+    final Directory documentsDirectory =
+        await getApplicationDocumentsDirectory();
     return join(documentsDirectory.path, 'library_manager.db');
   }
 
@@ -2354,9 +2655,8 @@ class DatabaseService implements LibraryRepository {
         return 'Backup failed integrity check (the file is corrupt).';
       }
       final tables = (await probe.rawQuery(
-              "SELECT name FROM sqlite_master WHERE type='table'"))
-          .map((r) => '${r['name']}')
-          .toSet();
+        "SELECT name FROM sqlite_master WHERE type='table'",
+      )).map((r) => '${r['name']}').toSet();
       if (!tables.contains('library_items') || !tables.contains('metadata')) {
         return 'Backup is not a library database (missing core tables).';
       }
@@ -2393,10 +2693,14 @@ class DatabaseService implements LibraryRepository {
     if (!await backupDir.exists()) {
       await backupDir.create(recursive: true);
     }
-    
-    final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-').split('.').first;
+
+    final timestamp = DateTime.now()
+        .toIso8601String()
+        .replaceAll(':', '-')
+        .split('.')
+        .first;
     final backupPath = join(backupDir.path, 'library_backup_$timestamp.db');
-    
+
     await backupDatabase(backupPath);
 
     // Retention (BR-05): keep the last [keepCount] ROTATING backups AND a
@@ -2460,7 +2764,8 @@ class DatabaseService implements LibraryRepository {
       return backupPath;
     } catch (e) {
       throw BackupFailedException(
-          'Could not create a "$tag" safety backup ($e). No data was changed.');
+        'Could not create a "$tag" safety backup ($e). No data was changed.',
+      );
     }
   }
 
@@ -2475,7 +2780,9 @@ class DatabaseService implements LibraryRepository {
   @override
   Future<String> generateMemberID() async {
     final db = await database;
-    final year = DateTime.now().year.toString().substring(2); // Last 2 digits of year
+    final year = DateTime.now().year.toString().substring(
+      2,
+    ); // Last 2 digits of year
 
     final yearPrefix = year;
     final result = await db.rawQuery(
@@ -2483,7 +2790,9 @@ class DatabaseService implements LibraryRepository {
       ['$yearPrefix%'],
     );
 
-    final maxId = result.isNotEmpty ? (result.first['max_id'] as String?) : null;
+    final maxId = result.isNotEmpty
+        ? (result.first['max_id'] as String?)
+        : null;
     var next = 1;
     if (maxId != null && maxId.length >= 6) {
       final suffix = maxId.substring(2);
@@ -2509,7 +2818,8 @@ class DatabaseService implements LibraryRepository {
         );
         if (((clash.first.values.first as int?) ?? 0) > 0) {
           throw MemberIdConflictException(
-              'Card id ${member.memberId} is already assigned to a member.');
+            'Card id ${member.memberId} is already assigned to a member.',
+          );
         }
         // row_version is server-owned (starts at the column DEFAULT 0), never
         // taken from the inbound row -- mirrors library_items.addItem.
@@ -2519,87 +2829,96 @@ class DatabaseService implements LibraryRepository {
       });
 
   @override
-  Future<void> updateMember(Member member,
-      {Map<String, dynamic>? audit, int? expectedVersion}) =>
-      _atomic((txn) async {
-        final current = await txn.query(
-          'members',
-          columns: ['member_id', 'row_version'],
-          where: 'id = ?',
-          whereArgs: [member.id],
-          limit: 1,
+  Future<void> updateMember(
+    Member member, {
+    Map<String, dynamic>? audit,
+    int? expectedVersion,
+  }) => _atomic((txn) async {
+    final current = await txn.query(
+      'members',
+      columns: ['member_id', 'row_version'],
+      where: 'id = ?',
+      whereArgs: [member.id],
+      limit: 1,
+    );
+    final oldMemberId = current.isEmpty
+        ? null
+        : current.first['member_id'] as String?;
+    final renamed = oldMemberId != null && oldMemberId != member.memberId;
+    if (renamed) {
+      // DB-01: reject a rename onto another member's card id before it can
+      // collide on the UNIQUE index (which would otherwise surface as a raw
+      // 500 and could blur two members' loan histories).
+      final clash = await txn.rawQuery(
+        'SELECT COUNT(*) FROM members WHERE member_id = ? AND id <> ?',
+        [member.memberId, member.id],
+      );
+      if (((clash.first.values.first as int?) ?? 0) > 0) {
+        throw MemberIdConflictException(
+          'Card id ${member.memberId} is already assigned to another member.',
         );
-        final oldMemberId =
-            current.isEmpty ? null : current.first['member_id'] as String?;
-        final renamed = oldMemberId != null && oldMemberId != member.memberId;
-        if (renamed) {
-          // DB-01: reject a rename onto another member's card id before it can
-          // collide on the UNIQUE index (which would otherwise surface as a raw
-          // 500 and could blur two members' loan histories).
-          final clash = await txn.rawQuery(
-            'SELECT COUNT(*) FROM members WHERE member_id = ? AND id <> ?',
-            [member.memberId, member.id],
-          );
-          if (((clash.first.values.first as int?) ?? 0) > 0) {
-            throw MemberIdConflictException(
-                'Card id ${member.memberId} is already assigned to another member.');
-          }
-        }
-        // The primary key (`id`) and the concurrency token (`row_version`) are
-        // both server-owned and must NOT be part of the SET clause: `id` selects
-        // the row via the WHERE, and a null `id` in the map would otherwise
-        // overwrite the PK with NULL and relocate the row. `row_version` is
-        // advanced explicitly below.
-        final values = member.toMap()
-          ..remove('id')
-          ..remove('row_version');
-        final stored = current.isEmpty
-            ? null
-            : ((current.first['row_version'] as num?)?.toInt() ?? 0);
-        if (expectedVersion != null) {
-          // TX-06: guard the write on the version the caller read. A 0-row
-          // result means the row changed (or vanished) since then -> the
-          // lost-update is refused and NOTHING (data, rename cascade, audit,
-          // version) commits.
-          final r = await txn.update(
-            'members',
-            {...values, 'row_version': expectedVersion + 1},
-            where: 'id = ? AND row_version = ?',
-            whereArgs: [member.id, expectedVersion],
-          );
-          if (r == 0) {
-            throw ConcurrentUpdateConflictException(current.isEmpty
-                ? 'Member ${member.memberId} no longer exists.'
-                : 'Member ${member.memberId} was modified by another client '
-                    '(now version $stored, expected $expectedVersion).');
-          }
-        } else {
-          // No expected version -> unconditional (legacy / host UI) write, but
-          // the stored token still advances so any future optimistic check is
-          // meaningful (strictly monotonic from the just-read stored value).
-          await txn.update(
-            'members',
-            {...values, 'row_version': (stored ?? 0) + 1},
-            where: 'id = ?',
-            whereArgs: [member.id],
-          );
-        }
-        if (renamed) {
-          // `member_id` is the join key loans carry; cascade it so a rename does
-          // not orphan their history (which would also blind deleteMember's
-          // active-loan guard, since it looks up loans by the NEW id). Runs only
-          // after the guarded write above succeeded, so a refused conflict never
-          // half-applies the cascade.
-          await txn.rawUpdate(
-            'UPDATE loans SET member_id = ? WHERE member_id = ?',
-            [member.memberId, oldMemberId],
-          );
-        }
-        await _writeAudit(txn, audit);
-      });
+      }
+    }
+    // The primary key (`id`) and the concurrency token (`row_version`) are
+    // both server-owned and must NOT be part of the SET clause: `id` selects
+    // the row via the WHERE, and a null `id` in the map would otherwise
+    // overwrite the PK with NULL and relocate the row. `row_version` is
+    // advanced explicitly below.
+    final values = member.toMap()
+      ..remove('id')
+      ..remove('row_version');
+    final stored = current.isEmpty
+        ? null
+        : ((current.first['row_version'] as num?)?.toInt() ?? 0);
+    if (expectedVersion != null) {
+      // TX-06: guard the write on the version the caller read. A 0-row
+      // result means the row changed (or vanished) since then -> the
+      // lost-update is refused and NOTHING (data, rename cascade, audit,
+      // version) commits.
+      final r = await txn.update(
+        'members',
+        {...values, 'row_version': expectedVersion + 1},
+        where: 'id = ? AND row_version = ?',
+        whereArgs: [member.id, expectedVersion],
+      );
+      if (r == 0) {
+        throw ConcurrentUpdateConflictException(
+          current.isEmpty
+              ? 'Member ${member.memberId} no longer exists.'
+              : 'Member ${member.memberId} was modified by another client '
+                    '(now version $stored, expected $expectedVersion).',
+        );
+      }
+    } else {
+      // No expected version -> unconditional (legacy / host UI) write, but
+      // the stored token still advances so any future optimistic check is
+      // meaningful (strictly monotonic from the just-read stored value).
+      await txn.update(
+        'members',
+        {...values, 'row_version': (stored ?? 0) + 1},
+        where: 'id = ?',
+        whereArgs: [member.id],
+      );
+    }
+    if (renamed) {
+      // `member_id` is the join key loans carry; cascade it so a rename does
+      // not orphan their history (which would also blind deleteMember's
+      // active-loan guard, since it looks up loans by the NEW id). Runs only
+      // after the guarded write above succeeded, so a refused conflict never
+      // half-applies the cascade.
+      await txn.rawUpdate(
+        'UPDATE loans SET member_id = ? WHERE member_id = ?',
+        [member.memberId, oldMemberId],
+      );
+    }
+    await _writeAudit(txn, audit);
+  });
 
   @override
-  Future<void> deleteMember(String memberId, {Map<String, dynamic>? audit}) async {
+  Future<void> deleteMember(
+    String memberId, {
+    Map<String, dynamic>? audit,
+  }) async {
     final db = await database;
     await db.transaction((txn) async {
       // BL-04: a member with items still out cannot be deleted (would orphan
@@ -2611,7 +2930,8 @@ class DatabaseService implements LibraryRepository {
       final activeLoans = (rows.first.values.first as int?) ?? 0;
       if (activeLoans > 0) {
         throw ActiveLoanConflictException(
-            'Cannot delete member $memberId: they have $activeLoans active loan(s).');
+          'Cannot delete member $memberId: they have $activeLoans active loan(s).',
+        );
       }
       await txn.delete(
         'members',
@@ -2629,7 +2949,7 @@ class DatabaseService implements LibraryRepository {
     final db = await database;
     String? whereClause;
     List<dynamic>? whereArgs;
-    
+
     if (activeOnly) {
       whereClause = 'status = ?';
       whereArgs = [LoanStatus.active.storage];
@@ -2688,7 +3008,8 @@ class DatabaseService implements LibraryRepository {
         // sent to the line rather than cutting in front of the holders.
         if (await _hasLiveHoldByOther(txn, loan.itemCode, loan.memberId)) {
           throw StateError(
-              'This title is reserved for a member in line. Place a hold instead.');
+            'This title is reserved for a member in line. Place a hold instead.',
+          );
         }
         final claimed = await txn.rawUpdate(
           // TX-06: the legacy claim mutates the row, so it advances
@@ -2703,7 +3024,8 @@ class DatabaseService implements LibraryRepository {
         );
         if (claimed == 0) {
           throw Exception(
-              'Item is not available (status: ${itemRows.first['status']}).');
+            'Item is not available (status: ${itemRows.first['status']}).',
+          );
         }
         await txn.insert('loans', loan.toMap());
         return;
@@ -2728,17 +3050,14 @@ class DatabaseService implements LibraryRepository {
         if (copies[idx].isReserved &&
             await _isHeldForOther(txn, loan.copyId!, loan.memberId)) {
           throw StateError(
-              'Copy ${loan.copyId} is reserved for another member.');
+            'Copy ${loan.copyId} is reserved for another member.',
+          );
         }
         // TX-02 CAS on the state actually read inside this transaction: a
         // racing claim sees 0 rows instead of double-booking the copy.
         final changed = await txn.rawUpdate(
           'UPDATE item_copies SET state = ? WHERE id = ? AND state = ?',
-          [
-            CopyState.onLoan.storage,
-            loan.copyId,
-            copies[idx].state,
-          ],
+          [CopyState.onLoan.storage, loan.copyId, copies[idx].state],
         );
         if (changed == 0) {
           throw Exception('Copy ${loan.copyId} is not available.');
@@ -2748,27 +3067,21 @@ class DatabaseService implements LibraryRepository {
         // Auto-pick: try each available copy in order until a CAS claim wins.
         // Copies claimed for ANOTHER member's promoted hold are excluded --
         // they are physically on the shelf but spoken for (Phase 10.3).
-        final availableIds = (
-          await txn.rawQuery(
-            'SELECT id FROM item_copies WHERE item_code = ? AND state = ? '
-            'AND id NOT IN (${_reservedForOtherSql()}) '
-            'ORDER BY id',
-            [
-              loan.itemCode,
-              CopyState.available.storage,
-              ReservationStatus.available.storage,
-              loan.memberId,
-            ],
-          )
-        ).map((r) => r['id'] as int).toList();
+        final availableIds = (await txn.rawQuery(
+          'SELECT id FROM item_copies WHERE item_code = ? AND state = ? '
+          'AND id NOT IN (${_reservedForOtherSql()}) '
+          'ORDER BY id',
+          [
+            loan.itemCode,
+            CopyState.available.storage,
+            ReservationStatus.available.storage,
+            loan.memberId,
+          ],
+        )).map((r) => r['id'] as int).toList();
         for (final id in availableIds) {
           final changed = await txn.rawUpdate(
             'UPDATE item_copies SET state = ? WHERE id = ? AND state = ?',
-            [
-              CopyState.onLoan.storage,
-              id,
-              CopyState.available.storage,
-            ],
+            [CopyState.onLoan.storage, id, CopyState.available.storage],
           );
           if (changed == 1) {
             claimedId = id;
@@ -2817,7 +3130,9 @@ class DatabaseService implements LibraryRepository {
       }
       final currentStatus = existing.first['status'] as String?;
       final code =
-          (loan.itemCode.isNotEmpty ? loan.itemCode : existing.first['item_code'])
+          (loan.itemCode.isNotEmpty
+                  ? loan.itemCode
+                  : existing.first['item_code'])
               as String;
       itemCode = code;
       final storedCopyId = existing.first['copy_id'] as int?;
@@ -2837,7 +3152,8 @@ class DatabaseService implements LibraryRepository {
       );
 
       // Restore availability only on a real active -> returned transition.
-      isReturn = loan.status == LoanStatus.returned.storage &&
+      isReturn =
+          loan.status == LoanStatus.returned.storage &&
           currentStatus != LoanStatus.returned.storage;
       if (isReturn) {
         if (storedCopyId != null) {
@@ -2965,7 +3281,10 @@ class DatabaseService implements LibraryRepository {
   /// Whether [memberId] may borrow [copyId]: yes unless a live promoted hold
   /// claims it for somebody else. Evaluated INSIDE the caller's transaction.
   Future<bool> _isHeldForOther(
-      Transaction txn, int copyId, String memberId) async {
+    Transaction txn,
+    int copyId,
+    String memberId,
+  ) async {
     final rows = await txn.rawQuery(
       'SELECT 1 FROM reservations WHERE status = ? AND copy_id = ? '
       'AND member_id <> ? LIMIT 1',
@@ -2978,7 +3297,10 @@ class DatabaseService implements LibraryRepository {
   /// title — the legacy per-title path has no copies to mark, so the queue
   /// itself is the priority claim on the single loan slot.
   Future<bool> _hasLiveHoldByOther(
-      Transaction txn, String itemCode, String memberId) async {
+    Transaction txn,
+    String itemCode,
+    String memberId,
+  ) async {
     final rows = await txn.rawQuery(
       'SELECT 1 FROM reservations WHERE item_code = ? AND member_id <> ? '
       'AND status IN (?, ?) LIMIT 1',
@@ -2995,7 +3317,10 @@ class DatabaseService implements LibraryRepository {
   /// A successful borrow settles the borrower's own promoted hold for the
   /// title (the claimed copy first, else FIFO) inside the borrow txn.
   Future<void> _fulfillHoldForBorrow(
-      Transaction txn, Loan loan, int? claimedId) async {
+    Transaction txn,
+    Loan loan,
+    int? claimedId,
+  ) async {
     final byCopy = claimedId != null && loan.copyId != null;
     final hit = await txn.rawQuery(
       'SELECT id FROM reservations WHERE item_code = ? AND member_id = ? '
@@ -3017,10 +3342,7 @@ class DatabaseService implements LibraryRepository {
         'ended_at': DateTime.now().toIso8601String(),
       },
       where: 'id = ? AND status = ?',
-      whereArgs: [
-        hit.first['id'],
-        ReservationStatus.available.storage,
-      ],
+      whereArgs: [hit.first['id'], ReservationStatus.available.storage],
     );
   }
 
@@ -3028,10 +3350,12 @@ class DatabaseService implements LibraryRepository {
   /// malformed values degrade to the safe DISABLED default (rate 0), so a
   /// half-written setting can never accrue a surprising charge.
   Future<FineSettings> _readFineSettings(DatabaseExecutor db) async {
-    final rows = await db.query('metadata',
-        columns: ['key', 'value'],
-        where: 'key IN (?, ?)',
-        whereArgs: [_kFineRate, _kFineCurrency]);
+    final rows = await db.query(
+      'metadata',
+      columns: ['key', 'value'],
+      where: 'key IN (?, ?)',
+      whereArgs: [_kFineRate, _kFineCurrency],
+    );
     String? value(String key) {
       for (final r in rows) {
         if (r['key'] == key) return r['value'] as String?;
@@ -3050,22 +3374,22 @@ class DatabaseService implements LibraryRepository {
       _readFineSettings(await database);
 
   @override
-  Future<void> setFineSettings(FineSettings settings,
-      {Map<String, dynamic>? audit}) async {
+  Future<void> setFineSettings(
+    FineSettings settings, {
+    Map<String, dynamic>? audit,
+  }) async {
     final db = await database;
     await db.transaction((txn) async {
       var rate = settings.ratePerDay;
       if (!rate.isFinite || rate < 0) rate = 0.0;
-      await txn.insert(
-        'metadata',
-        {'key': _kFineRate, 'value': rate.toString()},
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-      await txn.insert(
-        'metadata',
-        {'key': _kFineCurrency, 'value': settings.currency},
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
+      await txn.insert('metadata', {
+        'key': _kFineRate,
+        'value': rate.toString(),
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      await txn.insert('metadata', {
+        'key': _kFineCurrency,
+        'value': settings.currency,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
       await _writeAudit(txn, audit);
       await _touchVersion(txn);
     });
@@ -3105,19 +3429,35 @@ class DatabaseService implements LibraryRepository {
   }
 
   @override
-  Future<void> payFine(int id,
-          {String? operatorName, Map<String, dynamic>? audit}) =>
-      _resolveFine(id, FineStatus.paid,
-          operatorName: operatorName, audit: audit);
+  Future<void> payFine(
+    int id, {
+    String? operatorName,
+    Map<String, dynamic>? audit,
+  }) => _resolveFine(
+    id,
+    FineStatus.paid,
+    operatorName: operatorName,
+    audit: audit,
+  );
 
   @override
-  Future<void> waiveFine(int id,
-          {String? operatorName, Map<String, dynamic>? audit}) =>
-      _resolveFine(id, FineStatus.waived,
-          operatorName: operatorName, audit: audit);
+  Future<void> waiveFine(
+    int id, {
+    String? operatorName,
+    Map<String, dynamic>? audit,
+  }) => _resolveFine(
+    id,
+    FineStatus.waived,
+    operatorName: operatorName,
+    audit: audit,
+  );
 
-  Future<void> _resolveFine(int id, FineStatus target,
-      {String? operatorName, Map<String, dynamic>? audit}) async {
+  Future<void> _resolveFine(
+    int id,
+    FineStatus target, {
+    String? operatorName,
+    Map<String, dynamic>? audit,
+  }) async {
     final db = await database;
     await db.transaction((txn) async {
       final changed = await txn.update(
@@ -3134,11 +3474,18 @@ class DatabaseService implements LibraryRepository {
         whereArgs: [id, FineStatus.pending.storage],
       );
       if (changed == 0) {
-        final exists = await txn.query('fines',
-            columns: ['status'], where: 'id = ?', whereArgs: [id], limit: 1);
-        throw StateError(exists.isEmpty
-            ? 'No such fine #$id.'
-            : 'Fine #$id is already resolved.');
+        final exists = await txn.query(
+          'fines',
+          columns: ['status'],
+          where: 'id = ?',
+          whereArgs: [id],
+          limit: 1,
+        );
+        throw StateError(
+          exists.isEmpty
+              ? 'No such fine #$id.'
+              : 'Fine #$id is already resolved.',
+        );
       }
       await _writeAudit(txn, audit);
       await _touchVersion(txn);
@@ -3176,10 +3523,12 @@ class DatabaseService implements LibraryRepository {
   /// Reads the hold policy from `metadata`; absent/malformed values degrade
   /// to [HoldSettings.defaults] (mirrors the fine-rate degradation).
   Future<HoldSettings> _readHoldSettings(DatabaseExecutor db) async {
-    final rows = await db.query('metadata',
-        columns: ['key', 'value'],
-        where: 'key IN (?, ?)',
-        whereArgs: [_kHoldPickupDays, _kHoldQueueMax]);
+    final rows = await db.query(
+      'metadata',
+      columns: ['key', 'value'],
+      where: 'key IN (?, ?)',
+      whereArgs: [_kHoldPickupDays, _kHoldQueueMax],
+    );
     String? value(String key) {
       for (final r in rows) {
         if (r['key'] == key) return r['value'] as String?;
@@ -3198,8 +3547,10 @@ class DatabaseService implements LibraryRepository {
       _readHoldSettings(await database);
 
   @override
-  Future<void> setHoldSettings(HoldSettings settings,
-      {Map<String, dynamic>? audit}) async {
+  Future<void> setHoldSettings(
+    HoldSettings settings, {
+    Map<String, dynamic>? audit,
+  }) async {
     final db = await database;
     await db.transaction((txn) async {
       // Persist the SANITISED values (fromMap degradation), so a caller can
@@ -3208,16 +3559,14 @@ class DatabaseService implements LibraryRepository {
         'pickup_days': settings.pickupDays,
         'queue_max_per_item': settings.queueMaxPerItem,
       });
-      await txn.insert(
-        'metadata',
-        {'key': _kHoldPickupDays, 'value': safe.pickupDays.toString()},
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-      await txn.insert(
-        'metadata',
-        {'key': _kHoldQueueMax, 'value': safe.queueMaxPerItem.toString()},
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
+      await txn.insert('metadata', {
+        'key': _kHoldPickupDays,
+        'value': safe.pickupDays.toString(),
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      await txn.insert('metadata', {
+        'key': _kHoldQueueMax,
+        'value': safe.queueMaxPerItem.toString(),
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
       await _writeAudit(txn, audit);
       await _touchVersion(txn);
     });
@@ -3236,16 +3585,23 @@ class DatabaseService implements LibraryRepository {
     }
     final db = await database;
     final id = await db.transaction((txn) async {
-      final item = await txn.query('library_items',
-          columns: ['code'], where: 'code = ?', whereArgs: [code], limit: 1);
+      final item = await txn.query(
+        'library_items',
+        columns: ['code'],
+        where: 'code = ?',
+        whereArgs: [code],
+        limit: 1,
+      );
       if (item.isEmpty) {
         throw StateError('Unknown item: $code.');
       }
-      final memb = await txn.query('members',
-          columns: ['id'],
-          where: 'member_id = ?',
-          whereArgs: [member],
-          limit: 1);
+      final memb = await txn.query(
+        'members',
+        columns: ['id'],
+        where: 'member_id = ?',
+        whereArgs: [member],
+        limit: 1,
+      );
       if (memb.isEmpty) {
         throw StateError('Unknown member: $member.');
       }
@@ -3261,9 +3617,10 @@ class DatabaseService implements LibraryRepository {
       final settings = await _readHoldSettings(txn);
       final mine = live.where((r) => r['member_id'] == member);
       final refusal = HoldPolicy.refusalFor(
-          mine.isNotEmpty ? Reservation.fromMap(mine.first) : null,
-          live.length,
-          settings);
+        mine.isNotEmpty ? Reservation.fromMap(mine.first) : null,
+        live.length,
+        settings,
+      );
       if (refusal != null) throw StateError(refusal);
       return await txn.insert('reservations', {
         'item_code': code,
@@ -3271,12 +3628,16 @@ class DatabaseService implements LibraryRepository {
         'status': ReservationStatus.queued.storage,
         'created_at': DateTime.now().toIso8601String(),
       });
-    },);
+    });
     // The immediate-promotion step carries the audit line, so "A joined the
     // queue (and got the free copy)" commits as ONE unit.
     await _promoteStep(code, audit);
-    final rows = await db.query('reservations',
-        where: 'id = ?', whereArgs: [id], limit: 1);
+    final rows = await db.query(
+      'reservations',
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
     return Reservation.fromMap(rows.first);
   }
 
@@ -3285,8 +3646,12 @@ class DatabaseService implements LibraryRepository {
     final db = await database;
     String? itemCode;
     await db.transaction((txn) async {
-      final rows = await txn.query('reservations',
-          where: 'id = ?', whereArgs: [id], limit: 1);
+      final rows = await txn.query(
+        'reservations',
+        where: 'id = ?',
+        whereArgs: [id],
+        limit: 1,
+      );
       if (rows.isEmpty) throw StateError('No such hold #$id.');
       final r = Reservation.fromMap(rows.first);
       if (!r.isLive) {
@@ -3315,11 +3680,7 @@ class DatabaseService implements LibraryRepository {
         // `Réservé` copy) and re-derive the title rollup.
         await txn.rawUpdate(
           'UPDATE item_copies SET state = ? WHERE id = ? AND state = ?',
-          [
-            CopyState.available.storage,
-            r.copyId,
-            CopyState.reserved.storage,
-          ],
+          [CopyState.available.storage, r.copyId, CopyState.reserved.storage],
         );
         await _recalcItemStatus(txn, r.itemCode);
       }
@@ -3447,7 +3808,8 @@ class DatabaseService implements LibraryRepository {
       // pre-Pass-6 FIFO (`created_at` and `id` are correlated on an
       // AUTOINCREMENT table, so `id ASC` is the same ordering on every
       // existing row).
-      orderBy: "CASE status WHEN '${ReservationStatus.available.storage}' THEN 0 "
+      orderBy:
+          "CASE status WHEN '${ReservationStatus.available.storage}' THEN 0 "
           "WHEN '${ReservationStatus.queued.storage}' THEN 1 ELSE 2 END, "
           'COALESCE(rank, id) ASC, id ASC',
     );
@@ -3461,7 +3823,8 @@ class DatabaseService implements LibraryRepository {
     // deadline is part of the answer, not just the status column.
     final rows = await db.query(
       'reservations',
-      where: 'status = ? AND available_until IS NOT NULL AND available_until > ?',
+      where:
+          'status = ? AND available_until IS NOT NULL AND available_until > ?',
       whereArgs: [
         ReservationStatus.available.storage,
         DateTime.now().toIso8601String(),
@@ -3475,21 +3838,25 @@ class DatabaseService implements LibraryRepository {
   /// title (null = every title). Runs in its OWN transaction after the
   /// triggering write committed: a queue hiccup must never undo a return or
   /// a borrow, and every later touchpoint re-runs the sweep.
-  Future<void> _promoteStep([String? itemCode, Map<String, dynamic>? audit]) async {
+  Future<void> _promoteStep([
+    String? itemCode,
+    Map<String, dynamic>? audit,
+  ]) async {
     final db = await database;
     await db.transaction((txn) async {
       await _sweepExpiredLocked(txn, itemCode);
       final codes = itemCode != null
           ? [itemCode]
-          : (await txn.query('reservations', columns: ['item_code'],
-                  distinct: true,
-                  where: 'status IN (?, ?)',
-                  whereArgs: [
-                    ReservationStatus.queued.storage,
-                    ReservationStatus.available.storage,
-                  ]))
-              .map((r) => r['item_code'] as String)
-              .toList();
+          : (await txn.query(
+              'reservations',
+              columns: ['item_code'],
+              distinct: true,
+              where: 'status IN (?, ?)',
+              whereArgs: [
+                ReservationStatus.queued.storage,
+                ReservationStatus.available.storage,
+              ],
+            )).map((r) => r['item_code'] as String).toList();
       for (final code in codes) {
         await _promoteLocked(txn, code);
       }
@@ -3506,7 +3873,8 @@ class DatabaseService implements LibraryRepository {
     final now = DateTime.now().toIso8601String();
     final rows = await txn.query(
       'reservations',
-      where: 'status = ? AND available_until IS NOT NULL '
+      where:
+          'status = ? AND available_until IS NOT NULL '
           'AND available_until <= ?',
       whereArgs: [ReservationStatus.available.storage, now],
     );
@@ -3516,10 +3884,7 @@ class DatabaseService implements LibraryRepository {
       if (itemCode != null && r.itemCode != itemCode) continue;
       final changed = await txn.update(
         'reservations',
-        {
-          'status': ReservationStatus.expired.storage,
-          'ended_at': now,
-        },
+        {'status': ReservationStatus.expired.storage, 'ended_at': now},
         where: 'id = ? AND status = ?',
         whereArgs: [r.id, ReservationStatus.available.storage],
       );
@@ -3527,11 +3892,7 @@ class DatabaseService implements LibraryRepository {
       if (r.copyId != null) {
         final freed = await txn.rawUpdate(
           'UPDATE item_copies SET state = ? WHERE id = ? AND state = ?',
-          [
-            CopyState.available.storage,
-            r.copyId,
-            CopyState.reserved.storage,
-          ],
+          [CopyState.available.storage, r.copyId, CopyState.reserved.storage],
         );
         if (freed > 0) touchedItems.add(r.itemCode);
       }
@@ -3554,11 +3915,7 @@ class DatabaseService implements LibraryRepository {
       'SELECT id FROM item_copies WHERE item_code = ? AND state = ? '
       'AND id NOT IN (SELECT copy_id FROM reservations WHERE status = ? '
       'AND copy_id IS NOT NULL) ORDER BY id',
-      [
-        code,
-        CopyState.available.storage,
-        ReservationStatus.available.storage,
-      ],
+      [code, CopyState.available.storage, ReservationStatus.available.storage],
     );
     final freeIds = freeRows.map((r) => r['id'] as int).toList();
     final totalCopies = await txn.rawQuery(
@@ -3582,8 +3939,10 @@ class DatabaseService implements LibraryRepository {
           'status': ReservationStatus.available.storage,
           'copy_id': copyId,
           'available_at': now.toIso8601String(),
-          'available_until':
-              HoldPolicy.deadlineFor(now, settings).toIso8601String(),
+          'available_until': HoldPolicy.deadlineFor(
+            now,
+            settings,
+          ).toIso8601String(),
         },
         // CAS: only a still-queued hold is promoted -- a concurrent cancel
         // or settle wins and this row is simply left alone.
@@ -3602,11 +3961,7 @@ class DatabaseService implements LibraryRepository {
       final copyId = freeIds[i];
       final claimed = await txn.rawUpdate(
         'UPDATE item_copies SET state = ? WHERE id = ? AND state = ?',
-        [
-          CopyState.reserved.storage,
-          copyId,
-          CopyState.available.storage,
-        ],
+        [CopyState.reserved.storage, copyId, CopyState.available.storage],
       );
       if (claimed == 0) {
         i++;
@@ -3666,7 +4021,12 @@ class DatabaseService implements LibraryRepository {
   Future<Report> _reportCirculation(String? from, String? to) async {
     final db = await database;
     final now = DateTime.now();
-    final w = ReportQuery.window(ReportKind.circulation, from: from, to: to, now: now)!;
+    final w = ReportQuery.window(
+      ReportKind.circulation,
+      from: from,
+      to: to,
+      now: now,
+    )!;
 
     final borrowRows = await db.rawQuery(
       'SELECT substr(loan_date,1,10) AS day, COUNT(*) AS c FROM loans '
@@ -3696,12 +4056,7 @@ class DatabaseService implements LibraryRepository {
     var totalBorrow = 0;
     var totalReturn = 0;
     final rows = <List<String>>[
-      for (final day in days)
-        [
-          day,
-          '${perDay[day]![0]}',
-          '${perDay[day]![1]}',
-        ],
+      for (final day in days) [day, '${perDay[day]![0]}', '${perDay[day]![1]}'],
     ];
     for (final day in days) {
       totalBorrow += perDay[day]![0];
@@ -3746,7 +4101,9 @@ class DatabaseService implements LibraryRepository {
       rows.add([
         _memberCell(r['member_name'], r['member_id']),
         r['item_title']?.toString() ?? (r['item_code']?.toString() ?? ''),
-        dueRaw == null ? '' : dueRaw.substring(0, dueRaw.length < 10 ? dueRaw.length : 10),
+        dueRaw == null
+            ? ''
+            : dueRaw.substring(0, dueRaw.length < 10 ? dueRaw.length : 10),
         '$daysOverdue',
       ]);
     }
@@ -3800,10 +4157,7 @@ class DatabaseService implements LibraryRepository {
       generatedAt: now.toIso8601String(),
       columns: const ['Type', 'Titles', 'Copies'],
       rows: rows,
-      summary: {
-        'Titles': '$totalTitles',
-        'Physical copies': '$totalCopies',
-      },
+      summary: {'Titles': '$totalTitles', 'Physical copies': '$totalCopies'},
     );
   }
 
@@ -3812,7 +4166,12 @@ class DatabaseService implements LibraryRepository {
     final now = DateTime.now();
     final settings = await getFineSettings();
     final cur = settings.currency;
-    final w = ReportQuery.window(ReportKind.fines, from: from, to: to, now: now)!;
+    final w = ReportQuery.window(
+      ReportKind.fines,
+      from: from,
+      to: to,
+      now: now,
+    )!;
 
     Future<List<Object?>> agg(String where, List<Object?> args) async {
       final r = await db.rawQuery(
@@ -3820,13 +4179,16 @@ class DatabaseService implements LibraryRepository {
         args,
       );
       final row = r.first;
-      return [(row['c'] as num?)?.toInt() ?? 0, (row['s'] as num?)?.toDouble() ?? 0.0];
+      return [
+        (row['c'] as num?)?.toInt() ?? 0,
+        (row['s'] as num?)?.toDouble() ?? 0.0,
+      ];
     }
 
-    final assessed = await agg(
-      'substr(created_at,1,10) BETWEEN ? AND ?',
-      [w.fromDay, w.toDay],
-    );
+    final assessed = await agg('substr(created_at,1,10) BETWEEN ? AND ?', [
+      w.fromDay,
+      w.toDay,
+    ]);
     final collected = await agg(
       "status = ? AND resolved_at IS NOT NULL AND substr(resolved_at,1,10) BETWEEN ? AND ?",
       [FineStatus.paid.storage, w.fromDay, w.toDay],
@@ -3858,7 +4220,12 @@ class DatabaseService implements LibraryRepository {
   Future<Report> _reportMembers(String? from, String? to) async {
     final db = await database;
     final now = DateTime.now();
-    final w = ReportQuery.window(ReportKind.members, from: from, to: to, now: now)!;
+    final w = ReportQuery.window(
+      ReportKind.members,
+      from: from,
+      to: to,
+      now: now,
+    )!;
     final rows0 = await db.rawQuery(
       'SELECT member_id, member_name, COUNT(*) AS c FROM loans '
       'WHERE loan_date IS NOT NULL AND substr(loan_date,1,10) BETWEEN ? AND ? '
@@ -3895,4 +4262,3 @@ class DatabaseService implements LibraryRepository {
     );
   }
 }
-

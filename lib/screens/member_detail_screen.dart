@@ -49,15 +49,15 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
     try {
       // Loans: filter the in-memory list by memberId (already loaded).
       final allLoans = provider.loans;
-      _loans = allLoans
-          .where((l) => l.memberId == widget.memberId)
-          .toList();
+      _loans = allLoans.where((l) => l.memberId == widget.memberId).toList();
 
       // Fines + reservations require server queries (staff-only).
       if (provider.canWrite) {
         try {
-          _fines = await provider
-              .getFines(memberId: widget.memberId, status: FineStatus.pending);
+          _fines = await provider.getFines(
+            memberId: widget.memberId,
+            status: FineStatus.pending,
+          );
           _balance = await provider.outstandingBalance(widget.memberId);
         } catch (_) {
           _fines = null;
@@ -84,15 +84,15 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
     try {
       await provider.renewLoan(loan);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.renewSuccess)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.renewSuccess)));
       await _load();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(describeError(l10n, e))),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(describeError(l10n, e))));
     }
   }
 
@@ -102,8 +102,9 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
     final provider = context.watch<LibraryProvider>();
 
     // Resolve the member from the already-loaded list.
-    final matches =
-        provider.members.where((m) => m.memberId == widget.memberId);
+    final matches = provider.members.where(
+      (m) => m.memberId == widget.memberId,
+    );
     final member = matches.isEmpty ? null : matches.first;
 
     if (member == null) {
@@ -127,8 +128,9 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
           padding: const EdgeInsets.all(AppSpacing.xxl),
           child: Center(
             child: ConstrainedBox(
-              constraints:
-                  const BoxConstraints(maxWidth: AppSizing.maxContentWidth),
+              constraints: const BoxConstraints(
+                maxWidth: AppSizing.maxContentWidth,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -138,9 +140,10 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
                     const AppLoadingState()
                   else if (_error != null)
                     AppErrorState(
-                        message: _error!,
-                        retryLabel: l10n.retry,
-                        onRetry: _load)
+                      message: _error!,
+                      retryLabel: l10n.retry,
+                      onRetry: _load,
+                    )
                   else ...[
                     _LoansSection(
                       loans: _loans ?? [],
@@ -213,9 +216,12 @@ class _IdentityCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(member.fullName,
-                      style: txt.headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.w600)),
+                  Text(
+                    member.fullName,
+                    style: txt.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   const SizedBox(height: AppSpacing.xs),
                   Text('ID: ${member.memberId}', style: txt.bodyMedium),
                   const SizedBox(height: AppSpacing.xs),
@@ -225,10 +231,14 @@ class _IdentityCard extends StatelessWidget {
                     children: [
                       if (member.phone != null && member.phone!.isNotEmpty)
                         _MetaChip(
-                            icon: Icons.phone_outlined, label: member.phone!),
+                          icon: Icons.phone_outlined,
+                          label: member.phone!,
+                        ),
                       if (member.email != null && member.email!.isNotEmpty)
                         _MetaChip(
-                            icon: Icons.email_outlined, label: member.email!),
+                          icon: Icons.email_outlined,
+                          label: member.email!,
+                        ),
                       _MetaChip(
                         icon: Icons.calendar_today_outlined,
                         label:
@@ -264,11 +274,12 @@ class _MetaChip extends StatelessWidget {
       children: [
         Icon(icon, size: AppIcon.sm, color: scheme.onSurfaceVariant),
         const SizedBox(width: AppSpacing.xs),
-        Text(label,
-            style: Theme.of(context)
-                .textTheme
-                .bodySmall
-                ?.copyWith(color: scheme.onSurfaceVariant)),
+        Text(
+          label,
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+        ),
       ],
     );
   }
@@ -315,14 +326,18 @@ class _LoansSection extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.warning_amber_rounded,
-                      color: AppStatus.danger, size: AppIcon.lg),
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    color: AppStatus.danger,
+                    size: AppIcon.lg,
+                  ),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Text(
                       l10n.memberOverdueAlert(overdue.length),
-                      style: txt.bodyMedium
-                          ?.copyWith(color: scheme.onErrorContainer),
+                      style: txt.bodyMedium?.copyWith(
+                        color: scheme.onErrorContainer,
+                      ),
                     ),
                   ),
                 ],
@@ -330,15 +345,20 @@ class _LoansSection extends StatelessWidget {
             ),
           if (loans.isEmpty)
             AppEmptyState(
-                icon: Icons.assignment_outlined,
-                title: l10n.noLoansForMember,
-                compact: true)
+              icon: Icons.assignment_outlined,
+              title: l10n.noLoansForMember,
+              compact: true,
+            )
           else
             for (final loan in active)
               Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                 child: _LoanRow(
-                    loan: loan, l10n: l10n, canWrite: canWrite, onRenew: onRenew),
+                  loan: loan,
+                  l10n: l10n,
+                  canWrite: canWrite,
+                  onRenew: onRenew,
+                ),
               ),
         ],
       ),
@@ -436,8 +456,9 @@ class _FinesSection extends StatelessWidget {
                       dense: true,
                       contentPadding: EdgeInsets.zero,
                       title: Text(
-                          '${fine.amount.toStringAsFixed(0)} DZD',
-                          style: txt.titleSmall),
+                        '${fine.amount.toStringAsFixed(0)} DZD',
+                        style: txt.titleSmall,
+                      ),
                       subtitle: fine.reason != null
                           ? Text(fine.reason!, style: txt.bodySmall)
                           : null,
@@ -467,7 +488,9 @@ class _ReservationsSection extends StatelessWidget {
       trailing: reservations.isEmpty
           ? null
           : AppStatusChip(
-              label: '${reservations.length}', color: AppStatus.reserved),
+              label: '${reservations.length}',
+              color: AppStatus.reserved,
+            ),
       child: reservations.isEmpty
           ? AppEmptyState(
               icon: Icons.bookmark_outline,

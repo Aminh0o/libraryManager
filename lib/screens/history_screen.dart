@@ -31,7 +31,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
   void initState() {
     super.initState();
     _subjectFilter = widget.initialSubject;
-    _subjectController = TextEditingController(text: widget.initialSubject ?? '');
+    _subjectController = TextEditingController(
+      text: widget.initialSubject ?? '',
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<LibraryProvider>(
         context,

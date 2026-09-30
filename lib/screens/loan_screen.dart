@@ -24,9 +24,10 @@ class LoanScreen extends StatefulWidget {
   State<LoanScreen> createState() => _LoanScreenState();
 }
 
-class _LoanScreenState extends State<LoanScreen> with SingleTickerProviderStateMixin {
+class _LoanScreenState extends State<LoanScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  
+
   // Checkout State
   Member? _selectedMember;
   LibraryItem? _selectedItem;
@@ -70,29 +71,42 @@ class _LoanScreenState extends State<LoanScreen> with SingleTickerProviderStateM
       // Try to find by barcode or code
       final item = provider.items.firstWhere(
         (i) => i.code == code || i.barcode == code || i.fullCode == code,
-        orElse: () => LibraryItem(code: '', codeType: '', designation: '', quantite: 0, emplacement: '', taux: 0, emplacementStock: '', status: ''),
+        orElse: () => LibraryItem(
+          code: '',
+          codeType: '',
+          designation: '',
+          quantite: 0,
+          emplacement: '',
+          taux: 0,
+          emplacementStock: '',
+          status: '',
+        ),
       );
-      
+
       if (item.code.isNotEmpty) {
         setState(() {
           _selectedItem = item;
           _itemSearchCtrl.text = item.designation;
         });
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.itemNotFound)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context)!.itemNotFound)),
+        );
       }
     }
   }
 
   void _processCheckout() async {
     if (_selectedMember == null || _selectedItem == null) return;
-    
+
     final provider = Provider.of<LibraryProvider>(context, listen: false);
     final l10n = AppLocalizations.of(context)!;
     try {
       await provider.checkOutItem(_selectedItem!, _selectedMember!);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.loanSuccess)));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.loanSuccess)));
         setState(() {
           _selectedItem = null;
           _itemSearchCtrl.clear();
@@ -100,25 +114,37 @@ class _LoanScreenState extends State<LoanScreen> with SingleTickerProviderStateM
         });
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(describeError(l10n, e))));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(describeError(l10n, e))));
+      }
     }
   }
 
   void _processCheckin() async {
-     final code = _checkinSearchCtrl.text;
-     if (code.isEmpty) return;
+    final code = _checkinSearchCtrl.text;
+    if (code.isEmpty) return;
 
-     final provider = Provider.of<LibraryProvider>(context, listen: false);
-     final l10n = AppLocalizations.of(context)!;
-     try {
-       await provider.returnItem(code); // Logic needs to handle barcode lookup inside provider potentially
-       if (mounted) {
-         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.returnSuccess)));
-         _checkinSearchCtrl.clear();
-       }
-     } catch (e) {
-       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(describeError(l10n, e))));
-     }
+    final provider = Provider.of<LibraryProvider>(context, listen: false);
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      await provider.returnItem(
+        code,
+      ); // Logic needs to handle barcode lookup inside provider potentially
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.returnSuccess)));
+        _checkinSearchCtrl.clear();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(describeError(l10n, e))));
+      }
+    }
   }
 
   // FE2-15: renewal. `provider.renewLoan` funnels through the canonical
@@ -131,14 +157,15 @@ class _LoanScreenState extends State<LoanScreen> with SingleTickerProviderStateM
     try {
       await provider.renewLoan(loan);
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(l10n.renewSuccess)));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.renewSuccess)));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(describeError(l10n, e))),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(describeError(l10n, e))));
       }
     }
   }
@@ -213,10 +240,7 @@ class _LoanScreenState extends State<LoanScreen> with SingleTickerProviderStateM
                           leading: CircleAvatar(
                             backgroundColor: scheme.primaryContainer,
                             foregroundColor: scheme.onPrimaryContainer,
-                            child: const Icon(
-                              Icons.person,
-                              size: AppIcon.md,
-                            ),
+                            child: const Icon(Icons.person, size: AppIcon.md),
                           ),
                           title: Text(_selectedMember!.fullName),
                           subtitle: Text(_selectedMember!.memberId),
@@ -230,36 +254,38 @@ class _LoanScreenState extends State<LoanScreen> with SingleTickerProviderStateM
                         Autocomplete<Member>(
                           displayStringForOption: (Member option) =>
                               option.fullName,
-                          optionsBuilder:
-                              (TextEditingValue textEditingValue) {
+                          optionsBuilder: (TextEditingValue textEditingValue) {
                             if (textEditingValue.text == '') {
                               return const Iterable<Member>.empty();
                             }
                             return provider.members.where((Member option) {
-                              return option.fullName
-                                      .toLowerCase()
-                                      .contains(textEditingValue.text
-                                          .toLowerCase()) ||
-                                  option.memberId
-                                      .contains(textEditingValue.text);
+                              return option.fullName.toLowerCase().contains(
+                                    textEditingValue.text.toLowerCase(),
+                                  ) ||
+                                  option.memberId.contains(
+                                    textEditingValue.text,
+                                  );
                             });
                           },
                           onSelected: (Member selection) {
                             setState(() => _selectedMember = selection);
                           },
-                          fieldViewBuilder: (context,
-                              fieldTextEditingController,
-                              focusNode,
-                              onFieldSubmitted) {
-                            return TextField(
-                              controller: fieldTextEditingController,
-                              focusNode: focusNode,
-                              decoration: InputDecoration(
-                                labelText: l10n.memberSearchHint,
-                                prefixIcon: const Icon(Icons.search),
-                              ),
-                            );
-                          },
+                          fieldViewBuilder:
+                              (
+                                context,
+                                fieldTextEditingController,
+                                focusNode,
+                                onFieldSubmitted,
+                              ) {
+                                return TextField(
+                                  controller: fieldTextEditingController,
+                                  focusNode: focusNode,
+                                  decoration: InputDecoration(
+                                    labelText: l10n.memberSearchHint,
+                                    prefixIcon: const Icon(Icons.search),
+                                  ),
+                                );
+                              },
                         ),
                     ],
                   ),
@@ -275,32 +301,41 @@ class _LoanScreenState extends State<LoanScreen> with SingleTickerProviderStateM
                     children: [
                       Text(l10n.selectItem, style: txt.titleMedium),
                       const SizedBox(height: AppSpacing.sm),
-                      Row(children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _itemSearchCtrl,
-                            decoration:
-                                InputDecoration(labelText: l10n.itemSearchHint),
-                            readOnly: true, // Force use of scanner for now or implement autocomplete
-                            onTap: _scanItemForCheckout,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _itemSearchCtrl,
+                              decoration: InputDecoration(
+                                labelText: l10n.itemSearchHint,
+                              ),
+                              readOnly:
+                                  true, // Force use of scanner for now or implement autocomplete
+                              onTap: _scanItemForCheckout,
+                            ),
                           ),
-                        ),
-                        IconButton(
-                          tooltip: l10n.scanBarcode,
-                          icon: Icon(Icons.camera_alt,
-                              size: AppIcon.xl, color: scheme.primary),
-                          onPressed: _scanItemForCheckout,
-                        ),
-                      ]),
+                          IconButton(
+                            tooltip: l10n.scanBarcode,
+                            icon: Icon(
+                              Icons.camera_alt,
+                              size: AppIcon.xl,
+                              color: scheme.primary,
+                            ),
+                            onPressed: _scanItemForCheckout,
+                          ),
+                        ],
+                      ),
                       if (_selectedItem != null)
                         Padding(
                           padding: const EdgeInsets.only(top: AppSpacing.sm),
                           child: Text(
                             l10n.selectedItemLabel(
-                                _selectedItem!.designation, _selectedItem!.status),
+                              _selectedItem!.designation,
+                              _selectedItem!.status,
+                            ),
                             style: txt.bodyMedium?.copyWith(
-                              color: _selectedItem!.status ==
-                                      ItemStatus.disponible
+                              color:
+                                  _selectedItem!.status == ItemStatus.disponible
                                   ? AppStatus.success
                                   : AppStatus.danger,
                               fontWeight: FontWeight.w600,
@@ -313,7 +348,8 @@ class _LoanScreenState extends State<LoanScreen> with SingleTickerProviderStateM
               ),
               const Spacer(),
               FilledButton.icon(
-                onPressed: (_selectedMember != null &&
+                onPressed:
+                    (_selectedMember != null &&
                         _selectedItem != null &&
                         _selectedItem!.status == ItemStatus.disponible)
                     ? _processCheckout
@@ -339,12 +375,19 @@ class _LoanScreenState extends State<LoanScreen> with SingleTickerProviderStateM
           padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
             children: [
-              Icon(Icons.assignment_return,
-                  size: AppIcon.hero, color: scheme.primary),
+              Icon(
+                Icons.assignment_return,
+                size: AppIcon.hero,
+                color: scheme.primary,
+              ),
               const SizedBox(height: AppSpacing.lg),
-              Text(l10n.scanToReturn,
-                  style: txt.titleMedium?.copyWith(
-                      color: scheme.onSurface, fontWeight: FontWeight.w500)),
+              Text(
+                l10n.scanToReturn,
+                style: txt.titleMedium?.copyWith(
+                  color: scheme.onSurface,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
               const SizedBox(height: AppSpacing.xxl),
               Row(
                 children: [
@@ -357,8 +400,11 @@ class _LoanScreenState extends State<LoanScreen> with SingleTickerProviderStateM
                   const SizedBox(width: AppSpacing.sm),
                   IconButton(
                     tooltip: l10n.scanBarcode,
-                    icon: Icon(Icons.camera_alt,
-                        size: AppIcon.xl, color: scheme.primary),
+                    icon: Icon(
+                      Icons.camera_alt,
+                      size: AppIcon.xl,
+                      color: scheme.primary,
+                    ),
                     onPressed: () async {
                       final code = await showBarcodeScanner(context);
                       if (code != null) {
@@ -436,28 +482,37 @@ class _LoanScreenState extends State<LoanScreen> with SingleTickerProviderStateM
             DataRow(
               // Overdue reads through the semantic error container, so it is
               // a tint in BOTH modes (was Colors.red[50]: white-on-dark dead).
-              color: WidgetStatePropertyAll<Color?>(loan.isOverdue
-                  ? scheme.errorContainer.withValues(alpha: 0.45)
-                  : null),
+              color: WidgetStatePropertyAll<Color?>(
+                loan.isOverdue
+                    ? scheme.errorContainer.withValues(alpha: 0.45)
+                    : null,
+              ),
               cells: [
                 DataCell(Text(loan.memberName)),
                 DataCell(Text('${loan.itemTitle} (${loan.itemCode})')),
                 DataCell(Text(_fmtDate(loan.loanDate))),
                 DataCell(Text(_fmtDate(loan.dueDate))),
-                DataCell(loan.isOverdue
-                    ? AppStatusChip(
-                        label: l10n.overdue,
-                        color: AppStatus.danger,
-                      )
-                    // Not-overdue needs no alarm chip: a quiet check says it.
-                    : Icon(Icons.check_circle,
-                        size: AppIcon.lg, color: AppStatus.success)),
-                DataCell(TextButton.icon(
-                  key: Key('renew_${loan.id ?? loan.itemCode}'),
-                  onPressed: () => _renew(loan),
-                  icon: const Icon(Icons.refresh, size: AppIcon.md),
-                  label: Text(l10n.renew),
-                )),
+                DataCell(
+                  loan.isOverdue
+                      ? AppStatusChip(
+                          label: l10n.overdue,
+                          color: AppStatus.danger,
+                        )
+                      // Not-overdue needs no alarm chip: a quiet check says it.
+                      : Icon(
+                          Icons.check_circle,
+                          size: AppIcon.lg,
+                          color: AppStatus.success,
+                        ),
+                ),
+                DataCell(
+                  TextButton.icon(
+                    key: Key('renew_${loan.id ?? loan.itemCode}'),
+                    onPressed: () => _renew(loan),
+                    icon: const Icon(Icons.refresh, size: AppIcon.md),
+                    label: Text(l10n.renew),
+                  ),
+                ),
               ],
             ),
         ],

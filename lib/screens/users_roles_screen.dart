@@ -395,82 +395,82 @@ class _CreateAccountDialogState extends State<_CreateAccountDialog> {
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: AppSizing.maxDialogWidth),
       child: AlertDialog(
-      title: Text(l10n.createAccount),
-      content: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextFormField(
-                key: const Key('createUsername'),
-                controller: _username,
-                autofocus: true,
-                decoration: InputDecoration(
-                  labelText: l10n.username,
-                  helperText: l10n.usernameRules,
-                  helperMaxLines: 3,
-                ),
-                validator: (v) {
-                  final name = UserRecord.normalizeUsername(v ?? '');
-                  if (!UserRecord.isValidUsername(name)) {
-                    return l10n.usernameRules;
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                key: const Key('createPassword'),
-                controller: _password,
-                obscureText: true,
-                decoration: InputDecoration(
-                  labelText: l10n.password,
-                  helperText: l10n.passwordMinLength(
-                    UserRecord.minPasswordLength,
+        title: Text(l10n.createAccount),
+        content: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextFormField(
+                  key: const Key('createUsername'),
+                  controller: _username,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    labelText: l10n.username,
+                    helperText: l10n.usernameRules,
+                    helperMaxLines: 3,
                   ),
+                  validator: (v) {
+                    final name = UserRecord.normalizeUsername(v ?? '');
+                    if (!UserRecord.isValidUsername(name)) {
+                      return l10n.usernameRules;
+                    }
+                    return null;
+                  },
                 ),
-                validator: (v) =>
-                    (v == null || v.length < UserRecord.minPasswordLength)
-                    ? l10n.passwordMinLength(UserRecord.minPasswordLength)
-                    : null,
-              ),
-              const SizedBox(height: AppSpacing.md),
-              _RoleField(
-                value: _role,
-                onChanged: (r) => setState(() => _role = r),
-              ),
-              if (_error != null) ...[
+                const SizedBox(height: 12),
+                TextFormField(
+                  key: const Key('createPassword'),
+                  controller: _password,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: l10n.password,
+                    helperText: l10n.passwordMinLength(
+                      UserRecord.minPasswordLength,
+                    ),
+                  ),
+                  validator: (v) =>
+                      (v == null || v.length < UserRecord.minPasswordLength)
+                      ? l10n.passwordMinLength(UserRecord.minPasswordLength)
+                      : null,
+                ),
                 const SizedBox(height: AppSpacing.md),
-                Text(
-                  _error!,
-                  style: TextStyle(color: scheme.error),
-                  textAlign: TextAlign.center,
+                _RoleField(
+                  value: _role,
+                  onChanged: (r) => setState(() => _role = r),
                 ),
+                if (_error != null) ...[
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    _error!,
+                    style: TextStyle(color: scheme.error),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
+        actions: [
+          TextButton(
+            onPressed: _busy ? null : () => Navigator.pop(context, false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            key: const Key('createSubmit'),
+            onPressed: _busy ? null : _submit,
+            child: _busy
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Text(l10n.createAccount),
+          ),
+        ],
       ),
-      actions: [
-        TextButton(
-          onPressed: _busy ? null : () => Navigator.pop(context, false),
-          child: Text(l10n.cancel),
-        ),
-        FilledButton(
-          key: const Key('createSubmit'),
-          onPressed: _busy ? null : _submit,
-          child: _busy
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Text(l10n.createAccount),
-        ),
-      ],
-    ),
     );
   }
 }
@@ -515,39 +515,42 @@ class _ChangeRoleDialogState extends State<_ChangeRoleDialog> {
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: AppSizing.maxDialogWidth),
       child: AlertDialog(
-      title: Text(l10n.changeRole),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _RoleField(value: _role, onChanged: (r) => setState(() => _role = r)),
-          if (_error != null) ...[
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              _error!,
-              style: TextStyle(color: scheme.error),
-              textAlign: TextAlign.center,
+        title: Text(l10n.changeRole),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _RoleField(
+              value: _role,
+              onChanged: (r) => setState(() => _role = r),
             ),
+            if (_error != null) ...[
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                _error!,
+                style: TextStyle(color: scheme.error),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: _busy ? null : () => Navigator.pop(context, false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: _busy ? null : _submit,
+            child: _busy
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Text(l10n.changeRole),
+          ),
         ],
       ),
-      actions: [
-        TextButton(
-          onPressed: _busy ? null : () => Navigator.pop(context, false),
-          child: Text(l10n.cancel),
-        ),
-        FilledButton(
-          onPressed: _busy ? null : _submit,
-          child: _busy
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Text(l10n.changeRole),
-        ),
-      ],
-    ),
     );
   }
 }
@@ -599,56 +602,56 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: AppSizing.maxDialogWidth),
       child: AlertDialog(
-      title: Text(l10n.changePassword),
-      content: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            TextFormField(
-              controller: _password,
-              obscureText: true,
-              autofocus: true,
-              decoration: InputDecoration(
-                labelText: l10n.newPassword,
-                helperText: l10n.passwordMinLength(
-                  UserRecord.minPasswordLength,
+        title: Text(l10n.changePassword),
+        content: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextFormField(
+                controller: _password,
+                obscureText: true,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: l10n.newPassword,
+                  helperText: l10n.passwordMinLength(
+                    UserRecord.minPasswordLength,
+                  ),
                 ),
+                validator: (v) =>
+                    (v == null || v.length < UserRecord.minPasswordLength)
+                    ? l10n.passwordMinLength(UserRecord.minPasswordLength)
+                    : null,
               ),
-              validator: (v) =>
-                  (v == null || v.length < UserRecord.minPasswordLength)
-                  ? l10n.passwordMinLength(UserRecord.minPasswordLength)
-                  : null,
-            ),
-            if (_error != null) ...[
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                _error!,
-                style: TextStyle(color: scheme.error),
-                textAlign: TextAlign.center,
-              ),
+              if (_error != null) ...[
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  _error!,
+                  style: TextStyle(color: scheme.error),
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ],
-          ],
+          ),
         ),
+        actions: [
+          TextButton(
+            onPressed: _busy ? null : () => Navigator.pop(context, false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: _busy ? null : _submit,
+            child: _busy
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Text(l10n.changePassword),
+          ),
+        ],
       ),
-      actions: [
-        TextButton(
-          onPressed: _busy ? null : () => Navigator.pop(context, false),
-          child: Text(l10n.cancel),
-        ),
-        FilledButton(
-          onPressed: _busy ? null : _submit,
-          child: _busy
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Text(l10n.changePassword),
-        ),
-      ],
-    ),
     );
   }
 }
@@ -694,8 +697,8 @@ class _RoleField extends StatelessWidget {
         Text(
           roleDescription(l10n, value),
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       ],
     );

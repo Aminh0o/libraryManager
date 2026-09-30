@@ -87,15 +87,15 @@ class Report {
   int get rowCount => rows.length;
 
   Map<String, dynamic> toMap() => {
-        'kind': kind.storage,
-        'title': title,
-        'generated_at': generatedAt,
-        'from': from,
-        'to': to,
-        'columns': columns,
-        'rows': rows,
-        'summary': summary,
-      };
+    'kind': kind.storage,
+    'title': title,
+    'generated_at': generatedAt,
+    'from': from,
+    'to': to,
+    'columns': columns,
+    'rows': rows,
+    'summary': summary,
+  };
 
   /// Client-side decode of a server-authored payload. Every cell is coerced to
   /// a display string defensively: a null cell becomes '' and a numeric cell

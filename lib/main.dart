@@ -15,7 +15,7 @@ import 'screens/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize FFI for Windows
   sqfliteFfiInit();
   databaseFactory = databaseFactoryFfi;
@@ -27,7 +27,9 @@ void main() async {
     final docs = await getApplicationDocumentsDirectory();
     initAppLogging(docsDir: docs);
     appLog.info(
-        'app', 'Library Manager starting (release=${kReleaseMode ? "yes" : "no"})');
+      'app',
+      'Library Manager starting (release=${kReleaseMode ? "yes" : "no"})',
+    );
   } catch (e) {
     debugPrint('logging init skipped: $e');
   }
@@ -39,11 +41,13 @@ void main() async {
   final appearance = await AppearanceController.load();
   final flags = await FeatureFlags.load();
 
-  runApp(MyApp(
-    initialRoute: setupComplete ? '/' : '/onboarding',
-    appearance: appearance,
-    flags: flags,
-  ));
+  runApp(
+    MyApp(
+      initialRoute: setupComplete ? '/' : '/onboarding',
+      appearance: appearance,
+      flags: flags,
+    ),
+  );
 }
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -97,11 +101,7 @@ class _AppRoot extends StatelessWidget {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          supportedLocales: const [
-            Locale('en'),
-            Locale('fr'),
-            Locale('ar'),
-          ],
+          supportedLocales: const [Locale('en'), Locale('fr'), Locale('ar')],
           initialRoute: initialRoute,
           routes: {
             '/': (context) => const HomeScreen(),

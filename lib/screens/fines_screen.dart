@@ -89,9 +89,7 @@ class _FinesScreenState extends State<FinesScreen> {
     final msg = fallback == null
         ? _fineMessage(l10n, e)
         : '$fallback\n${_fineMessage(l10n, e)}';
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(
+    ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
         backgroundColor: Theme.of(context).colorScheme.error,
@@ -163,9 +161,7 @@ class _FinesScreenState extends State<FinesScreen> {
           TextButton(
             key: const Key('waiveConfirm'),
             onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(
-              foregroundColor: AppStatus.warning,
-            ),
+            style: TextButton.styleFrom(foregroundColor: AppStatus.warning),
             child: Text(l10n.fineWaive),
           ),
         ],
@@ -334,11 +330,7 @@ class _FinesScreenState extends State<FinesScreen> {
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: color.withValues(alpha: 0.12),
-          child: Icon(
-            _statusIcon(fine.status),
-            size: AppIcon.md,
-            color: color,
-          ),
+          child: Icon(_statusIcon(fine.status), size: AppIcon.md, color: color),
         ),
         title: Text(
           '${_memberLabel(provider, fine)}  •  ${_money(fine.amount)}',

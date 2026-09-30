@@ -10,13 +10,12 @@ void main() {
     String firstName = '',
     String lastName = '',
     String memberId = '',
-  }) =>
-      Member(
-        firstName: firstName,
-        lastName: lastName,
-        memberId: memberId,
-        registeredAt: DateTime(2020),
-      );
+  }) => Member(
+    firstName: firstName,
+    lastName: lastName,
+    memberId: memberId,
+    registeredAt: DateTime(2020),
+  );
 
   group('Member.avatarInitial (FE2-07)', () {
     test('uses the first letter of the first name, uppercased', () {
@@ -31,9 +30,9 @@ void main() {
 
     test('falls back to the card id when both names are blank', () {
       expect(
-          build(firstName: '', lastName: '', memberId: 'AA0001')
-              .avatarInitial,
-          'A');
+        build(firstName: '', lastName: '', memberId: 'AA0001').avatarInitial,
+        'A',
+      );
     });
 
     test('returns empty (never throws) when EVERY source is blank', () {

@@ -19,7 +19,11 @@ import 'package:library_manager/services/repository.dart';
 /// reservations) and exposes the renew affordance to a writable session.
 
 class _MemberDetailRepo implements LibraryRepository {
-  _MemberDetailRepo({this.loans = const [], this.fines = const [], this.reservations = const []});
+  _MemberDetailRepo({
+    this.loans = const [],
+    this.fines = const [],
+    this.reservations = const [],
+  });
 
   final List<Loan> loans;
   final List<Fine> fines;
@@ -37,7 +41,10 @@ class _MemberDetailRepo implements LibraryRepository {
   }) async => const [];
 
   @override
-  Future<int> countItems({String? search, String? status, String? codeType,
+  Future<int> countItems({
+    String? search,
+    String? status,
+    String? codeType,
     String? sort,
     bool ascending = true,
   }) async => 0;
@@ -60,12 +67,13 @@ class _MemberDetailRepo implements LibraryRepository {
   }
 
   @override
-  Future<List<Fine>> getFines({String? memberId, FineStatus? status}) async => fines;
+  Future<List<Fine>> getFines({String? memberId, FineStatus? status}) async =>
+      fines;
 
   @override
-  Future<double> outstandingBalance(String memberId) async =>
-      fines.where((f) => f.status == FineStatus.pending)
-          .fold<double>(0.0, (s, f) => s + f.amount);
+  Future<double> outstandingBalance(String memberId) async => fines
+      .where((f) => f.status == FineStatus.pending)
+      .fold<double>(0.0, (s, f) => s + f.amount);
 
   @override
   Future<List<Reservation>> getReservations({
@@ -78,7 +86,9 @@ class _MemberDetailRepo implements LibraryRepository {
   @override
   Future<List<Map<String, dynamic>>> getCodeDefinitions() async => const [];
   @override
-  Future<List<Map<String, dynamic>>> getAttributeDefinitions(String? type) async => const [];
+  Future<List<Map<String, dynamic>>> getAttributeDefinitions(
+    String? type,
+  ) async => const [];
   @override
   Future<Map<String, dynamic>> getStats() async => const {};
   @override
@@ -175,7 +185,9 @@ void main() {
     expect(find.text('Late return'), findsOneWidget);
   });
 
-  testWidgets('reservations section renders for a staff session', (tester) async {
+  testWidgets('reservations section renders for a staff session', (
+    tester,
+  ) async {
     final reservations = [
       const Reservation(
         itemCode: 'BK-099',

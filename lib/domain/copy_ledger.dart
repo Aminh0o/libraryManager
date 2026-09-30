@@ -45,7 +45,8 @@ class CopyLedger {
     }
     if (!copies[idx].isAvailable) {
       throw StateError(
-          'Copy $copyId is not available (state: ${copies[idx].state}).');
+        'Copy $copyId is not available (state: ${copies[idx].state}).',
+      );
     }
     final next = List<ItemCopy>.of(copies);
     next[idx] = copies[idx].copyWith(state: CopyState.onLoan.storage);
@@ -62,7 +63,8 @@ class CopyLedger {
     }
     if (!copies[idx].isOnLoan) {
       throw StateError(
-          'Copy $copyId is not on loan (state: ${copies[idx].state}).');
+        'Copy $copyId is not on loan (state: ${copies[idx].state}).',
+      );
     }
     final next = List<ItemCopy>.of(copies);
     next[idx] = copies[idx].copyWith(state: CopyState.available.storage);

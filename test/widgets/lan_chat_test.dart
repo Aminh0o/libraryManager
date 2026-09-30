@@ -20,28 +20,29 @@ import 'package:library_manager/screens/home_screen.dart';
 
 class _EmptyRepo implements LibraryRepository {
   @override
-  Future<List<LibraryItem>> getItems(
-          {int limit = 1000,
-          int offset = 0,
-          String? search,
-          String? status,
-          String? codeType,
+  Future<List<LibraryItem>> getItems({
+    int limit = 1000,
+    int offset = 0,
+    String? search,
+    String? status,
+    String? codeType,
     String? sort,
     bool ascending = true,
-  }) async =>
-      const [];
+  }) async => const [];
   @override
-  Future<int> countItems(
-          {String? search, String? status, String? codeType,
+  Future<int> countItems({
+    String? search,
+    String? status,
+    String? codeType,
     String? sort,
     bool ascending = true,
-  }) async =>
-      0;
+  }) async => 0;
   @override
   Future<List<Map<String, dynamic>>> getCodeDefinitions() async => const [];
   @override
-  Future<List<Map<String, dynamic>>> getAttributeDefinitions(String? type) async =>
-      const [];
+  Future<List<Map<String, dynamic>>> getAttributeDefinitions(
+    String? type,
+  ) async => const [];
   @override
   Future<Map<String, dynamic>> getStats() async => const {};
   @override
@@ -61,11 +62,11 @@ Future<void> _pumpHome(
   tester.view.physicalSize = const Size(1400, 1400);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
-  SharedPreferences.setMockInitialValues({
-    'feature.flag.lanChat': lanChatOn,
-  });
-  final provider =
-      LibraryProvider.forTesting(repository: _EmptyRepo(), isHost: isHost);
+  SharedPreferences.setMockInitialValues({'feature.flag.lanChat': lanChatOn});
+  final provider = LibraryProvider.forTesting(
+    repository: _EmptyRepo(),
+    isHost: isHost,
+  );
   final appearance = await AppearanceController.load();
   final flags = await FeatureFlags.load();
   await tester.pumpWidget(
@@ -87,8 +88,9 @@ Future<void> _pumpHome(
 }
 
 void main() {
-  testWidgets('the chat tab appears for staff only while the flag is on',
-      (tester) async {
+  testWidgets('the chat tab appears for staff only while the flag is on', (
+    tester,
+  ) async {
     await _pumpHome(tester, isHost: true, lanChatOn: true);
     expect(find.text('Staff chat'), findsOneWidget);
 
@@ -96,8 +98,9 @@ void main() {
     expect(find.text('Staff chat'), findsNothing);
   });
 
-  testWidgets('a read-only session is never offered the chat tab',
-      (tester) async {
+  testWidgets('a read-only session is never offered the chat tab', (
+    tester,
+  ) async {
     await _pumpHome(tester, isHost: false, lanChatOn: true);
     expect(find.text('Staff chat'), findsNothing);
   });
@@ -105,13 +108,12 @@ void main() {
   test('the host refuses to send when its LAN server is not running', () async {
     // No false success: with no live server the provider surfaces a real error
     // rather than pretending the message went out.
-    final provider =
-        LibraryProvider.forTesting(repository: _EmptyRepo(), isHost: true);
-    expect(provider.chatMessages, isEmpty);
-    await expectLater(
-      provider.sendChatMessage('hello'),
-      throwsStateError,
+    final provider = LibraryProvider.forTesting(
+      repository: _EmptyRepo(),
+      isHost: true,
     );
+    expect(provider.chatMessages, isEmpty);
+    await expectLater(provider.sendChatMessage('hello'), throwsStateError);
     // An empty message is a no-op (not an error, not a phantom send).
     await provider.sendChatMessage('   ');
     expect(provider.chatMessages, isEmpty);

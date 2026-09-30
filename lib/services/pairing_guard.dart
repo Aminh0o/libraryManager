@@ -45,8 +45,11 @@ class PairingGuard {
   void recordFailure(String sourceIp) {
     final now = _now();
     final entry = _bySource.putIfAbsent(sourceIp, _PairingAttempts.new);
-    entry.recordFailure(now,
-        maxAttempts: maxFailedAttempts, window: lockoutWindow);
+    entry.recordFailure(
+      now,
+      maxAttempts: maxFailedAttempts,
+      window: lockoutWindow,
+    );
   }
 
   /// Clears [sourceIp]'s failure history after a successful pairing.
@@ -65,8 +68,11 @@ class _PairingAttempts {
 
   /// Increments the failure count; returns true iff this failure engaged a
   /// lockout (until `now + window`).
-  bool recordFailure(DateTime now,
-      {required int maxAttempts, required Duration window}) {
+  bool recordFailure(
+    DateTime now, {
+    required int maxAttempts,
+    required Duration window,
+  }) {
     _failures++;
     _lastFailure = now;
     if (_failures >= maxAttempts) {

@@ -36,8 +36,12 @@ void main() {
   late Directory tmp;
   late Database db;
 
-  LibraryItem item(String code,
-      {String designation = 'Title', int quantite = 1, String? barcode}) {
+  LibraryItem item(
+    String code, {
+    String designation = 'Title',
+    int quantite = 1,
+    String? barcode,
+  }) {
     final m = <String, dynamic>{
       'code': code,
       'code_type': 'LIV',
@@ -53,8 +57,11 @@ void main() {
   }
 
   Future<Map<String, dynamic>?> row(String code) async {
-    final r = await db
-        .query('library_items', where: 'code = ?', whereArgs: [code]);
+    final r = await db.query(
+      'library_items',
+      where: 'code = ?',
+      whereArgs: [code],
+    );
     return r.isEmpty ? null : r.first;
   }
 
@@ -85,8 +92,10 @@ void main() {
       await svc.addItem(item('V200', designation: 'Original'));
       expect(await version('V200'), 0);
 
-      await svc.updateItem(item('V200', designation: 'Edited'),
-          expectedVersion: 0);
+      await svc.updateItem(
+        item('V200', designation: 'Edited'),
+        expectedVersion: 0,
+      );
 
       expect((await row('V200'))!['designation'], 'Edited');
       expect(await version('V200'), 1);
@@ -96,15 +105,19 @@ void main() {
         'back everything (no silent clobber)', () async {
       await svc.addItem(item('V300', designation: 'Real'));
       // Bump the row to version 1 via a legitimate write.
-      await svc.updateItem(item('V300', designation: 'Real'),
-          expectedVersion: 0);
+      await svc.updateItem(
+        item('V300', designation: 'Real'),
+        expectedVersion: 0,
+      );
       expect(await version('V300'), 1);
 
       // A second client that still believes the row is at version 0 tries to
       // overwrite it. The write must be refused, not applied.
       await expectLater(
-        svc.updateItem(item('V300', designation: 'Clobber'),
-            expectedVersion: 0),
+        svc.updateItem(
+          item('V300', designation: 'Clobber'),
+          expectedVersion: 0,
+        ),
         throwsA(isA<ConcurrentUpdateConflictException>()),
       );
 
@@ -120,8 +133,10 @@ void main() {
       await svc.updateItem(item('V400'), expectedVersion: 0); // -> v1
       Object? caught;
       try {
-        await svc.updateItem(item('V400', designation: 'Bad'),
-            expectedVersion: 0); // stale
+        await svc.updateItem(
+          item('V400', designation: 'Bad'),
+          expectedVersion: 0,
+        ); // stale
       } catch (e) {
         caught = e;
       }
@@ -152,14 +167,19 @@ void main() {
       expect((await row('V500'))!['designation'], 'V2');
     });
 
-    test('updating a row that no longer exists is refused, not created',
-        () async {
-      await expectLater(
-        svc.updateItem(item('GONE', designation: 'ghost'), expectedVersion: 0),
-        throwsA(isA<ConcurrentUpdateConflictException>()),
-      );
-      expect(await row('GONE'), isNull);
-    });
+    test(
+      'updating a row that no longer exists is refused, not created',
+      () async {
+        await expectLater(
+          svc.updateItem(
+            item('GONE', designation: 'ghost'),
+            expectedVersion: 0,
+          ),
+          throwsA(isA<ConcurrentUpdateConflictException>()),
+        );
+        expect(await row('GONE'), isNull);
+      },
+    );
   });
 
   // TX-06 opt-in (P9-9.46): a loan checkout/return rewrites the title's derived
@@ -169,49 +189,63 @@ void main() {
   group('loan writes advance the concurrency token (TX-06 opt-in)', () {
     final now = DateTime(2026, 1, 1, 12);
     Loan loanFor(String code) => LoanTransitions.checkOut(
-          itemCode: code,
-          memberId: '250001',
-          memberName: 'Alice',
-          itemTitle: 'Title',
-          now: now,
+      itemCode: code,
+      memberId: '250001',
+      memberName: 'Alice',
+      itemTitle: 'Title',
+      now: now,
+    );
+
+    test(
+      'a copy-level checkout bumps row_version so a pre-loan edit is refused',
+      () async {
+        await svc.addItem(item('L100')); // seeds physical copies -> v0
+        final vBefore = await version('L100');
+        expect(vBefore, 0);
+
+        await svc.addLoan(loanFor('L100'));
+
+        // The status re-derivation advanced the token: a client still holding
+        // v0 can no longer overwrite the (now Emprunté) row.
+        final vAfter = await version('L100');
+        expect(vAfter, greaterThan(vBefore));
+        await expectLater(
+          svc.updateItem(
+            item('L100', designation: 'Stale clobber'),
+            expectedVersion: vBefore,
+          ),
+          throwsA(isA<ConcurrentUpdateConflictException>()),
         );
-
-    test('a copy-level checkout bumps row_version so a pre-loan edit is refused',
-        () async {
-      await svc.addItem(item('L100')); // seeds physical copies -> v0
-      final vBefore = await version('L100');
-      expect(vBefore, 0);
-
-      await svc.addLoan(loanFor('L100'));
-
-      // The status re-derivation advanced the token: a client still holding
-      // v0 can no longer overwrite the (now Emprunté) row.
-      final vAfter = await version('L100');
-      expect(vAfter, greaterThan(vBefore));
-      await expectLater(
-        svc.updateItem(item('L100', designation: 'Stale clobber'),
-            expectedVersion: vBefore),
-        throwsA(isA<ConcurrentUpdateConflictException>()),
-      );
-      expect((await row('L100'))!['designation'], 'Title',
-          reason: 'the refused edit must not have landed');
-    });
+        expect(
+          (await row('L100'))!['designation'],
+          'Title',
+          reason: 'the refused edit must not have landed',
+        );
+      },
+    );
 
     test('a return also bumps the token, and a whole-row write against the '
         'fresh version still succeeds', () async {
       await svc.addItem(item('L200'));
       await svc.addLoan(loanFor('L200'));
-      final active = (await svc.getLoans(activeOnly: true))
-          .firstWhere((l) => l.itemCode == 'L200');
+      final active = (await svc.getLoans(
+        activeOnly: true,
+      )).firstWhere((l) => l.itemCode == 'L200');
 
       await svc.updateLoan(
-          LoanTransitions.returnLoan(active, when: now.add(const Duration(days: 2))));
+        LoanTransitions.returnLoan(
+          active,
+          when: now.add(const Duration(days: 2)),
+        ),
+      );
 
       final vNow = await version('L200');
       // An edit carrying the CURRENT token is accepted (not locked out) and
       // advances it once more -- proving the bump does not wedge editing.
-      await svc.updateItem(item('L200', designation: 'Renamed'),
-          expectedVersion: vNow);
+      await svc.updateItem(
+        item('L200', designation: 'Renamed'),
+        expectedVersion: vNow,
+      );
       expect((await row('L200'))!['designation'], 'Renamed');
       expect(await version('L200'), greaterThan(vNow));
     });

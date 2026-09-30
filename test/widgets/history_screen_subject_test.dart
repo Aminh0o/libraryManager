@@ -36,16 +36,16 @@ class _Repo implements LibraryRepository {
     String? codeType,
     String? sort,
     bool ascending = true,
-  }) async =>
-      const [];
+  }) async => const [];
 
   @override
   dynamic noSuchMethod(Invocation invocation) => null;
 }
 
 void main() {
-  testWidgets('initialSubject pre-fills the field and the first query',
-      (tester) async {
+  testWidgets('initialSubject pre-fills the field and the first query', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(1400, 1080);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
@@ -65,9 +65,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     // Field state.
-    final field = tester.widget<TextField>(
-      find.byType(TextField).first,
-    );
+    final field = tester.widget<TextField>(find.byType(TextField).first);
     expect(
       field.controller?.text,
       'BK-42',

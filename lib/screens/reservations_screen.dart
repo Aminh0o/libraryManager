@@ -139,9 +139,7 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
     final msg = fallback == null
         ? _holdMessage(l10n, e)
         : '$fallback\n${_holdMessage(l10n, e)}';
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(
+    ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
         backgroundColor: Theme.of(context).colorScheme.error,
@@ -406,41 +404,36 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
   }
 
   Widget _itemFilterDropdown(AppLocalizations l10n) {
-    final codes = <String>{
-      for (final h in _holds) h.itemCode,
-    }.toList()
-      ..sort();
+    final codes = <String>{for (final h in _holds) h.itemCode}.toList()..sort();
     final hasSelection = _itemFilter != null;
     return Tooltip(
       message: l10n.queueOrderByItem,
       child: SizedBox(
         width: 140,
         child: DropdownButton<String?>(
-        key: const Key('holdItemFilter'),
-        isExpanded: true,
-        value: hasSelection ? _itemFilter : _allSentinel,
-        items: [
-          DropdownMenuItem<String?>(
-            value: _allSentinel,
-            child: Text(
-              l10n.all,
-              style: TextStyle(
-                fontStyle: hasSelection
-                    ? FontStyle.normal
-                    : FontStyle.italic,
+          key: const Key('holdItemFilter'),
+          isExpanded: true,
+          value: hasSelection ? _itemFilter : _allSentinel,
+          items: [
+            DropdownMenuItem<String?>(
+              value: _allSentinel,
+              child: Text(
+                l10n.all,
+                style: TextStyle(
+                  fontStyle: hasSelection ? FontStyle.normal : FontStyle.italic,
+                ),
               ),
             ),
-          ),
-          for (final c in codes)
-            DropdownMenuItem<String?>(value: c, child: Text(c)),
-        ],
-        onChanged: (v) {
-          setState(() {
-            _itemFilter = (v == _allSentinel) ? null : v;
-          });
-          _load();
-        },
-      ),
+            for (final c in codes)
+              DropdownMenuItem<String?>(value: c, child: Text(c)),
+          ],
+          onChanged: (v) {
+            setState(() {
+              _itemFilter = (v == _allSentinel) ? null : v;
+            });
+            _load();
+          },
+        ),
       ),
     );
   }
@@ -476,11 +469,7 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: color.withValues(alpha: 0.12),
-          child: Icon(
-            _statusIcon(hold.status),
-            size: AppIcon.md,
-            color: color,
-          ),
+          child: Icon(_statusIcon(hold.status), size: AppIcon.md, color: color),
         ),
         title: Text(_memberLabel(provider.members, hold.memberId)),
         subtitle: Text(subtitleParts.join('  •  ')),
@@ -517,10 +506,7 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
         ? IconButton(
             key: Key('hold-cancel-${hold.id}'),
             tooltip: l10n.holdCancel,
-            icon: Icon(
-              Icons.cancel_presentation_outlined,
-              color: scheme.error,
-            ),
+            icon: Icon(Icons.cancel_presentation_outlined, color: scheme.error),
             onPressed: _busy ? null : () => _cancel(hold),
           )
         : null;
@@ -529,7 +515,11 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
         ? chip
         : Row(
             mainAxisSize: MainAxisSize.min,
-            children: [chip, const SizedBox(width: AppSpacing.xs), cancel],
+            children: [
+              chip,
+              const SizedBox(width: AppSpacing.xs),
+              cancel,
+            ],
           );
     if (!showReorder) return base;
     // Material 3 dimming for a disabled IconButton is normally driven by the
@@ -552,19 +542,13 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
         IconButton(
           key: Key('hold-up-${hold.id}'),
           tooltip: l10n.queueMoveUp,
-          icon: Icon(
-            Icons.arrow_upward,
-            color: arrowColor(upDisabled),
-          ),
+          icon: Icon(Icons.arrow_upward, color: arrowColor(upDisabled)),
           onPressed: upDisabled ? null : () => _move(hold, up: true),
         ),
         IconButton(
           key: Key('hold-down-${hold.id}'),
           tooltip: l10n.queueMoveDown,
-          icon: Icon(
-            Icons.arrow_downward,
-            color: arrowColor(downDisabled),
-          ),
+          icon: Icon(Icons.arrow_downward, color: arrowColor(downDisabled)),
           onPressed: downDisabled ? null : () => _move(hold, up: false),
         ),
         base,
@@ -666,9 +650,7 @@ class _PlaceHoldDialogState extends State<_PlaceHoldDialog> {
     return AlertDialog(
       title: Text(l10n.holdPlace),
       content: !canPick
-          ? Text(
-              widget.items.isEmpty ? l10n.holdNoItems : l10n.holdNoMembers,
-            )
+          ? Text(widget.items.isEmpty ? l10n.holdNoItems : l10n.holdNoMembers)
           : Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -680,8 +662,10 @@ class _PlaceHoldDialogState extends State<_PlaceHoldDialog> {
                     for (final i in widget.items)
                       DropdownMenuItem(
                         value: i.code,
-                        child: Text('${i.designation} (${i.code})',
-                            overflow: TextOverflow.ellipsis),
+                        child: Text(
+                          '${i.designation} (${i.code})',
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                   ],
                   onChanged: (v) => setState(() => _itemCode = v),
@@ -695,8 +679,10 @@ class _PlaceHoldDialogState extends State<_PlaceHoldDialog> {
                     for (final m in widget.members)
                       DropdownMenuItem(
                         value: m.memberId,
-                        child: Text('${m.fullName} (${m.memberId})',
-                            overflow: TextOverflow.ellipsis),
+                        child: Text(
+                          '${m.fullName} (${m.memberId})',
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                   ],
                   onChanged: (v) => setState(() => _memberId = v),
@@ -705,7 +691,9 @@ class _PlaceHoldDialogState extends State<_PlaceHoldDialog> {
                   const SizedBox(height: AppSpacing.sm),
                   Text(
                     _error!,
-                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
                   ),
                 ],
               ],

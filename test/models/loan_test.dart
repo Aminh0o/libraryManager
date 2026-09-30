@@ -14,19 +14,18 @@ void main() {
     Object? dueDate = '2026-01-20T00:00:00.000',
     Object? returnDate,
     Object? status = 'Active',
-  }) =>
-      {
-        'id': 3,
-        'item_code': '0500',
-        'copy_id': 9,
-        'member_id': 'AA0001',
-        'member_name': 'Ada',
-        'item_title': 'Book',
-        'loan_date': loanDate,
-        'due_date': dueDate,
-        'return_date': returnDate,
-        'status': status,
-      };
+  }) => {
+    'id': 3,
+    'item_code': '0500',
+    'copy_id': 9,
+    'member_id': 'AA0001',
+    'member_name': 'Ada',
+    'item_title': 'Book',
+    'loan_date': loanDate,
+    'due_date': dueDate,
+    'return_date': returnDate,
+    'status': status,
+  };
 
   group('Loan.fromMap / toMap', () {
     test('a well-formed loan parses its dates exactly', () {
@@ -40,7 +39,8 @@ void main() {
 
     test('a present return_date is parsed; a returned loan is not active', () {
       final l = Loan.fromMap(
-          base(returnDate: '2026-02-01T00:00:00.000', status: 'Returned'));
+        base(returnDate: '2026-02-01T00:00:00.000', status: 'Returned'),
+      );
       expect(l.returnDate, DateTime.parse('2026-02-01T00:00:00.000'));
       expect(l.isReturned, isTrue);
       expect(l.isActive, isFalse);

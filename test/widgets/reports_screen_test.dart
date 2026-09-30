@@ -39,7 +39,9 @@ const _canned = Report(
   from: '2026-09-01',
   to: '2026-09-22',
   columns: ['Date', 'Borrowed', 'Returned'],
-  rows: [['2026-09-20', '3', '1']],
+  rows: [
+    ['2026-09-20', '3', '1'],
+  ],
   summary: {'Borrowed': '3', 'Returned': '1'},
 );
 
@@ -108,8 +110,7 @@ class _FakeFilePicker extends FilePicker {
     List<String>? allowedExtensions,
     Uint8List? bytes,
     bool lockParentWindow = false,
-  }) async =>
-      result;
+  }) async => result;
 }
 
 Future<void> _pump(
@@ -157,7 +158,10 @@ ApiService _staffClient(Report canned) {
       final kind = ReportKind.tryParse(match.group(1));
       if (kind == null) {
         return http.Response(
-          jsonEncode({'error': 'bad_request', 'message': 'unknown report kind'}),
+          jsonEncode({
+            'error': 'bad_request',
+            'message': 'unknown report kind',
+          }),
           400,
         );
       }
@@ -220,7 +224,10 @@ void main() {
     final repo = _ReportRepo(report: _canned);
     await _pump(tester, repo);
 
-    await tester.enterText(find.byKey(const Key('reportFromField')), 'not-a-date');
+    await tester.enterText(
+      find.byKey(const Key('reportFromField')),
+      'not-a-date',
+    );
     await tester.tap(find.byKey(const Key('reportRunButton')));
     await tester.pumpAndSettle();
 
@@ -258,7 +265,8 @@ void main() {
     expect(find.byKey(const Key('reportExportPdf')), findsOneWidget);
   });
 
-  test('provider.exportReportCsv writes the server report to a real file',
+  test(
+    'provider.exportReportCsv writes the server report to a real file',
     () async {
       final tmp = Directory.systemTemp.createTempSync('lib_provider_csv_');
       PathProviderPlatform.instance = _FakePathProvider(tmp.path);
@@ -278,7 +286,8 @@ void main() {
       expect(content, contains('Circulation'));
       expect(content, contains('Date,Borrowed,Returned'));
       expect(content, contains('2026-09-20,3,1'));
-    });
+    },
+  );
 
   test('provider.exportReportPdf writes a real PDF file', () async {
     final tmp = Directory.systemTemp.createTempSync('lib_provider_pdf_');
@@ -298,8 +307,7 @@ void main() {
     expect(String.fromCharCodes(File(path!).readAsBytesSync().take(4)), '%PDF');
   });
 
-  test('save-as HONORS the path the OS dialog returns (BL-09 / 11b)',
-      () async {
+  test('save-as HONORS the path the OS dialog returns (BL-09 / 11b)', () async {
     final tmp = Directory.systemTemp.createTempSync('lib_provider_save_');
     addTearDown(() {
       try {
@@ -348,7 +356,8 @@ void main() {
     );
   });
 
-  testWidgets('a staff client runs the report over HTTP and sees the server rows',
+  testWidgets(
+    'a staff client runs the report over HTTP and sees the server rows',
     (tester) async {
       await _pump(
         tester,
@@ -364,7 +373,8 @@ void main() {
 
       expect(find.text('2026-09-20'), findsOneWidget);
       expect(find.text('Borrowed: 3'), findsOneWidget);
-    });
+    },
+  );
 
   testWidgets('a server-side reversed-window refusal is surfaced verbatim', (
     tester,
@@ -378,13 +388,21 @@ void main() {
 
     // Both dates are individually well-formed, so the client forwards them and
     // the SERVER owns the reversed-window refusal -- shown exactly as authored.
-    await tester.enterText(find.byKey(const Key('reportFromField')), '2026-09-30');
-    await tester.enterText(find.byKey(const Key('reportToField')), '2026-09-01');
+    await tester.enterText(
+      find.byKey(const Key('reportFromField')),
+      '2026-09-30',
+    );
+    await tester.enterText(
+      find.byKey(const Key('reportToField')),
+      '2026-09-01',
+    );
     await tester.tap(find.byKey(const Key('reportRunButton')));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('The start date is after the end date.'),
-        findsOneWidget);
+    expect(
+      find.textContaining('The start date is after the end date.'),
+      findsOneWidget,
+    );
     // Nothing is pretended applied: no report rows are rendered.
     expect(find.text('2026-09-20'), findsNothing);
   });

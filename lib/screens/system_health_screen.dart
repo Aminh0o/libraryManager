@@ -64,8 +64,8 @@ class SystemHealthScreen extends StatelessWidget {
             icon: Icons.link,
             label: l10n.healthConnection,
             value: _connectionLabel(provider.connectionStatus, l10n),
-            positive: provider.connectionStatus ==
-                LanConnectionStatus.connected,
+            positive:
+                provider.connectionStatus == LanConnectionStatus.connected,
           ),
           if (provider.isHost)
             _HealthTile(
@@ -100,11 +100,11 @@ class SystemHealthScreen extends StatelessWidget {
       final path = await provider.exportDiagnostics();
       if (path != null) {
         messenger.showSnackBar(
-            SnackBar(content: Text(l10n.diagnosticsSaved(path))));
+          SnackBar(content: Text(l10n.diagnosticsSaved(path))),
+        );
       }
     } catch (e) {
-      messenger.showSnackBar(
-          SnackBar(content: Text(describeError(l10n, e))));
+      messenger.showSnackBar(SnackBar(content: Text(describeError(l10n, e))));
     }
   }
 }
@@ -178,16 +178,18 @@ class _BackupTile extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: ListTile(
-        leading: Icon(Icons.backup_outlined,
-            size: AppIcon.lg,
-            color: fresh ? AppStatus.success : AppStatus.warning),
+        leading: Icon(
+          Icons.backup_outlined,
+          size: AppIcon.lg,
+          color: fresh ? AppStatus.success : AppStatus.warning,
+        ),
         title: Text(l10n.healthLastBackup),
         subtitle: Text(fresh ? l10n.healthBackupFresh : l10n.healthBackupStale),
         trailing: Text(
           value,
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
         ),
       ),
     );

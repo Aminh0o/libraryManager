@@ -30,22 +30,29 @@ void main() {
   late Directory tmp;
   late Database db;
 
-  LibraryItem item(String code,
-          {int quantite = 1, String status = 'Disponible'}) =>
-      LibraryItem(
-        code: code,
-        codeType: 'LIV',
-        designation: 'Title $code',
-        quantite: quantite,
-        emplacement: 'A',
-        taux: 10,
-        emplacementStock: 'S',
-        status: status,
-      );
+  LibraryItem item(
+    String code, {
+    int quantite = 1,
+    String status = 'Disponible',
+  }) => LibraryItem(
+    code: code,
+    codeType: 'LIV',
+    designation: 'Title $code',
+    quantite: quantite,
+    emplacement: 'A',
+    taux: 10,
+    emplacementStock: 'S',
+    status: status,
+  );
 
   Future<String?> storedStatus(String code) async {
-    final r = await db.query('library_items',
-        columns: ['status'], where: 'code = ?', whereArgs: [code], limit: 1);
+    final r = await db.query(
+      'library_items',
+      columns: ['status'],
+      where: 'code = ?',
+      whereArgs: [code],
+      limit: 1,
+    );
     return r.isEmpty ? null : r.first['status'] as String?;
   }
 
@@ -68,8 +75,11 @@ void main() {
         svc.addItem(item('W100', status: 'Endommagé')),
         throwsA(isA<InvalidStatusException>()),
       );
-      expect(await storedStatus('W100'), isNull,
-          reason: 'a refused add must leave no orphan title row');
+      expect(
+        await storedStatus('W100'),
+        isNull,
+        reason: 'a refused add must leave no orphan title row',
+      );
     });
 
     test('stores the derived rollup and seeds available copies, ignoring a '
@@ -85,67 +95,93 @@ void main() {
   });
 
   group('updateItem is copy-driven (BL-05)', () {
-    test('rejects an out-of-vocabulary status and rolls the edit back',
-        () async {
-      await svc.addItem(item('W200'));
-      await expectLater(
-        svc.updateItem(item('W200', status: 'Payé')),
-        throwsA(isA<InvalidStatusException>()),
-      );
-      // The stored row is untouched (still the derived 'Disponible').
-      expect(await storedStatus('W200'), 'Disponible');
-    });
+    test(
+      'rejects an out-of-vocabulary status and rolls the edit back',
+      () async {
+        await svc.addItem(item('W200'));
+        await expectLater(
+          svc.updateItem(item('W200', status: 'Payé')),
+          throwsA(isA<InvalidStatusException>()),
+        );
+        // The stored row is untouched (still the derived 'Disponible').
+        expect(await storedStatus('W200'), 'Disponible');
+      },
+    );
 
     test('derives the stored status from the copies, overriding the inbound '
         'status (which is only validated)', () async {
       await svc.addItem(item('W201')); // 1 available copy -> 'Disponible'
       final copy = (await svc.getCopies('W201')).single;
       // Simulate a genuine loan: the physical copy is now out.
-      await db.update('item_copies', {'state': CopyState.onLoan.storage},
-          where: 'id = ?', whereArgs: [copy.id]);
-      expect(await storedStatus('W201'), 'Disponible',
-          reason: 'status is not recomputed until a write path runs');
+      await db.update(
+        'item_copies',
+        {'state': CopyState.onLoan.storage},
+        where: 'id = ?',
+        whereArgs: [copy.id],
+      );
+      expect(
+        await storedStatus('W201'),
+        'Disponible',
+        reason: 'status is not recomputed until a write path runs',
+      );
 
       // A metadata-only edit that also (wrongly / stalely) claims 'Disponible':
       // the inbound value is a VALID word so it is accepted, but the stored
       // status must be the rollup of the (on-loan) copy, i.e. 'Emprunté'.
-      await svc.updateItem(LibraryItem(
-        code: 'W201',
-        codeType: 'LIV',
-        designation: 'Renamed',
-        quantite: 1,
-        emplacement: 'A',
-        taux: 10,
-        emplacementStock: 'S',
-        status: 'Disponible',
-      ));
-      expect(await storedStatus('W201'), 'Emprunté',
-          reason: 'the on-loan copy makes the title Emprunté regardless of input');
-      final desig = await db.query('library_items',
-          columns: ['designation'], where: "code = 'W201'");
-      expect(desig.first['designation'], 'Renamed',
-          reason: 'the legitimate metadata edit still lands');
+      await svc.updateItem(
+        LibraryItem(
+          code: 'W201',
+          codeType: 'LIV',
+          designation: 'Renamed',
+          quantite: 1,
+          emplacement: 'A',
+          taux: 10,
+          emplacementStock: 'S',
+          status: 'Disponible',
+        ),
+      );
+      expect(
+        await storedStatus('W201'),
+        'Emprunté',
+        reason: 'the on-loan copy makes the title Emprunté regardless of input',
+      );
+      final desig = await db.query(
+        'library_items',
+        columns: ['designation'],
+        where: "code = 'W201'",
+      );
+      expect(
+        desig.first['designation'],
+        'Renamed',
+        reason: 'the legitimate metadata edit still lands',
+      );
     });
   });
 
   group('batchInsertItems is copy-driven (BL-05)', () {
-    test('imports every row as the derived rollup, materializes copies, and '
-        'reports out-of-vocabulary imported statuses without rejecting the row',
-        () async {
-      final res = await svc.batchInsertItems([
-        item('W300', quantite: 2, status: 'Endommagé'), // out of vocabulary
-        item('W301', quantite: 1, status: 'Disponible'), // fine
-      ]);
-      expect(res.inserted, 2,
-          reason: 'an invalid status is reported, never a reason to drop the row');
-      expect(res.invalidStatusCodes, contains('W300'));
-      expect(res.invalidStatusCodes, isNot(contains('W301')));
+    test(
+      'imports every row as the derived rollup, materializes copies, and '
+      'reports out-of-vocabulary imported statuses without rejecting the row',
+      () async {
+        final res = await svc.batchInsertItems([
+          item('W300', quantite: 2, status: 'Endommagé'), // out of vocabulary
+          item('W301', quantite: 1, status: 'Disponible'), // fine
+        ]);
+        expect(
+          res.inserted,
+          2,
+          reason:
+              'an invalid status is reported, never a reason to drop the row',
+        );
+        expect(res.invalidStatusCodes, contains('W300'));
+        expect(res.invalidStatusCodes, isNot(contains('W301')));
 
-      // Both are stored as the honest rollup and own available copies.
-      expect(await storedStatus('W300'), 'Disponible');
-      expect(await storedStatus('W301'), 'Disponible');
-      expect(await svc.getCopies('W300'), hasLength(2));
-      expect(await svc.getCopies('W301'), hasLength(1));
-    });
+        // Both are stored as the honest rollup and own available copies.
+        expect(await storedStatus('W300'), 'Disponible');
+        expect(await storedStatus('W301'), 'Disponible');
+        expect(await svc.getCopies('W300'), hasLength(2));
+        expect(await svc.getCopies('W301'), hasLength(1));
+      },
+    );
   });
 }

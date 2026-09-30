@@ -20,19 +20,19 @@ class ChatMessage {
   final String text;
 
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'sender': sender,
-        'role': role,
-        'sent_at': sentAt.toIso8601String(),
-        'text': text,
-      };
+    'id': id,
+    'sender': sender,
+    'role': role,
+    'sent_at': sentAt.toIso8601String(),
+    'text': text,
+  };
 
   factory ChatMessage.fromMap(Map<String, dynamic> m) => ChatMessage(
-        id: (m['id'] as num).toInt(),
-        sender: (m['sender'] ?? '').toString(),
-        role: (m['role'] ?? '').toString(),
-        sentAt:
-            DateTime.tryParse((m['sent_at'] ?? '').toString()) ?? DateTime.now(),
-        text: (m['text'] ?? '').toString(),
-      );
+    id: (m['id'] as num).toInt(),
+    sender: (m['sender'] ?? '').toString(),
+    role: (m['role'] ?? '').toString(),
+    sentAt:
+        DateTime.tryParse((m['sent_at'] ?? '').toString()) ?? DateTime.now(),
+    text: (m['text'] ?? '').toString(),
+  );
 }

@@ -25,7 +25,8 @@ class WindowsFirewallService {
   }) async {
     if (!Platform.isWindows) return false;
 
-    final script = r'''
+    final script =
+        r'''
 $ErrorActionPreference = 'Stop'
 
 function Ensure-NetRule([string]$Name, [string]$Protocol, [int]$Port) {
@@ -53,10 +54,10 @@ catch {
   exit 1
 }
 '''
-        .replaceAll(r'$_TCP_RULE', _tcpRuleName)
-        .replaceAll(r'$_UDP_RULE', _udpRuleName)
-        .replaceAll(r'$_HTTP_PORT', httpPort.toString())
-        .replaceAll(r'$_UDP_PORT', pairingUdpPort.toString());
+            .replaceAll(r'$_TCP_RULE', _tcpRuleName)
+            .replaceAll(r'$_UDP_RULE', _udpRuleName)
+            .replaceAll(r'$_HTTP_PORT', httpPort.toString())
+            .replaceAll(r'$_UDP_PORT', pairingUdpPort.toString());
 
     final encodedScript = base64.encode(_toUtf16LeBytes(script));
 
@@ -66,11 +67,11 @@ catch {
         r"') -WindowStyle Hidden -Wait -PassThru | ForEach-Object { exit `$_.ExitCode }";
 
     try {
-      final result = await Process.run(
-        'powershell',
-        ['-NoProfile', '-Command', startProcessCommand],
-        runInShell: true,
-      );
+      final result = await Process.run('powershell', [
+        '-NoProfile',
+        '-Command',
+        startProcessCommand,
+      ], runInShell: true);
       return result.exitCode == 0;
     } catch (_) {
       return false;

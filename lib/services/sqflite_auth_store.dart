@@ -55,9 +55,10 @@ class SqfliteAuthStore implements AuthStore {
     // v19 migration normally does this; mirrors the defensive _addColumnSafe
     // spirit -- an existing column or a missing table is simply a no-op).
     try {
-      await db.execute(
-          'ALTER TABLE $tokensTable ADD COLUMN username TEXT');
-    } catch (_) {/* column already present (the normal path) */}
+      await db.execute('ALTER TABLE $tokensTable ADD COLUMN username TEXT');
+    } catch (_) {
+      /* column already present (the normal path) */
+    }
   }
 
   Future<void> _ensure(Database db) => ensureSchema(db);
@@ -83,15 +84,11 @@ class SqfliteAuthStore implements AuthStore {
   Future<void> saveCredential(String hash) async {
     final db = await _database();
     await _ensure(db);
-    await db.insert(
-      credentialsTable,
-      {
-        'id': credentialId,
-        'hash': hash,
-        'updated_at': DateTime.now().toIso8601String(),
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await db.insert(credentialsTable, {
+      'id': credentialId,
+      'hash': hash,
+      'updated_at': DateTime.now().toIso8601String(),
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   @override
@@ -109,10 +106,10 @@ class SqfliteAuthStore implements AuthStore {
     final db = await _database();
     await _ensure(db);
     await db.transaction((txn) async {
-      final existing =
-          (await txn.query(tokensTable, columns: ['token']))
-              .map((r) => r['token'] as String)
-              .toSet();
+      final existing = (await txn.query(
+        tokensTable,
+        columns: ['token'],
+      )).map((r) => r['token'] as String).toSet();
 
       final toRemove = existing.difference(tokens);
       final toAdd = tokens.difference(existing);
@@ -139,8 +136,10 @@ class SqfliteAuthStore implements AuthStore {
   Future<Map<String, ({UserRole role, String? createdAt})>> listUsers() async {
     final db = await _database();
     await _ensure(db);
-    final rows =
-        await db.query(usersTable, columns: ['username', 'role', 'created_at']);
+    final rows = await db.query(
+      usersTable,
+      columns: ['username', 'role', 'created_at'],
+    );
     return {
       for (final r in rows)
         r['username'] as String: (
@@ -157,11 +156,13 @@ class SqfliteAuthStore implements AuthStore {
     // Preserve created_at across UPDATEs: changeUserRole/setUserPassword also
     // upsert, and blindly stamping 'now' would silently falsify the account's
     // creation date in the audit trail.
-    final existing = await db.query(usersTable,
-        columns: ['created_at'],
-        where: 'username = ?',
-        whereArgs: [username],
-        limit: 1);
+    final existing = await db.query(
+      usersTable,
+      columns: ['created_at'],
+      where: 'username = ?',
+      whereArgs: [username],
+      limit: 1,
+    );
     await db.insert(usersTable, {
       'username': username,
       'hash': hash,
@@ -176,8 +177,13 @@ class SqfliteAuthStore implements AuthStore {
   Future<String?> userHash(String username) async {
     final db = await _database();
     await _ensure(db);
-    final rows = await db.query(usersTable,
-        columns: ['hash'], where: 'username = ?', whereArgs: [username], limit: 1);
+    final rows = await db.query(
+      usersTable,
+      columns: ['hash'],
+      where: 'username = ?',
+      whereArgs: [username],
+      limit: 1,
+    );
     if (rows.isEmpty) return null;
     final hash = rows.first['hash'] as String?;
     return (hash == null || hash.isEmpty) ? null : hash;
@@ -187,21 +193,23 @@ class SqfliteAuthStore implements AuthStore {
   Future<void> removeUserRow(String username) async {
     final db = await _database();
     await _ensure(db);
-    await db
-        .delete(usersTable, where: 'username = ?', whereArgs: [username]);
+    await db.delete(usersTable, where: 'username = ?', whereArgs: [username]);
   }
 
   @override
   Future<Map<String, ({String username, UserRole role})>>
-      loadTokenPrincipals() async {
+  loadTokenPrincipals() async {
     final db = await _database();
     await _ensure(db);
     // Roles are resolved through the users table so a role change takes
     // effect for ALREADY-ISSUED tokens; a token whose owner has no `users`
     // row (legacy/pairing) is attributed to the bootstrap admin, matching
     // AuthService.principalFor's documented degradation.
-    final rows = await db.query(tokensTable,
-        columns: ['token', 'username'], where: 'username IS NOT NULL');
+    final rows = await db.query(
+      tokensTable,
+      columns: ['token', 'username'],
+      where: 'username IS NOT NULL',
+    );
     if (rows.isEmpty) return {};
     final roles = await listUsers();
     return {
@@ -215,25 +223,37 @@ class SqfliteAuthStore implements AuthStore {
 
   @override
   Future<void> saveTokenPrincipals(
-      Map<String, ({String username, UserRole role})> principals) async {
+    Map<String, ({String username, UserRole role})> principals,
+  ) async {
     final db = await _database();
     await _ensure(db);
     await db.transaction((txn) async {
       // Attribute newly-owned tokens; drop attribution for revoked ones (the
       // rows themselves are removed by saveTokens -- here we only clear the
       // username of any token no longer owned, keeping legacy NULL rows as-is).
-      final owned = await txn.query(tokensTable,
-          columns: ['token', 'username'], where: 'username IS NOT NULL');
+      final owned = await txn.query(
+        tokensTable,
+        columns: ['token', 'username'],
+        where: 'username IS NOT NULL',
+      );
       for (final r in owned) {
         final token = r['token'] as String;
         if (!principals.containsKey(token)) {
-          await txn.update(tokensTable, {'username': null},
-              where: 'token = ?', whereArgs: [token]);
+          await txn.update(
+            tokensTable,
+            {'username': null},
+            where: 'token = ?',
+            whereArgs: [token],
+          );
         }
       }
       for (final e in principals.entries) {
-        final changed = await txn.update(tokensTable, {'username': e.value.username},
-            where: 'token = ?', whereArgs: [e.key]);
+        final changed = await txn.update(
+          tokensTable,
+          {'username': e.value.username},
+          where: 'token = ?',
+          whereArgs: [e.key],
+        );
         // A token can reach here BEFORE saveTokens has persisted its row (e.g.
         // a role change touching an already-paired token). Inserting the
         // attribution keeps it durable instead of silently losing the owner on

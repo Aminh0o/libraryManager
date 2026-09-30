@@ -18,7 +18,11 @@ void main() {
   late Database db;
   late DatabaseService svc;
 
-  Future<void> seedItem(String code, {String type = 'LIV', int copies = 0}) async {
+  Future<void> seedItem(
+    String code, {
+    String type = 'LIV',
+    int copies = 0,
+  }) async {
     await db.insert('library_items', {
       'code': code,
       'code_type': type,
@@ -45,32 +49,30 @@ void main() {
     String? dueDate,
     String? returnDate,
     String status = 'Active',
-  }) =>
-      db.insert('loans', {
-        'item_code': item,
-        'member_id': member,
-        'member_name': memberName ?? member,
-        'item_title': 'Title $item',
-        'loan_date': loanDate,
-        'due_date': dueDate ?? '2999-01-01T00:00:00.000',
-        'return_date': returnDate,
-        'status': status,
-      });
+  }) => db.insert('loans', {
+    'item_code': item,
+    'member_id': member,
+    'member_name': memberName ?? member,
+    'item_title': 'Title $item',
+    'loan_date': loanDate,
+    'due_date': dueDate ?? '2999-01-01T00:00:00.000',
+    'return_date': returnDate,
+    'status': status,
+  });
 
   Future<void> seedFine({
     required double amount,
     required String status,
     required String createdAt,
     String? resolvedAt,
-  }) =>
-      db.insert('fines', {
-        'member_id': 'M-1',
-        'amount': amount,
-        'status': status,
-        'reason': 'Overdue',
-        'created_at': createdAt,
-        'resolved_at': resolvedAt,
-      });
+  }) => db.insert('fines', {
+    'member_id': 'M-1',
+    'amount': amount,
+    'status': status,
+    'reason': 'Overdue',
+    'created_at': createdAt,
+    'resolved_at': resolvedAt,
+  });
 
   setUp(() async {
     db = await databaseFactoryFfi.openDatabase(inMemoryDatabasePath);
@@ -128,37 +130,42 @@ void main() {
       row < r.rows.length && col < r.columns.length ? r.rows[row][col] : null;
 
   group('circulation report', () {
-    test('counts borrowed vs returned per calendar day within the window',
-        () async {
-      await seedLoan(member: 'M-1', loanDate: '2026-09-01T09:00:00.000');
-      await seedLoan(member: 'M-2', loanDate: '2026-09-01T18:00:00.000');
-      await seedLoan(
-        member: 'M-3',
-        loanDate: '2026-09-02T09:00:00.000',
-        returnDate: '2026-09-03T09:00:00.000',
-        status: 'Returned',
-      );
-      // Out of window (earlier) — must be excluded.
-      await seedLoan(member: 'M-9', loanDate: '2026-08-01T09:00:00.000');
+    test(
+      'counts borrowed vs returned per calendar day within the window',
+      () async {
+        await seedLoan(member: 'M-1', loanDate: '2026-09-01T09:00:00.000');
+        await seedLoan(member: 'M-2', loanDate: '2026-09-01T18:00:00.000');
+        await seedLoan(
+          member: 'M-3',
+          loanDate: '2026-09-02T09:00:00.000',
+          returnDate: '2026-09-03T09:00:00.000',
+          status: 'Returned',
+        );
+        // Out of window (earlier) — must be excluded.
+        await seedLoan(member: 'M-9', loanDate: '2026-08-01T09:00:00.000');
 
-      final r = await svc.generateReport(
-        ReportKind.circulation,
-        from: '2026-09-01',
-        to: '2026-09-30',
-      );
-      expect(r.kind, ReportKind.circulation);
-      expect(r.from, '2026-09-01');
-      expect(r.to, '2026-09-30');
-      expect(r.columns, ['Date', 'Borrowed', 'Returned']);
-      expect(cell(r, 0, 0), '2026-09-01');
-      expect(cell(r, 0, 1), '2'); // two borrowed that day, time-of-day ignored
-      expect(cell(r, 1, 0), '2026-09-02');
-      expect(cell(r, 1, 1), '1');
-      expect(cell(r, 2, 0), '2026-09-03');
-      expect(cell(r, 2, 2), '1'); // the return shows on its own day
-      expect(r.summary['Borrowed'], '3');
-      expect(r.summary['Returned'], '1');
-    });
+        final r = await svc.generateReport(
+          ReportKind.circulation,
+          from: '2026-09-01',
+          to: '2026-09-30',
+        );
+        expect(r.kind, ReportKind.circulation);
+        expect(r.from, '2026-09-01');
+        expect(r.to, '2026-09-30');
+        expect(r.columns, ['Date', 'Borrowed', 'Returned']);
+        expect(cell(r, 0, 0), '2026-09-01');
+        expect(
+          cell(r, 0, 1),
+          '2',
+        ); // two borrowed that day, time-of-day ignored
+        expect(cell(r, 1, 0), '2026-09-02');
+        expect(cell(r, 1, 1), '1');
+        expect(cell(r, 2, 0), '2026-09-03');
+        expect(cell(r, 2, 2), '1'); // the return shows on its own day
+        expect(r.summary['Borrowed'], '3');
+        expect(r.summary['Returned'], '1');
+      },
+    );
 
     test('a reversed window is refused at the source (host path)', () async {
       await expectLater(
@@ -173,43 +180,47 @@ void main() {
   });
 
   group('overdue report', () {
-    test('lists only ACTIVE loans past their due date, with days overdue',
-        () async {
-      await seedLoan(
-        member: 'Late',
-        memberName: 'Late Borrower',
-        dueDate: '2020-01-01T00:00:00.000',
-        loanDate: '2019-12-01T00:00:00.000',
-      );
-      // Active but due far in the future — never overdue.
-      await seedLoan(member: 'Early', dueDate: '2999-01-01T00:00:00.000');
-      // Returned late — no longer outstanding, so not on the overdue shelf.
-      await seedLoan(
-        member: 'Returned',
-        dueDate: '2020-01-01T00:00:00.000',
-        returnDate: '2020-02-01T00:00:00.000',
-        status: 'Returned',
-      );
+    test(
+      'lists only ACTIVE loans past their due date, with days overdue',
+      () async {
+        await seedLoan(
+          member: 'Late',
+          memberName: 'Late Borrower',
+          dueDate: '2020-01-01T00:00:00.000',
+          loanDate: '2019-12-01T00:00:00.000',
+        );
+        // Active but due far in the future — never overdue.
+        await seedLoan(member: 'Early', dueDate: '2999-01-01T00:00:00.000');
+        // Returned late — no longer outstanding, so not on the overdue shelf.
+        await seedLoan(
+          member: 'Returned',
+          dueDate: '2020-01-01T00:00:00.000',
+          returnDate: '2020-02-01T00:00:00.000',
+          status: 'Returned',
+        );
 
-      final r = await svc.generateReport(ReportKind.overdue);
-      expect(r.rows, hasLength(1));
-      expect(r.rows.single[0], 'Late Borrower');
-      expect(int.parse(r.rows.single[3]), greaterThan(0));
-      expect(r.summary['Overdue loans'], '1');
-    });
+        final r = await svc.generateReport(ReportKind.overdue);
+        expect(r.rows, hasLength(1));
+        expect(r.rows.single[0], 'Late Borrower');
+        expect(int.parse(r.rows.single[3]), greaterThan(0));
+        expect(r.summary['Overdue loans'], '1');
+      },
+    );
 
-    test('ignores a malformed window because it is not a windowed report',
-        () async {
-      // Windowless kinds never touch from/to, so a garbage date is harmless.
-      final r = await svc.generateReport(
-        ReportKind.overdue,
-        from: 'not-a-date',
-        to: 'also-bad',
-      );
-      expect(r.kind, ReportKind.overdue);
-      expect(r.from, isNull);
-      expect(r.to, isNull);
-    });
+    test(
+      'ignores a malformed window because it is not a windowed report',
+      () async {
+        // Windowless kinds never touch from/to, so a garbage date is harmless.
+        final r = await svc.generateReport(
+          ReportKind.overdue,
+          from: 'not-a-date',
+          to: 'also-bad',
+        );
+        expect(r.kind, ReportKind.overdue);
+        expect(r.from, isNull);
+        expect(r.to, isNull);
+      },
+    );
   });
 
   group('inventory report', () {
@@ -231,69 +242,87 @@ void main() {
   });
 
   group('fines report', () {
-    test('separates assessed / collected / waived / outstanding by money',
-        () async {
-      await seedFine(
-          amount: 5.0, status: 'pending', createdAt: '2026-09-05T00:00:00.000');
-      await seedFine(
-        amount: 3.0,
-        status: 'paid',
-        createdAt: '2026-09-01T00:00:00.000',
-        resolvedAt: '2026-09-06T00:00:00.000',
-      );
-      await seedFine(
-        amount: 2.0,
-        status: 'waived',
-        createdAt: '2026-09-02T00:00:00.000',
-        resolvedAt: '2026-09-07T00:00:00.000',
-      );
-      // Assessed OUT of window — must not count toward the window's assessed.
-      await seedFine(
-          amount: 99.0, status: 'pending', createdAt: '2025-01-01T00:00:00.000');
+    test(
+      'separates assessed / collected / waived / outstanding by money',
+      () async {
+        await seedFine(
+          amount: 5.0,
+          status: 'pending',
+          createdAt: '2026-09-05T00:00:00.000',
+        );
+        await seedFine(
+          amount: 3.0,
+          status: 'paid',
+          createdAt: '2026-09-01T00:00:00.000',
+          resolvedAt: '2026-09-06T00:00:00.000',
+        );
+        await seedFine(
+          amount: 2.0,
+          status: 'waived',
+          createdAt: '2026-09-02T00:00:00.000',
+          resolvedAt: '2026-09-07T00:00:00.000',
+        );
+        // Assessed OUT of window — must not count toward the window's assessed.
+        await seedFine(
+          amount: 99.0,
+          status: 'pending',
+          createdAt: '2025-01-01T00:00:00.000',
+        );
 
-      final r = await svc.generateReport(
-        ReportKind.fines,
-        from: '2026-09-01',
-        to: '2026-09-30',
-      );
-      final metric = {for (final row in r.rows) row[0]: row};
-      expect(metric['Assessed']![1], '3'); // the three in-window fines
-      expect(metric['Assessed']![2], '10.00 DZD');
-      expect(metric['Collected']![1], '1');
-      expect(metric['Collected']![2], '3.00 DZD');
-      expect(metric['Waived']![2], '2.00 DZD');
-      // Outstanding counts every still-pending fine regardless of window.
-      expect(metric['Still outstanding']![1], '2');
-      expect(metric['Still outstanding']![2], '104.00 DZD');
-      expect(r.summary['Currency'], 'DZD');
-    });
+        final r = await svc.generateReport(
+          ReportKind.fines,
+          from: '2026-09-01',
+          to: '2026-09-30',
+        );
+        final metric = {for (final row in r.rows) row[0]: row};
+        expect(metric['Assessed']![1], '3'); // the three in-window fines
+        expect(metric['Assessed']![2], '10.00 DZD');
+        expect(metric['Collected']![1], '1');
+        expect(metric['Collected']![2], '3.00 DZD');
+        expect(metric['Waived']![2], '2.00 DZD');
+        // Outstanding counts every still-pending fine regardless of window.
+        expect(metric['Still outstanding']![1], '2');
+        expect(metric['Still outstanding']![2], '104.00 DZD');
+        expect(r.summary['Currency'], 'DZD');
+      },
+    );
   });
 
   group('members report', () {
-    test('ranks borrowers by checkouts in the window and reports totals',
-        () async {
-      for (var i = 0; i < 3; i++) {
+    test(
+      'ranks borrowers by checkouts in the window and reports totals',
+      () async {
+        for (var i = 0; i < 3; i++) {
+          await seedLoan(
+            member: 'M-1',
+            memberName: 'Alice',
+            loanDate: '2026-09-0${i + 1}T00:00:00.000',
+          );
+        }
         await seedLoan(
-          member: 'M-1',
-          memberName: 'Alice',
-          loanDate: '2026-09-0${i + 1}T00:00:00.000',
+          member: 'M-2',
+          memberName: 'Bob',
+          loanDate: '2026-09-02T00:00:00.000',
         );
-      }
-      await seedLoan(member: 'M-2', memberName: 'Bob', loanDate: '2026-09-02T00:00:00.000');
-      await seedLoan(member: 'M-2', memberName: 'Bob', loanDate: '2025-01-01T00:00:00.000'); // out
+        await seedLoan(
+          member: 'M-2',
+          memberName: 'Bob',
+          loanDate: '2025-01-01T00:00:00.000',
+        ); // out
 
-      final r = await svc.generateReport(
-        ReportKind.members,
-        from: '2026-09-01',
-        to: '2026-09-30',
-      );
-      expect(r.columns, ['Rank', 'Member', 'Items borrowed']);
-      expect(r.rows.first[1], 'Alice');
-      expect(r.rows.first[2], '3');
-      expect(r.rows[1][1], 'Bob');
-      expect(r.rows[1][2], '1');
-      expect(r.summary['Active borrowers'], '2');
-      expect(r.summary['Total checkouts'], '4');
-    });
+        final r = await svc.generateReport(
+          ReportKind.members,
+          from: '2026-09-01',
+          to: '2026-09-30',
+        );
+        expect(r.columns, ['Rank', 'Member', 'Items borrowed']);
+        expect(r.rows.first[1], 'Alice');
+        expect(r.rows.first[2], '3');
+        expect(r.rows[1][1], 'Bob');
+        expect(r.rows[1][2], '1');
+        expect(r.summary['Active borrowers'], '2');
+        expect(r.summary['Total checkouts'], '4');
+      },
+    );
   });
 }

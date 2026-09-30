@@ -31,33 +31,34 @@ class HoldPolicy {
   /// over the original FIFO; rows with no rank still sort by id, which is
   /// insertion order on an AUTOINCREMENT table (identical to the pre-Pass-6
   /// `created_at ASC, id ASC` behaviour for every existing row).
-  static int Function(Reservation, Reservation) get queueOrder =>
-      (a, b) {
-        final statusRank = {
-          ReservationStatus.available: 0,
-          ReservationStatus.queued: 1,
-        };
-        final ra = statusRank[a.status]!, rb = statusRank[b.status]!;
-        if (ra != rb) return ra.compareTo(rb);
-        // Pass 6: effective position = rank if explicitly set, else id.
-        final effA = a.rank ?? a.id ?? 0;
-        final effB = b.rank ?? b.id ?? 0;
-        final byEff = effA.compareTo(effB);
-        if (byEff != 0) return byEff;
-        return (a.id ?? 0).compareTo(b.id ?? 0);
-      };
+  static int Function(Reservation, Reservation) get queueOrder => (a, b) {
+    final statusRank = {
+      ReservationStatus.available: 0,
+      ReservationStatus.queued: 1,
+    };
+    final ra = statusRank[a.status]!, rb = statusRank[b.status]!;
+    if (ra != rb) return ra.compareTo(rb);
+    // Pass 6: effective position = rank if explicitly set, else id.
+    final effA = a.rank ?? a.id ?? 0;
+    final effB = b.rank ?? b.id ?? 0;
+    final byEff = effA.compareTo(effB);
+    if (byEff != 0) return byEff;
+    return (a.id ?? 0).compareTo(b.id ?? 0);
+  };
 
   /// 1-based position in line for a live hold within its title's queue
   /// ([holdsForItem] must be the LIVE holds of that one item). Returns null
   /// for terminal rows and for promoted holds (they have no "place in line" —
   /// they are already at the counter).
   static int? queuePosition(
-      Reservation r, List<Reservation> holdsForItem, DateTime now) {
+    Reservation r,
+    List<Reservation> holdsForItem,
+    DateTime now,
+  ) {
     if (r.status != ReservationStatus.queued) return null;
-    final live = holdsForItem
-        .where((h) => h.status == ReservationStatus.queued)
-        .toList()
-      ..sort(queueOrder);
+    final live =
+        holdsForItem.where((h) => h.status == ReservationStatus.queued).toList()
+          ..sort(queueOrder);
     final idx = live.indexWhere((h) => h.id == r.id);
     return idx < 0 ? null : idx + 1;
   }

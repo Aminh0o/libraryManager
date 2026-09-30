@@ -23,23 +23,24 @@ class _FakeRepo implements LibraryRepository {
     String? codeType,
     String? sort,
     bool ascending = true,
-  }) async =>
-      const [];
+  }) async => const [];
 
   @override
-  Future<int> countItems(
-          {String? search, String? status, String? codeType,
+  Future<int> countItems({
+    String? search,
+    String? status,
+    String? codeType,
     String? sort,
     bool ascending = true,
-  }) async =>
-      0;
+  }) async => 0;
 
   @override
   Future<List<Map<String, dynamic>>> getCodeDefinitions() async => const [];
 
   @override
-  Future<List<Map<String, dynamic>>> getAttributeDefinitions(String? type) async =>
-      const [];
+  Future<List<Map<String, dynamic>>> getAttributeDefinitions(
+    String? type,
+  ) async => const [];
 
   @override
   Future<Map<String, dynamic>> getStats() async => const {};
@@ -56,9 +57,7 @@ Widget _app(LibraryProvider provider, VoidCallback onOpenInventory) =>
         locale: const Locale('fr'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: DashboardScreen(onOpenInventory: onOpenInventory),
-        ),
+        home: Scaffold(body: DashboardScreen(onOpenInventory: onOpenInventory)),
       ),
     );
 
@@ -80,37 +79,53 @@ void _useDesktopSurface(WidgetTester tester) {
 }
 
 void main() {
-  testWidgets('a completed scan applies the search and opens inventory (FE2-10)',
-      (tester) async {
+  testWidgets(
+    'a completed scan applies the search and opens inventory (FE2-10)',
+    (tester) async {
+      _useDesktopSurface(tester);
+      final provider = LibraryProvider.forTesting(
+        repository: _FakeRepo(),
+        isHost: true,
+      );
+      var opened = 0;
+      await tester.pumpWidget(_app(provider, () => opened++));
+
+      await _tapQuickScan(tester);
+      expect(
+        find.byType(TextField),
+        findsOneWidget,
+        reason: 'the desktop scanner should present a code entry field',
+      );
+
+      await tester.enterText(find.byType(TextField), 'ABC123');
+      await tester.tap(find.byIcon(Icons.send));
+      await tester.pump(); // dialog pops -> onPressed continuation runs
+
+      expect(
+        provider.searchQuery,
+        'ABC123',
+        reason: 'the scanned code must become the active search',
+      );
+      expect(
+        opened,
+        1,
+        reason: 'the operator must be moved to the inventory view',
+      );
+
+      // Drain the 300ms search debounce so no timer is pending at teardown.
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+    },
+  );
+
+  testWidgets('cancelling the scan does NOT search or navigate (FE2-10)', (
+    tester,
+  ) async {
     _useDesktopSurface(tester);
-    final provider =
-        LibraryProvider.forTesting(repository: _FakeRepo(), isHost: true);
-    var opened = 0;
-    await tester.pumpWidget(_app(provider, () => opened++));
-
-    await _tapQuickScan(tester);
-    expect(find.byType(TextField), findsOneWidget,
-        reason: 'the desktop scanner should present a code entry field');
-
-    await tester.enterText(find.byType(TextField), 'ABC123');
-    await tester.tap(find.byIcon(Icons.send));
-    await tester.pump(); // dialog pops -> onPressed continuation runs
-
-    expect(provider.searchQuery, 'ABC123',
-        reason: 'the scanned code must become the active search');
-    expect(opened, 1,
-        reason: 'the operator must be moved to the inventory view');
-
-    // Drain the 300ms search debounce so no timer is pending at teardown.
-    await tester.pump(const Duration(milliseconds: 400));
-    await tester.pumpAndSettle();
-  });
-
-  testWidgets('cancelling the scan does NOT search or navigate (FE2-10)',
-      (tester) async {
-    _useDesktopSurface(tester);
-    final provider =
-        LibraryProvider.forTesting(repository: _FakeRepo(), isHost: true);
+    final provider = LibraryProvider.forTesting(
+      repository: _FakeRepo(),
+      isHost: true,
+    );
     var opened = 0;
     await tester.pumpWidget(_app(provider, () => opened++));
 
@@ -119,8 +134,11 @@ void main() {
     await tester.tap(find.text('Annuler'));
     await tester.pumpAndSettle();
 
-    expect(provider.searchQuery, '',
-        reason: 'an aborted scan must leave the query untouched');
+    expect(
+      provider.searchQuery,
+      '',
+      reason: 'an aborted scan must leave the query untouched',
+    );
     expect(opened, 0, reason: 'an aborted scan must not navigate');
   });
 }

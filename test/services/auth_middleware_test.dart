@@ -27,7 +27,9 @@ void main() {
         .addHandler(okHandler);
 
     final res = await _handle(
-        handler, Request('GET', Uri.parse('http://host/items')));
+      handler,
+      Request('GET', Uri.parse('http://host/items')),
+    );
     expect(res.statusCode, 401);
     final body = jsonDecode(await res.readAsString());
     expect(body['error'], 'unauthorized');
@@ -37,9 +39,14 @@ void main() {
     final handler = const Pipeline()
         .addMiddleware(requireAuth(auth))
         .addHandler(okHandler);
-    final res = await _handle(handler, Request('GET',
+    final res = await _handle(
+      handler,
+      Request(
+        'GET',
         Uri.parse('http://host/items'),
-        headers: {'authorization': 'Bearer not-a-real-token'}));
+        headers: {'authorization': 'Bearer not-a-real-token'},
+      ),
+    );
     expect(res.statusCode, 401);
   });
 
@@ -47,9 +54,14 @@ void main() {
     final handler = const Pipeline()
         .addMiddleware(requireAuth(auth))
         .addHandler(okHandler);
-    final res = await _handle(handler, Request('GET',
+    final res = await _handle(
+      handler,
+      Request(
+        'GET',
         Uri.parse('http://host/items'),
-        headers: {'authorization': 'Bearer $validToken'}));
+        headers: {'authorization': 'Bearer $validToken'},
+      ),
+    );
     expect(res.statusCode, 200);
     expect(await res.readAsString(), 'protected');
   });
@@ -58,9 +70,14 @@ void main() {
     final handler = const Pipeline()
         .addMiddleware(requireAuth(auth))
         .addHandler(okHandler);
-    final res = await _handle(handler, Request('GET',
+    final res = await _handle(
+      handler,
+      Request(
+        'GET',
         Uri.parse('http://host/items'),
-        headers: {'authorization': 'Basic $validToken'}));
+        headers: {'authorization': 'Basic $validToken'},
+      ),
+    );
     expect(res.statusCode, 401);
   });
 
@@ -69,7 +86,9 @@ void main() {
         .addMiddleware(requireAuth(auth, openPaths: {'/db-version'}))
         .addHandler(okHandler);
     final res = await _handle(
-        handler, Request('GET', Uri.parse('http://host/db-version')));
+      handler,
+      Request('GET', Uri.parse('http://host/db-version')),
+    );
     expect(res.statusCode, 200);
   });
 
@@ -78,9 +97,14 @@ void main() {
     final handler = const Pipeline()
         .addMiddleware(requireAuth(auth))
         .addHandler(okHandler);
-    final res = await _handle(handler, Request('GET',
+    final res = await _handle(
+      handler,
+      Request(
+        'GET',
         Uri.parse('http://host/items'),
-        headers: {'authorization': 'Bearer $validToken'}));
+        headers: {'authorization': 'Bearer $validToken'},
+      ),
+    );
     expect(res.statusCode, 401);
   });
 
@@ -89,7 +113,9 @@ void main() {
         .addMiddleware(requireAuth(auth))
         .addHandler((_) => Response.ok('written'));
     final res = await _handle(
-        handler, Request('POST', Uri.parse('http://host/items'), body: '{}'));
+      handler,
+      Request('POST', Uri.parse('http://host/items'), body: '{}'),
+    );
     expect(res.statusCode, 401);
   });
 }

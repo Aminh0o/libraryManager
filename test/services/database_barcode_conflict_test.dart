@@ -32,8 +32,12 @@ void main() {
   late Directory tmp;
   late Database db;
 
-  LibraryItem item(String code,
-      {String? barcode, String designation = 'Title', int quantite = 1}) {
+  LibraryItem item(
+    String code, {
+    String? barcode,
+    String designation = 'Title',
+    int quantite = 1,
+  }) {
     final m = <String, dynamic>{
       'code': code,
       'code_type': 'LIV',
@@ -49,8 +53,11 @@ void main() {
   }
 
   Future<Map<String, dynamic>?> row(String code) async {
-    final r = await db
-        .query('library_items', where: 'code = ?', whereArgs: [code]);
+    final r = await db.query(
+      'library_items',
+      where: 'code = ?',
+      whereArgs: [code],
+    );
     return r.isEmpty ? null : r.first;
   }
 
@@ -80,20 +87,22 @@ void main() {
       expect(await row('B101'), isNull);
     });
 
-    test('the typed conflict (not a raw DatabaseException) is what surfaces',
-        () async {
-      // Guards the specific regression: without the pre-check the UNIQUE index
-      // raises a DatabaseException, which the server turns into a 500.
-      await svc.addItem(item('B200', barcode: 'ISBN-777'));
-      Object? caught;
-      try {
-        await svc.addItem(item('B201', barcode: 'ISBN-777'));
-      } catch (e) {
-        caught = e;
-      }
-      expect(caught, isA<BarcodeConflictException>());
-      expect(caught, isNot(isA<DatabaseException>()));
-    });
+    test(
+      'the typed conflict (not a raw DatabaseException) is what surfaces',
+      () async {
+        // Guards the specific regression: without the pre-check the UNIQUE index
+        // raises a DatabaseException, which the server turns into a 500.
+        await svc.addItem(item('B200', barcode: 'ISBN-777'));
+        Object? caught;
+        try {
+          await svc.addItem(item('B201', barcode: 'ISBN-777'));
+        } catch (e) {
+          caught = e;
+        }
+        expect(caught, isA<BarcodeConflictException>());
+        expect(caught, isNot(isA<DatabaseException>()));
+      },
+    );
 
     test('null and blank barcodes never collide', () async {
       // Two items with no barcode, then two with an empty one -- the partial
@@ -122,42 +131,47 @@ void main() {
       expect((await row('B401'))!['barcode'], 'ISBN-BBB');
 
       // Re-saving B401 with its OWN barcode must not be a self-clash.
-      await svc.updateItem(item('B401', barcode: 'ISBN-BBB',
-          designation: 'Renamed'));
+      await svc.updateItem(
+        item('B401', barcode: 'ISBN-BBB', designation: 'Renamed'),
+      );
       expect((await row('B401'))!['designation'], 'Renamed');
       expect((await row('B401'))!['barcode'], 'ISBN-BBB');
     });
   });
 
-  group('bulk import skips barcode collisions instead of failing the batch',
-      () {
-    test('a row whose barcode duplicates an existing catalogue row is '
-        'skipped and reported; valid new rows still commit', () async {
-      await svc.addItem(item('I500', barcode: 'ISBN-500'));
+  group(
+    'bulk import skips barcode collisions instead of failing the batch',
+    () {
+      test('a row whose barcode duplicates an existing catalogue row is '
+          'skipped and reported; valid new rows still commit', () async {
+        await svc.addItem(item('I500', barcode: 'ISBN-500'));
 
-      final res = await svc.batchInsertItems([
-        item('I501', barcode: 'ISBN-500'), // collides with existing -> skip
-        item('I502', barcode: 'ISBN-502'), // new -> insert
-      ]);
+        final res = await svc.batchInsertItems([
+          item('I501', barcode: 'ISBN-500'), // collides with existing -> skip
+          item('I502', barcode: 'ISBN-502'), // new -> insert
+        ]);
 
-      expect(res.inserted, 1);
-      expect(res.skippedBarcodes, contains('I501'));
-      expect(await row('I501'), isNull);
-      expect(await row('I502'), isNotNull);
-      // The pre-existing holder is untouched.
-      expect((await row('I500'))!['barcode'], 'ISBN-500');
-    });
+        expect(res.inserted, 1);
+        expect(res.skippedBarcodes, contains('I501'));
+        expect(await row('I501'), isNull);
+        expect(await row('I502'), isNotNull);
+        // The pre-existing holder is untouched.
+        expect((await row('I500'))!['barcode'], 'ISBN-500');
+      });
 
-    test('a barcode duplicated WITHIN one file inserts only the first',
+      test(
+        'a barcode duplicated WITHIN one file inserts only the first',
         () async {
-      final res = await svc.batchInsertItems([
-        item('I600', barcode: 'ISBN-600', designation: 'First'),
-        item('I601', barcode: 'ISBN-600', designation: 'Second'),
-      ]);
-      expect(res.inserted, 1);
-      expect(res.skippedBarcodes, contains('I601'));
-      expect(await row('I600'), isNotNull);
-      expect(await row('I601'), isNull);
-    });
-  });
+          final res = await svc.batchInsertItems([
+            item('I600', barcode: 'ISBN-600', designation: 'First'),
+            item('I601', barcode: 'ISBN-600', designation: 'Second'),
+          ]);
+          expect(res.inserted, 1);
+          expect(res.skippedBarcodes, contains('I601'));
+          expect(await row('I600'), isNotNull);
+          expect(await row('I601'), isNull);
+        },
+      );
+    },
+  );
 }

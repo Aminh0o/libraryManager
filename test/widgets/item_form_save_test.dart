@@ -29,12 +29,14 @@ class _FakeRepo implements LibraryRepository {
     String? codeType,
     String? sort,
     bool ascending = true,
-  }) async =>
-      const [];
+  }) async => const [];
 
   @override
-  Future<void> updateItem(LibraryItem item,
-      {Map<String, dynamic>? audit, int? expectedVersion}) async {
+  Future<void> updateItem(
+    LibraryItem item, {
+    Map<String, dynamic>? audit,
+    int? expectedVersion,
+  }) async {
     if (failOnWrite) {
       // Mimic a real rejection (409 conflict / 500 / network error): the
       // provider rethrows, which the fixed form must catch and surface.
@@ -51,17 +53,18 @@ class _FakeRepo implements LibraryRepository {
 }
 
 LibraryItem get _existing => LibraryItem(
-      code: '0001',
-      codeType: 'LIV',
-      designation: 'Existing Book',
-      quantite: 1,
-      emplacement: 'A1',
-      taux: 0,
-      emplacementStock: 'S1',
-      status: 'Disponible',
-    );
+  code: '0001',
+  codeType: 'LIV',
+  designation: 'Existing Book',
+  quantite: 1,
+  emplacement: 'A1',
+  taux: 0,
+  emplacementStock: 'S1',
+  status: 'Disponible',
+);
 
-Widget _app(LibraryProvider provider) => ChangeNotifierProvider<LibraryProvider>.value(
+Widget _app(LibraryProvider provider) =>
+    ChangeNotifierProvider<LibraryProvider>.value(
       value: provider,
       child: MaterialApp(
         locale: const Locale('fr'),
@@ -102,69 +105,97 @@ Future<void> _tapSave(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('a failed save keeps the form OPEN and shows an error (FE2-01/02)',
-      (tester) async {
-    await _openForm(
+  testWidgets(
+    'a failed save keeps the form OPEN and shows an error (FE2-01/02)',
+    (tester) async {
+      await _openForm(
         tester,
         LibraryProvider.forTesting(
-            repository: _FakeRepo(failOnWrite: true), isHost: false));
+          repository: _FakeRepo(failOnWrite: true),
+          isHost: false,
+        ),
+      );
 
-    await _tapSave(tester);
-    await tester.pump(); // _saving = true
-    await tester.pump(); // future rejects -> catch -> _saving = false + snackbar
+      await _tapSave(tester);
+      await tester.pump(); // _saving = true
+      await tester
+          .pump(); // future rejects -> catch -> _saving = false + snackbar
 
-    expect(find.byType(ItemFormScreen), findsOneWidget,
-        reason: 'the form must NOT close when the write failed');
-    expect(find.byType(SnackBar), findsOneWidget,
-        reason: 'the failure must be surfaced to the operator');
+      expect(
+        find.byType(ItemFormScreen),
+        findsOneWidget,
+        reason: 'the form must NOT close when the write failed',
+      );
+      expect(
+        find.byType(SnackBar),
+        findsOneWidget,
+        reason: 'the failure must be surfaced to the operator',
+      );
 
-    // Flush the SnackBar auto-dismiss timer so the test ends with none pending.
-    await tester.pump(const Duration(seconds: 6));
-    await tester.pumpAndSettle();
-  });
+      // Flush the SnackBar auto-dismiss timer so the test ends with none pending.
+      await tester.pump(const Duration(seconds: 6));
+      await tester.pumpAndSettle();
+    },
+  );
 
   testWidgets('a successful save CLOSES the form (FE2-01/02)', (tester) async {
     final repo = _FakeRepo();
     await _openForm(
-        tester, LibraryProvider.forTesting(repository: repo, isHost: false));
+      tester,
+      LibraryProvider.forTesting(repository: repo, isHost: false),
+    );
 
     await _tapSave(tester);
     await tester.pumpAndSettle();
 
     expect(repo.updates, 1, reason: 'the mutation must reach the repository');
-    expect(find.byType(ItemFormScreen), findsNothing,
-        reason: 'a confirmed save closes the form');
+    expect(
+      find.byType(ItemFormScreen),
+      findsNothing,
+      reason: 'a confirmed save closes the form',
+    );
     expect(find.byType(SnackBar), findsNothing);
   });
 
   // FE2-09: quantity used to accept empty / non-numeric / negative text and
   // silently store 0. The field must now reject it and block the save.
   Finder quantityField() => find.ancestor(
-      of: find.byIcon(Icons.numbers), matching: find.byType(TextFormField));
+    of: find.byIcon(Icons.numbers),
+    matching: find.byType(TextFormField),
+  );
 
-  testWidgets('a non-numeric quantity is rejected and blocks the save (FE2-09)',
-      (tester) async {
-    final repo = _FakeRepo();
-    await _openForm(
-        tester, LibraryProvider.forTesting(repository: repo, isHost: false));
+  testWidgets(
+    'a non-numeric quantity is rejected and blocks the save (FE2-09)',
+    (tester) async {
+      final repo = _FakeRepo();
+      await _openForm(
+        tester,
+        LibraryProvider.forTesting(repository: repo, isHost: false),
+      );
 
-    final qty = quantityField();
-    expect(qty, findsOneWidget);
-    await tester.enterText(qty, 'abc');
-    await tester.pump();
-    await _tapSave(tester);
-    await tester.pump();
+      final qty = quantityField();
+      expect(qty, findsOneWidget);
+      await tester.enterText(qty, 'abc');
+      await tester.pump();
+      await _tapSave(tester);
+      await tester.pump();
 
-    expect(find.text('Nombre entier requis'), findsOneWidget);
-    expect(find.byType(ItemFormScreen), findsOneWidget,
-        reason: 'an invalid quantity must block the save');
-    expect(repo.updates, 0, reason: 'no write may reach the repository');
-  });
+      expect(find.text('Nombre entier requis'), findsOneWidget);
+      expect(
+        find.byType(ItemFormScreen),
+        findsOneWidget,
+        reason: 'an invalid quantity must block the save',
+      );
+      expect(repo.updates, 0, reason: 'no write may reach the repository');
+    },
+  );
 
   testWidgets('a negative quantity is rejected (FE2-09)', (tester) async {
     final repo = _FakeRepo();
     await _openForm(
-        tester, LibraryProvider.forTesting(repository: repo, isHost: false));
+      tester,
+      LibraryProvider.forTesting(repository: repo, isHost: false),
+    );
 
     await tester.enterText(quantityField(), '-5');
     await tester.pump();
@@ -200,7 +231,9 @@ void main() {
       ),
     ]);
     await _openForm(
-        tester, LibraryProvider.forTesting(repository: repo, isHost: false));
+      tester,
+      LibraryProvider.forTesting(repository: repo, isHost: false),
+    );
 
     await _tapSave(tester);
     await tester.pump(); // _saving = true, save runs -> throws
@@ -208,25 +241,41 @@ void main() {
     await tester.pumpAndSettle(); // reload completes + snackbar
 
     expect(repo.updates, 0, reason: 'a stale-token write must be refused');
-    expect(find.byType(ItemFormScreen), findsOneWidget,
-        reason: 'the form stays open so nothing typed is lost');
-    expect(find.byType(SnackBar), findsOneWidget,
-        reason: 'the conflict is surfaced to the operator');
-    expect(repo.lastExpected, 0,
-        reason: 'the first attempt carries the version the form READ (0)');
+    expect(
+      find.byType(ItemFormScreen),
+      findsOneWidget,
+      reason: 'the form stays open so nothing typed is lost',
+    );
+    expect(
+      find.byType(SnackBar),
+      findsOneWidget,
+      reason: 'the conflict is surfaced to the operator',
+    );
+    expect(
+      repo.lastExpected,
+      0,
+      reason: 'the first attempt carries the version the form READ (0)',
+    );
 
     // Flush the first SnackBar so it cannot intercept the retry tap.
     await tester.pump(const Duration(seconds: 6));
     await tester.pumpAndSettle();
 
     await _tapSave(tester);
-    await tester.pumpAndSettle(); // retry carries the refreshed version -> success
+    await tester
+        .pumpAndSettle(); // retry carries the refreshed version -> success
 
-    expect(repo.lastExpected, 1,
-        reason: 'the retry must target the CURRENT version, not the stale 0');
+    expect(
+      repo.lastExpected,
+      1,
+      reason: 'the retry must target the CURRENT version, not the stale 0',
+    );
     expect(repo.updates, 1, reason: 'the reconciled retry commits');
-    expect(find.byType(ItemFormScreen), findsNothing,
-        reason: 'a confirmed save closes the form');
+    expect(
+      find.byType(ItemFormScreen),
+      findsNothing,
+      reason: 'a confirmed save closes the form',
+    );
   });
 }
 
@@ -249,24 +298,29 @@ class _ConflictRepo implements LibraryRepository {
     String? codeType,
     String? sort,
     bool ascending = true,
-  }) async =>
-      rows;
+  }) async => rows;
 
   @override
-  Future<int> countItems({String? search, String? status, String? codeType,
+  Future<int> countItems({
+    String? search,
+    String? status,
+    String? codeType,
     String? sort,
     bool ascending = true,
-  }) async =>
-      rows.length;
+  }) async => rows.length;
 
   @override
-  Future<void> updateItem(LibraryItem item,
-      {Map<String, dynamic>? audit, int? expectedVersion}) async {
+  Future<void> updateItem(
+    LibraryItem item, {
+    Map<String, dynamic>? audit,
+    int? expectedVersion,
+  }) async {
     lastExpected = expectedVersion;
     final cur = rows.firstWhere((r) => r.code == item.code).rowVersion;
     if (expectedVersion != null && expectedVersion != cur) {
       throw ConcurrentUpdateConflictException(
-          'Item ${item.code} was modified by another client.');
+        'Item ${item.code} was modified by another client.',
+      );
     }
     updates++;
   }

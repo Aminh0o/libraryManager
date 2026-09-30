@@ -54,16 +54,18 @@ class _MemberSelectDialogState extends State<MemberSelectDialog> {
     final q = _query.trim().toLowerCase();
     if (q.isEmpty) {
       final sorted = [...all]
-        ..sort((a, b) => a.fullName.toLowerCase().compareTo(
-            b.fullName.toLowerCase()));
+        ..sort(
+          (a, b) =>
+              a.fullName.toLowerCase().compareTo(b.fullName.toLowerCase()),
+        );
       return sorted;
     }
     return all.where((m) {
       return m.fullName.toLowerCase().contains(q) ||
           m.memberId.toLowerCase().contains(q);
-    }).toList()
-      ..sort((a, b) =>
-          a.fullName.toLowerCase().compareTo(b.fullName.toLowerCase()));
+    }).toList()..sort(
+      (a, b) => a.fullName.toLowerCase().compareTo(b.fullName.toLowerCase()),
+    );
   }
 
   @override
