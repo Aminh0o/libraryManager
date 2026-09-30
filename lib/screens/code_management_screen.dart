@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/library_provider.dart';
+import '../services/error_messages.dart';
 import '../models/code_definition.dart';
+import '../ui/app_tokens.dart';
+import '../widgets/confirm_action_dialog.dart';
 import '../l10n/app_localizations.dart';
 
 class CodeManagementScreen extends StatefulWidget {
@@ -37,7 +40,7 @@ class _CodeManagementScreenState extends State<CodeManagementScreen> {
     final provider = Provider.of<LibraryProvider>(context, listen: false);
     final l10n = AppLocalizations.of(context)!;
     final messenger = ScaffoldMessenger.of(context);
-    
+
     final prefix = _prefixController.text.toUpperCase();
     final label = _labelController.text;
 
@@ -45,18 +48,23 @@ class _CodeManagementScreenState extends State<CodeManagementScreen> {
       if (_editingDefinition == null) {
         await provider.addCodeDefinition(prefix, label);
       } else {
-        await provider.updateCodeDefinition(_editingDefinition!.prefix, prefix, label);
+        await provider.updateCodeDefinition(
+          _editingDefinition!.prefix,
+          prefix,
+          label,
+        );
       }
       if (mounted) {
-        messenger.showSnackBar(
-          SnackBar(content: Text(l10n.savedSuccessfully)),
-        );
+        messenger.showSnackBar(SnackBar(content: Text(l10n.savedSuccessfully)));
         _resetForm();
       }
     } catch (e) {
       if (mounted) {
         messenger.showSnackBar(
-          SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(describeError(l10n, e)),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
         );
       }
     }
@@ -66,49 +74,66 @@ class _CodeManagementScreenState extends State<CodeManagementScreen> {
   Widget build(BuildContext context) {
     final provider = Provider.of<LibraryProvider>(context);
     final l10n = AppLocalizations.of(context)!;
+    final scheme = Theme.of(context).colorScheme;
+    final txt = Theme.of(context).textTheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.manageVariables),
-        backgroundColor: Colors.orange,
-        foregroundColor: Colors.white,
-      ),
+      appBar: AppBar(title: Text(l10n.manageVariables)),
       body: Row(
         children: [
           // List Section
           Expanded(
             flex: 2,
             child: Container(
-              padding: const EdgeInsets.all(24),
+              padding: AppSpacing.allXxl,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     l10n.manageVariables,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                    style: txt.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
                   Expanded(
                     child: Card(
-                      elevation: 2,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      clipBehavior: Clip.antiAlias,
                       child: ListView.separated(
                         itemCount: provider.codeDefinitions.length,
-                        separatorBuilder: (context, index) => const Divider(height: 1),
+                        separatorBuilder: (context, index) =>
+                            const Divider(height: 1),
                         itemBuilder: (context, index) {
                           final def = provider.codeDefinitions[index];
                           return ListTile(
                             leading: CircleAvatar(
-                              backgroundColor: Colors.orange.withValues(alpha: 0.1),
-                              child: Text(def.prefix[0], style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
+                              backgroundColor: scheme.primary.withValues(
+                                alpha: 0.12,
+                              ),
+                              child: Text(
+                                def.prefix[0],
+                                style: TextStyle(
+                                  color: scheme.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ),
-                            title: Text(def.prefix, style: const TextStyle(fontWeight: FontWeight.bold)),
+                            title: Text(
+                              def.prefix,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                             subtitle: Text(def.label),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 IconButton(
-                                  icon: const Icon(Icons.edit, color: Colors.blue),
+                                  icon: Icon(
+                                    Icons.edit_outlined,
+                                    color: scheme.primary,
+                                    size: AppIcon.md,
+                                  ),
                                   onPressed: () {
                                     setState(() {
                                       _editingDefinition = def;
@@ -119,7 +144,11 @@ class _CodeManagementScreenState extends State<CodeManagementScreen> {
                                   tooltip: l10n.editItem,
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                  icon: const Icon(
+                                    Icons.delete_outline,
+                                    color: AppStatus.danger,
+                                    size: AppIcon.md,
+                                  ),
                                   onPressed: () => _confirmDelete(def),
                                   tooltip: l10n.deleteItem,
                                 ),
@@ -139,53 +168,57 @@ class _CodeManagementScreenState extends State<CodeManagementScreen> {
           Expanded(
             flex: 1,
             child: Container(
-              color: Colors.white,
-              padding: const EdgeInsets.all(24),
+              color: scheme.surfaceContainerLow,
+              padding: AppSpacing.allXxl,
               child: Form(
                 key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _editingDefinition == null ? l10n.newVariable : l10n.editVariable,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                      _editingDefinition == null
+                          ? l10n.newVariable
+                          : l10n.editVariable,
+                      style: txt.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: AppSpacing.xxl),
                     TextFormField(
                       controller: _prefixController,
                       decoration: InputDecoration(
                         labelText: l10n.prefix,
-                        border: const OutlineInputBorder(),
                         hintText: l10n.prefixHint,
                       ),
-                      validator: (value) => (value == null || value.isEmpty) ? l10n.required : null,
+                      validator: (value) => (value == null || value.isEmpty)
+                          ? l10n.required
+                          : null,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
                     TextFormField(
                       controller: _labelController,
                       decoration: InputDecoration(
                         labelText: l10n.label,
-                        border: const OutlineInputBorder(),
                         hintText: l10n.labelHint,
                       ),
-                      validator: (value) => (value == null || value.isEmpty) ? l10n.required : null,
+                      validator: (value) => (value == null || value.isEmpty)
+                          ? l10n.required
+                          : null,
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: AppSpacing.xxl),
                     SizedBox(
                       width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
+                      child: FilledButton(
                         onPressed: _handleSave,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange, 
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        child: Text(
+                          _editingDefinition == null
+                              ? l10n.addVariable
+                              : l10n.updateVariable,
                         ),
-                        child: Text(_editingDefinition == null ? l10n.addVariable : l10n.updateVariable),
                       ),
                     ),
                     if (_editingDefinition != null) ...[
-                      const SizedBox(height: 12),
+                      const SizedBox(height: AppSpacing.sm),
                       SizedBox(
                         width: double.infinity,
                         child: TextButton(
@@ -195,24 +228,32 @@ class _CodeManagementScreenState extends State<CodeManagementScreen> {
                       ),
                     ],
                     const Spacer(),
-                    Card(
-                      color: const Color(0xFFFFF3E0),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      child: Padding(
-                        padding: const EdgeInsets.all(12.0),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.info_outline, color: Colors.orange),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                l10n.notePrefixChange,
-                                style: const TextStyle(fontSize: 12, color: Colors.brown),
+                    // Advisory note: a subtle surface tint, not the old hard-
+                    // coded cream card that was unreadable in dark mode.
+                    Container(
+                      padding: AppSpacing.allMd,
+                      decoration: BoxDecoration(
+                        color: scheme.surfaceContainerHigh,
+                        borderRadius: AppRadius.card,
+                        border: Border.all(color: scheme.outlineVariant),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            color: scheme.primary,
+                            size: AppIcon.md,
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: Text(
+                              l10n.notePrefixChange,
+                              style: txt.bodySmall?.copyWith(
+                                color: scheme.onSurfaceVariant,
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -228,22 +269,21 @@ class _CodeManagementScreenState extends State<CodeManagementScreen> {
   void _confirmDelete(CodeDefinition def) {
     final l10n = AppLocalizations.of(context)!;
     final provider = Provider.of<LibraryProvider>(context, listen: false);
-    
+
+    // FE2-01/02 (P9-9.29): await the deletion and close only on success.
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (_) => ConfirmActionDialog(
         title: Text(l10n.confirmDeleteDefinition),
         content: Text(l10n.deleteDefinitionWarning),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancel)),
-          TextButton(
-            onPressed: () {
-              provider.deleteCodeDefinition(def.prefix);
-              Navigator.pop(context);
-            },
-            child: Text(l10n.deleteItem, style: const TextStyle(color: Colors.red)),
-          ),
-        ],
+        confirmLabel: Text(
+          l10n.deleteItem,
+          style: const TextStyle(color: AppStatus.danger),
+        ),
+        cancelLabel: Text(l10n.cancel),
+        confirmKey: const Key('confirmDelete'),
+        cancelKey: const Key('cancelDelete'),
+        onConfirm: () => provider.deleteCodeDefinition(def.prefix),
       ),
     );
   }

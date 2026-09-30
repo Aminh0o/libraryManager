@@ -3,7 +3,14 @@ import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
 import '../services/onboarding_service.dart';
 import '../providers/library_provider.dart';
+import '../ui/app_tokens.dart';
 
+/// Phase K (frontend reconstruction): the first-run setup wizard rebuilt on
+/// the centralized design system -- scheme colors + text roles + tokens
+/// instead of the old scattered `Colors.orange` / `fontSize:` literals. The
+/// wizard LOGIC (page order, password-step validation, locale switching,
+/// password save, setup-complete + navigation) is unchanged; only the
+/// presentation moved onto the same tokens every other screen consumes.
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -29,7 +36,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   void _nextPage() {
     if (_currentPage < _numPages - 1) {
-      if (_currentPage == 1) { // Password step
+      if (_currentPage == 1) {
+        // Password step
         if (!_formKey.currentState!.validate()) return;
       }
       _pageController.nextPage(
@@ -52,12 +60,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Future<void> _completeSetup() async {
     final provider = Provider.of<LibraryProvider>(context, listen: false);
-    
+
     // Save password if provided
     if (_passwordCtrl.text.isNotEmpty) {
       await provider.changePassword(_passwordCtrl.text);
     }
-    
+
     await OnboardingService.markSetupComplete();
     if (mounted) {
       Navigator.pushReplacementNamed(context, '/');
@@ -96,65 +104,144 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
+  /// Shared page chrome: centered, width-capped column with the theme's
+  /// subtitle heading + muted description under a hero icon (§5/§8/§38).
+  Widget _page({required Widget child, bool scrollable = false}) {
+    final content = ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: AppSizing.maxFormWidth),
+      child: child,
+    );
+    final padded = Padding(
+      padding: const EdgeInsets.all(AppSpacing.xxxl),
+      child: scrollable ? SingleChildScrollView(child: content) : content,
+    );
+    return Center(
+      child: LayoutBuilder(
+        builder: (context, constraints) => SingleChildScrollView(
+          primary: false,
+          // The inner Padding is outside this scroller so an overflowing
+          // short window still reveals the bottom content when scrolled.
+          child: SizedBox(height: constraints.maxHeight, child: padded),
+        ),
+      ),
+    );
+  }
+
+  Widget _stepHeading(BuildContext context, String title, String message) {
+    final txt = Theme.of(context).textTheme;
+    final scheme = Theme.of(context).colorScheme;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (title.isNotEmpty) ...[
+          Text(title, style: txt.headlineSmall, textAlign: TextAlign.center),
+          const SizedBox(height: AppSpacing.md),
+        ],
+        Text(
+          message,
+          textAlign: TextAlign.center,
+          style: txt.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+        ),
+      ],
+    );
+  }
+
   Widget _buildWelcomeStep(AppLocalizations l10n) {
     final provider = Provider.of<LibraryProvider>(context);
+    final scheme = Theme.of(context).colorScheme;
+    final txt = Theme.of(context).textTheme;
     final currentLocale = provider.locale.languageCode;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(32.0),
+    return _page(
+      scrollable: true,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.library_books, size: 100, color: Colors.orange),
-          const SizedBox(height: 32),
-          // Triple language welcome
-          const Text(
-            'Welcome',
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+          Icon(
+            Icons.library_books_outlined,
+            size: AppIcon.hero,
+            color: scheme.primary,
           ),
-          const Text(
-            'Bienvenue',
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-          ),
-          const Text(
-            'مرحباً',
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 32),
+          const SizedBox(height: AppSpacing.xxxl),
+          // Triple-language greeting: the welcome itself stays in all three
+          // scripts on purpose, so it is readable before a locale is chosen.
           Text(
-            l10n.setupLanguageDesc,
+            'Welcome',
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 16, color: Colors.grey),
+            style: txt.headlineMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
-          const SizedBox(height: 32),
+          Text(
+            'Bienvenue',
+            textAlign: TextAlign.center,
+            style: txt.headlineMedium?.copyWith(fontWeight: FontWeight.w600),
+          ),
+          Text(
+            'مرحباً',
+            textAlign: TextAlign.center,
+            style: txt.headlineMedium?.copyWith(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: AppSpacing.xxxl),
+          _stepHeading(context, '', l10n.setupLanguageDesc),
+          const SizedBox(height: AppSpacing.xxxl),
           // Language selector buttons
-          _buildLanguageButton(context, provider, 'English', 'en', currentLocale == 'en'),
-          const SizedBox(height: 12),
-          _buildLanguageButton(context, provider, 'Français', 'fr', currentLocale == 'fr'),
-          const SizedBox(height: 12),
-          _buildLanguageButton(context, provider, 'العربية', 'ar', currentLocale == 'ar'),
+          _buildLanguageButton(
+            context,
+            provider,
+            'English',
+            'en',
+            currentLocale == 'en',
+          ),
+          const SizedBox(height: AppSpacing.md),
+          _buildLanguageButton(
+            context,
+            provider,
+            'Français',
+            'fr',
+            currentLocale == 'fr',
+          ),
+          const SizedBox(height: AppSpacing.md),
+          _buildLanguageButton(
+            context,
+            provider,
+            'العربية',
+            'ar',
+            currentLocale == 'ar',
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildLanguageButton(BuildContext context, LibraryProvider provider, String label, String code, bool isSelected) {
+  Widget _buildLanguageButton(
+    BuildContext context,
+    LibraryProvider provider,
+    String label,
+    String code,
+    bool isSelected,
+  ) {
+    final scheme = Theme.of(context).colorScheme;
+    final txt = Theme.of(context).textTheme;
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton(
         onPressed: () => provider.setLocale(Locale(code)),
         style: OutlinedButton.styleFrom(
-          side: BorderSide(color: isSelected ? Colors.orange : Colors.grey.shade300, width: 2),
-          backgroundColor: isSelected ? Colors.orange.withValues(alpha: 0.1) : null,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          side: BorderSide(
+            color: isSelected ? scheme.primary : scheme.outlineVariant,
+            width: isSelected ? 2 : AppBorder.width,
+          ),
+          backgroundColor: isSelected
+              ? scheme.primary.withValues(alpha: 0.1)
+              : null,
+          foregroundColor: isSelected ? scheme.primary : scheme.onSurface,
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+          shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
         ),
         child: Text(
           label,
-          style: TextStyle(
-            fontSize: 18,
-            color: isSelected ? Colors.orange : Colors.grey.shade700,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          style: txt.titleMedium?.copyWith(
+            color: isSelected ? scheme.primary : scheme.onSurface,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
           ),
         ),
       ),
@@ -162,75 +249,73 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Widget _buildPasswordStep(AppLocalizations l10n) {
-    return Padding(
-      padding: const EdgeInsets.all(32.0),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.security, size: 80, color: Colors.orange),
-            const SizedBox(height: 32),
-            Text(
-              l10n.stepSecurity,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              l10n.setupPasswordDesc,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-            const SizedBox(height: 32),
-            TextFormField(
+    final scheme = Theme.of(context).colorScheme;
+    return _page(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.security_outlined,
+            size: AppIcon.xl * 2,
+            color: scheme.primary,
+          ),
+          const SizedBox(height: AppSpacing.xxxl),
+          _stepHeading(context, l10n.stepSecurity, l10n.setupPasswordDesc),
+          const SizedBox(height: AppSpacing.xxxl),
+          Form(
+            key: _formKey,
+            child: TextFormField(
               controller: _passwordCtrl,
               obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Password',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.lock),
+              decoration: InputDecoration(
+                labelText: l10n.password,
+                prefixIcon: const Icon(Icons.lock_outline, size: AppIcon.md),
               ),
-              validator: (v) => (v == null || v.isEmpty) ? l10n.requiredField : null,
+              validator: (v) =>
+                  (v == null || v.isEmpty) ? l10n.requiredField : null,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildConfigSummaryStep(AppLocalizations l10n) {
-    return Padding(
-      padding: const EdgeInsets.all(32.0),
+    final scheme = Theme.of(context).colorScheme;
+    return _page(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.settings, size: 80, color: Colors.orange),
-          const SizedBox(height: 32),
-          Text(
-            l10n.stepConfiguration,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          Icon(
+            Icons.tune_outlined,
+            size: AppIcon.xl * 2,
+            color: scheme.primary,
           ),
-          const SizedBox(height: 16),
-          Text(
-            l10n.setupConfigDesc,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 16, color: Colors.grey),
-          ),
-          const SizedBox(height: 32),
-          const Card(
+          const SizedBox(height: AppSpacing.xxxl),
+          _stepHeading(context, l10n.stepConfiguration, l10n.setupConfigDesc),
+          const SizedBox(height: AppSpacing.xxxl),
+          Card(
             child: Padding(
-              padding: EdgeInsets.all(16.0),
+              padding: AppSpacing.allLg,
               child: Column(
                 children: [
-                   ListTile(
-                    leading: Icon(Icons.category, color: Colors.orange),
-                    title: Text('Code Prefixes (LIV, REV, etc.)'),
-                    subtitle: Text('Default values will be initialized.'),
+                  ListTile(
+                    leading: Icon(
+                      Icons.category_outlined,
+                      color: scheme.primary,
+                      size: AppIcon.lg,
+                    ),
+                    title: Text(l10n.configPrefixesLabel),
+                    subtitle: Text(l10n.configPrefixesDesc),
                   ),
-                   ListTile(
-                    leading: Icon(Icons.place, color: Colors.orange),
-                    title: Text('Dynamic Attributes'),
-                    subtitle: Text('Locations, Statuses, and Stocks.'),
+                  ListTile(
+                    leading: Icon(
+                      Icons.place_outlined,
+                      color: scheme.primary,
+                      size: AppIcon.lg,
+                    ),
+                    title: Text(l10n.configAttributesLabel),
+                    subtitle: Text(l10n.configAttributesDesc),
                   ),
                 ],
               ),
@@ -242,22 +327,29 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Widget _buildFinalStep(AppLocalizations l10n) {
-    return Padding(
-      padding: const EdgeInsets.all(32.0),
+    final txt = Theme.of(context).textTheme;
+    return _page(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.check_circle, size: 100, color: Colors.green),
-          const SizedBox(height: 32),
+          Icon(
+            Icons.check_circle_outline,
+            size: AppIcon.hero,
+            color: AppStatus.success,
+          ),
+          const SizedBox(height: AppSpacing.xxxl),
           Text(
             l10n.setupComplete,
-            style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
+            style: txt.headlineMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           Text(
             l10n.setupCompleteDesc,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 18, color: Colors.grey),
+            style: txt.bodyLarge?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -265,51 +357,71 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Widget _buildBottomBar(AppLocalizations l10n) {
+    final scheme = Theme.of(context).colorScheme;
+    final isLastPage = _currentPage == _numPages - 1;
     return Padding(
-      padding: const EdgeInsets.all(24.0),
+      padding: const EdgeInsetsDirectional.fromSTEB(
+        AppSpacing.xxxl,
+        AppSpacing.lg,
+        AppSpacing.xxxl,
+        AppSpacing.xxl,
+      ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Previous Button
-          _currentPage > 0 
-              ? TextButton(
-                  onPressed: _previousPage,
-                  child: Text(
-                    l10n.cancel, // Or use a 'Previous' key if available
-                    style: const TextStyle(fontSize: 16, color: Colors.grey),
+          // Previous (first/last steps have no where to go back to / the
+          // finish action speaks for itself).
+          if (_currentPage > 0 && !isLastPage)
+            TextButton.icon(
+              onPressed: _previousPage,
+              icon: const Icon(Icons.arrow_back, size: AppIcon.md),
+              label: Text(l10n.cancel), // Or use a 'Previous' key if available
+            )
+          else
+            const SizedBox(width: AppSizing.topBarHeight),
+
+          // Progress dots + step count (colorblind-safe: position is also
+          // text, not just the highlighted dot).
+          Expanded(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: List.generate(
+                    _numPages,
+                    (index) => Container(
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.xs,
+                      ),
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _currentPage == index
+                            ? scheme.primary
+                            : scheme.outlineVariant,
+                      ),
+                    ),
                   ),
-                )
-              : const SizedBox(width: 80), // Spacer
-          
-          // Dots indicator
-          Row(
-            children: List.generate(
-              _numPages,
-              (index) => Container(
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: _currentPage == index ? Colors.orange : Colors.grey.shade300,
                 ),
-              ),
+                const SizedBox(width: AppSpacing.md),
+                Text(
+                  '${_currentPage + 1} / $_numPages',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ),
           ),
-          
-          // Next Button
-          ElevatedButton(
+
+          // Next / Finish
+          FilledButton.icon(
             onPressed: _nextPage,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            child: Text(
-              _currentPage == _numPages - 1 ? l10n.finish : l10n.next,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
+            icon: isLastPage
+                ? const Icon(Icons.check, size: AppIcon.md)
+                : const Icon(Icons.arrow_forward, size: AppIcon.md),
+            label: Text(isLastPage ? l10n.finish : l10n.next),
           ),
         ],
       ),
