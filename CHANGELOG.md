@@ -6,6 +6,42 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.1.2] — 2026-09-30
+
+Codename *pairing reliability*. Closes the field report that a client could not
+discover the host over LAN. The root cause is almost always that Windows
+Firewall on the host never opened UDP 19001 — the rule used to sit behind a
+manual Settings button that a first-time host had no reason to click. This
+release makes the prerequisite self-announcing and self-diagnosing.
+
+### Added
+
+- **One-time firewall prompt on first host start.** When a machine is in Host
+  mode on Windows and the LAN rules have never been offered, `HomeScreen` now
+  shows a single explanatory dialog (deferred to a post-frame callback) asking
+  to open UDP 19001 (pairing discovery) and TCP 8080 (HTTP API). Accepting runs
+  the existing elevated `WindowsFirewallService.ensureLanFirewallRules()`;
+  declining is remembered. The choice is persisted via a `firewall_prompt_shown`
+  flag so it never nags again.
+
+- **Pairing diagnostic tool** in Settings → Data Protection. A non-elevated
+  `WindowsFirewallService.runPairingDiagnostic()` runs read-only PowerShell
+  checks and returns a structured result rendered as a checklist: whether UDP
+  19001 is actually listening, whether the Library Manager firewall rules are
+  installed and enabled, and whether an inbound Block rule (commonly added by
+  antivirus network filters) is intercepting the port. Requires no admin rights.
+
+### Changed
+
+- **Richer "host not found" guidance.** The client-side pairing failure message
+  is now a detailed six-point checklist (`pairingHostNotFoundDetailed`) covering
+  firewall, host-mode, code expiry, AP isolation, cross-subnet broadcast, and
+  antivirus filtering — shown for 12 seconds instead of a fleeting snackbar.
+
+- **Localisation.** All new strings shipped in EN / FR / AR.
+
+---
+
 ## [1.1.1] — 2026-09-30
 
 Codename *post-release hardening*. Two follow-ups on top of 1.1.0 that close
