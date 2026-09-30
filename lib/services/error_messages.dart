@@ -27,6 +27,27 @@ class HostOnlyFeatureException extends StateError {
   HostOnlyFeatureException(String feature) : super('$feature is host-only');
 }
 
+/// BL-XX: a title whose derived status is not 'available' was presented for
+/// check-out. Thrown from the provider as a typed signal so the UI can render
+/// `l10n.itemNotAvailable` regardless of the session language, and so the raw
+/// English sentence never leaks into the audit log or crash reports.
+class ItemNotAvailableException implements Exception {
+  final String itemCode;
+  ItemNotAvailableException(this.itemCode);
+  @override
+  String toString() => 'Item $itemCode is not available';
+}
+
+/// BL-XX: a check-in scan arrived that does not correspond to any currently
+/// active loan (either never borrowed, or already returned). Typed so the UI
+/// shows `l10n.noActiveLoan` rather than a hard-coded French sentence.
+class NoActiveLoanException implements Exception {
+  final String scan;
+  NoActiveLoanException(this.scan);
+  @override
+  String toString() => 'No active loan for scan $scan';
+}
+
 /// FE2-12: turn any thrown error into a SHORT, LOCALIZED, CATEGORIZED message
 /// instead of leaking the raw `'Erreur: $e'` — which dumped exception class
 /// names, English server strings and internal detail straight to the operator.
@@ -84,6 +105,13 @@ String describeError(AppLocalizations l10n, Object e) {
   // malfunction, so it must not read as "something went wrong" -- the operator
   // needs to know WHERE to go instead.
   if (e is HostOnlyFeatureException) return l10n.errHostOnlyFeature;
+
+  // Circulation-level business refusals: not a malfunction, but a rule the
+  // operator tripped. Localise them explicitly so a French session shows
+  // French and an Arabic session shows Arabic, instead of the generic
+  // "something went wrong" fallback.
+  if (e is ItemNotAvailableException) return l10n.itemNotAvailable;
+  if (e is NoActiveLoanException) return l10n.noActiveLoan;
 
   // Unknown: never surface the raw object. Log it and show a generic message.
   debugPrint('describeError uncategorised: $e');

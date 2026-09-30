@@ -2443,7 +2443,7 @@ class LibraryProvider with ChangeNotifier {
 
     // Check if item is available
     if (item.status != 'Disponible') {
-      throw Exception('Cet article n\'est pas disponible.');
+      throw ItemNotAvailableException(item.code);
     }
 
     final loan = LoanTransitions.checkOut(
@@ -2475,7 +2475,7 @@ class LibraryProvider with ChangeNotifier {
     // for anything a scanner produces and frees exactly the copy borrowed.
     final activeLoan = await _repository!.findActiveLoanByScan(scanned);
     if (activeLoan == null) {
-      throw Exception('Aucun emprunt actif trouvé pour cet article.');
+      throw NoActiveLoanException(scanned);
     }
 
     final returnedLoan = LoanTransitions.returnLoan(activeLoan);
