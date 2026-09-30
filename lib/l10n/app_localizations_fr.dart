@@ -42,6 +42,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get stockLocation => 'Emplacement Stock';
 
   @override
+  String get stock => 'Stock';
+
+  @override
   String get save => 'Enregistrer';
 
   @override
@@ -65,6 +68,26 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get designationRequired => 'La désignation est requise';
+
+  @override
+  String get wholeNumberRequired => 'Nombre entier requis';
+
+  @override
+  String get numberRequired => 'Nombre requis';
+
+  @override
+  String get mustBeNonNegative => 'Doit etre superieur ou egal a 0';
+
+  @override
+  String get newValue => 'Nouvelle valeur';
+
+  @override
+  String get attributeOptionsNote =>
+      'Ces options apparaîtront dans les listes déroulantes lors de l\'ajout ou de la modification d\'un livre.';
+
+  @override
+  String get usbScannerNote =>
+      'Les lecteurs USB agissent comme des claviers. Il suffit de scanner !';
 
   @override
   String get settings => 'Paramètres';
@@ -109,6 +132,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get backupDatabase => 'Sauvegarder la base de données';
 
   @override
+  String get selectBackupDatabase => 'Sélectionner la base de sauvegarde';
+
+  @override
   String get restoreDatabase => 'Restaurer la base de données';
 
   @override
@@ -142,7 +168,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get adminPassword => 'Mot de passe administrateur';
 
   @override
-  String get changePassword => 'Changer le mot de passe';
+  String get changePassword => 'Modifier le mot de passe';
 
   @override
   String get newPassword => 'Nouveau mot de passe';
@@ -168,6 +194,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get disconnected => 'Déconnecté';
+
+  @override
+  String get reconnecting => 'Reconnexion…';
 
   @override
   String get connectionType => 'Type de connexion';
@@ -285,6 +314,28 @@ class AppLocalizationsFr extends AppLocalizations {
   String get backupSuccess => 'Sauvegarde créée avec succès !';
 
   @override
+  String get backupFailed => 'Échec de la sauvegarde.';
+
+  @override
+  String get restoreFailed => 'Échec de la restauration.';
+
+  @override
+  String get retry => 'Réessayer';
+
+  @override
+  String get noPhone => 'Aucun téléphone';
+
+  @override
+  String scannerError(String code) {
+    return 'Erreur du scanner : $code';
+  }
+
+  @override
+  String selectedItemLabel(String name, String status) {
+    return 'Sélectionné : $name ($status)';
+  }
+
+  @override
   String get restoreSuccess => 'Base de données restaurée avec succès !';
 
   @override
@@ -333,6 +384,61 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get statusEndommage => 'Endommagé';
+
+  @override
+  String get statusEnReparation => 'En réparation';
+
+  @override
+  String get statusPerdu => 'Perdu';
+
+  @override
+  String get statusArchive => 'Archivé';
+
+  @override
+  String get itemCopies => 'Exemplaires';
+
+  @override
+  String copyNumberLabel(int n) {
+    return 'Exemplaire $n';
+  }
+
+  @override
+  String get copyBarcodeMissing => 'Aucun code-barres';
+
+  @override
+  String get changeCopyState => 'Changer l\'état';
+
+  @override
+  String get copyLockedTooltip =>
+      'Les exemplaires empruntés ou réservés doivent être modifiés via les prêts / réservations';
+
+  @override
+  String get copyStateUpdated => 'Exemplaire mis à jour';
+
+  @override
+  String get addCopy => 'Ajouter un exemplaire';
+
+  @override
+  String get removeCopy => 'Retirer cet exemplaire';
+
+  @override
+  String get setCopyBarcode => 'Code-barres de l\'exemplaire';
+
+  @override
+  String get copyBarcodeSave => 'Enregistrer';
+
+  @override
+  String get removeCopyConfirm =>
+      'Retirer cet exemplaire physique ? Cette action est irréversible.';
+
+  @override
+  String get copyAdded => 'Exemplaire ajouté';
+
+  @override
+  String get copyRemoved => 'Exemplaire retiré';
+
+  @override
+  String get copyBarcodeSaved => 'Code-barres de l\'exemplaire mis à jour';
 
   @override
   String get itemProfile => 'Profil de l\'élément';
@@ -451,6 +557,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get connectedViaLan => 'Connecté via LAN';
 
   @override
+  String get noConnectedDevices =>
+      'Aucun appareil n\'est connecté actuellement.';
+
+  @override
+  String get noCopiesYet => 'Aucun exemplaire enregistré pour le moment.';
+
+  @override
+  String get memberIdAuto => 'ID (généré automatiquement)';
+
+  @override
+  String get memberIdCode => 'ID / Code';
+
+  @override
   String get scanWithUsbOrType => 'Utilisez un scanner USB ou tapez le code';
 
   @override
@@ -532,6 +651,33 @@ class AppLocalizationsFr extends AppLocalizations {
   String get noActiveLoan => 'Aucun emprunt actif trouvé pour cet article.';
 
   @override
+  String get activeLoans => 'Emprunts actifs';
+
+  @override
+  String get noActiveLoans => 'Aucun emprunt actif.';
+
+  @override
+  String get overdue => 'En retard';
+
+  @override
+  String get renew => 'Renouveler';
+
+  @override
+  String get renewSuccess => 'Emprunt renouvelé avec succès';
+
+  @override
+  String get colMember => 'Membre';
+
+  @override
+  String get colItem => 'Article';
+
+  @override
+  String get loanDateCol => 'Date de prêt';
+
+  @override
+  String get dueDateCol => 'Date d\'échéance';
+
+  @override
   String get selectCamera => 'Sélectionner une caméra';
 
   @override
@@ -595,6 +741,19 @@ class AppLocalizationsFr extends AppLocalizations {
       'Configurez les préfixes et attributs de base de la bibliothèque.';
 
   @override
+  String get configPrefixesLabel => 'Préfixes de code (LIV, REV, etc.)';
+
+  @override
+  String get configPrefixesDesc =>
+      'Les valeurs par défaut seront initialisées.';
+
+  @override
+  String get configAttributesLabel => 'Attributs dynamiques';
+
+  @override
+  String get configAttributesDesc => 'Emplacements, statuts et stocks.';
+
+  @override
   String get setupComplete => 'Configuration Terminée !';
 
   @override
@@ -656,6 +815,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get updateNow => 'Mettre à Jour Maintenant';
 
   @override
+  String get updateNotConfigured =>
+      'La vérification automatique des mises à jour n\'est pas configurée pour ce déploiement.';
+
+  @override
+  String get updateCheckFailed =>
+      'Impossible de joindre le serveur de mise à jour. Réessayez plus tard.';
+
+  @override
+  String updateFoundVersion(String version) {
+    return 'La version $version est disponible.';
+  }
+
+  @override
   String get enableLanAccess => 'Activer l\'accès LAN';
 
   @override
@@ -678,4 +850,745 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get appDefinitionContent =>
       'Library Manager est une solution de bureau professionnelle conçue pour les bibliothèques et centres de documentation algériens. Il fournit des outils spécialisés pour la gestion des stocks, la synchronisation via LAN et le suivi par codes-barres. Le système prend en charge la catégorisation complète en anglais, français et arabe selon les normes nationales.';
+
+  @override
+  String get errNetwork =>
+      'Serveur injoignable. Vérifiez la connexion et réessayez.';
+
+  @override
+  String get errAuth =>
+      'Cette action nécessite une authentification administrateur.';
+
+  @override
+  String get errConflict =>
+      'Conflit : l\'enregistrement a été modifié par quelqu\'un d\'autre ou existe déjà.';
+
+  @override
+  String get errNotFound => 'L\'enregistrement demandé est introuvable.';
+
+  @override
+  String get errBadRequest => 'La requête a été rejetée comme invalide.';
+
+  @override
+  String get errServerError =>
+      'Le serveur a signalé une erreur. Veuillez réessayer.';
+
+  @override
+  String get errGeneric => 'Une erreur est survenue. Veuillez réessayer.';
+
+  @override
+  String get errServerNotInitialized =>
+      'Aucun serveur LAN n\'a été configuré sur ce PC.';
+
+  @override
+  String get errServerStartFailed =>
+      'Le serveur LAN n\'a pas pu démarrer. Un autre programme utilise peut-être déjà ce port.';
+
+  @override
+  String get errHostOnlyFeature =>
+      'Cette fonctionnalité est disponible uniquement sur le PC hôte (celui qui gère la bibliothèque).';
+
+  @override
+  String get usersAndRoles => 'Utilisateurs et rôles';
+
+  @override
+  String get account => 'Compte';
+
+  @override
+  String get role => 'Rôle';
+
+  @override
+  String get roleAdmin => 'Administrateur';
+
+  @override
+  String get roleStaff => 'Personnel';
+
+  @override
+  String get roleViewer => 'Lecteur';
+
+  @override
+  String get roleAdminDescription =>
+      'Accès complet, y compris la gestion des comptes et les paramètres';
+
+  @override
+  String get roleStaffDescription =>
+      'Peut emprunter, retourner et modifier le catalogue, les membres et les prêts';
+
+  @override
+  String get roleViewerDescription =>
+      'Lecture seule : peut consulter, ne peut rien modifier';
+
+  @override
+  String signedInAs(String user, String role) {
+    return 'Connecté en tant que $user ($role)';
+  }
+
+  @override
+  String get signIn => 'Se connecter';
+
+  @override
+  String get signOut => 'Se déconnecter';
+
+  @override
+  String get username => 'Nom d\'utilisateur';
+
+  @override
+  String get password => 'Mot de passe';
+
+  @override
+  String get createAccount => 'Créer un compte';
+
+  @override
+  String get removeAccount => 'Supprimer le compte';
+
+  @override
+  String get changeRole => 'Modifier le rôle';
+
+  @override
+  String removeAccountConfirm(String user) {
+    return 'Supprimer le compte « $user » ? Tout appareil connecté avec ce compte sera déconnecté.';
+  }
+
+  @override
+  String passwordMinLength(int n) {
+    return 'Utilisez au moins $n caractères.';
+  }
+
+  @override
+  String get usernameRules =>
+      '3 à 32 caractères : lettres, chiffres, point, tiret bas ou trait d\'union ; doit commencer par une lettre ou un chiffre ; en minuscules.';
+
+  @override
+  String get onlyAdminManagesUsers =>
+      'Seul un administrateur peut gérer les comptes et les rôles.';
+
+  @override
+  String get readOnlyMode =>
+      'Vous êtes connecté avec un compte en lecture seule. Modification désactivée.';
+
+  @override
+  String get readAccountFailed => 'Impossible de charger la liste des comptes.';
+
+  @override
+  String get signInFailed =>
+      'Échec de la connexion. Vérifiez le nom d\'utilisateur et le mot de passe.';
+
+  @override
+  String get pairAsRole =>
+      'Accorder cet rôle à l\'appareil lors de l\'appairage';
+
+  @override
+  String get readOnlyAccount => 'Compte en lecture seule';
+
+  @override
+  String get noAccounts => 'Aucun compte pour le moment';
+
+  @override
+  String get fines => 'Amendes';
+
+  @override
+  String get fineNoFines => 'Aucune amende enregistrée';
+
+  @override
+  String get fineStatusPending => 'En attente';
+
+  @override
+  String get fineStatusPaid => 'Payée';
+
+  @override
+  String get fineStatusWaived => 'Annulée';
+
+  @override
+  String get fineCollectedBy => 'Traitée par';
+
+  @override
+  String get fineAmountLabel => 'Montant';
+
+  @override
+  String get fineMemberLabel => 'Membre';
+
+  @override
+  String get fineReasonLabel => 'Motif';
+
+  @override
+  String get fineDateLabel => 'Date';
+
+  @override
+  String get fineStatusLabel => 'Statut';
+
+  @override
+  String get fineCollect => 'Encaisser';
+
+  @override
+  String get fineWaive => 'Annuler';
+
+  @override
+  String get fineFilterAll => 'Toutes les amendes';
+
+  @override
+  String fineOutstanding(String amount) {
+    return 'Reste dû : $amount';
+  }
+
+  @override
+  String fineCollectConfirm(String amount) {
+    return 'Enregistrer le paiement de $amount pour cette amende ?';
+  }
+
+  @override
+  String fineWaiveConfirm(String amount) {
+    return 'Annuler cette amende de $amount ? Aucun montant ne sera perçu.';
+  }
+
+  @override
+  String get finePolicy => 'Politique des amendes';
+
+  @override
+  String get fineRatePerDay => 'Taux par jour de retard';
+
+  @override
+  String get fineCurrency => 'Devise';
+
+  @override
+  String get finePolicySaved => 'Politique des amendes mise à jour';
+
+  @override
+  String get finePolicyDisabledHint =>
+      'Les amendes sont désactivées (taux 0). Définissez un taux pour facturer les retours en retard.';
+
+  @override
+  String get fineSettled => 'Amende mise à jour';
+
+  @override
+  String get finePolicyTooltip =>
+      'Définir le taux de retard et la devise (administrateurs uniquement)';
+
+  @override
+  String get onlyStaffManageFines =>
+      'Seuls le personnel peut voir ou régler les amendes.';
+
+  @override
+  String get fineViewFailed => 'Impossible de charger les amendes.';
+
+  @override
+  String get reservations => 'Réservations';
+
+  @override
+  String get holdNoHolds => 'Aucune réservation enregistrée';
+
+  @override
+  String get holdStatusQueued => 'En file d\'attente';
+
+  @override
+  String get holdStatusAvailable => 'Prêt à retirer';
+
+  @override
+  String get holdStatusFulfilled => 'Retirée';
+
+  @override
+  String get holdStatusCancelled => 'Annulée';
+
+  @override
+  String get holdStatusExpired => 'Expirée';
+
+  @override
+  String get holdPlace => 'Réserver';
+
+  @override
+  String get holdCancel => 'Annuler';
+
+  @override
+  String holdCancelConfirm(String member, String item) {
+    return 'Annuler la réservation de $member pour $item ?';
+  }
+
+  @override
+  String get holdPlaced => 'Réservation enregistrée';
+
+  @override
+  String get holdCancelled => 'Réservation annulée';
+
+  @override
+  String get holdViewFailed => 'Impossible de charger les réservations.';
+
+  @override
+  String get holdPlaceFailed => 'Impossible d\'enregistrer la réservation.';
+
+  @override
+  String get onlyStaffManageHolds =>
+      'Seul le personnel peut gérer les réservations.';
+
+  @override
+  String get holdFilterAll => 'Toutes les réservations';
+
+  @override
+  String get holdFilterOpen => 'Réservations ouvertes';
+
+  @override
+  String get holdFilterReady => 'Prêtes à retirer';
+
+  @override
+  String holdQueuePosition(String position) {
+    return 'N° $position dans la file';
+  }
+
+  @override
+  String holdPickupBy(String date) {
+    return 'À retirer avant le $date';
+  }
+
+  @override
+  String get holdItemLabel => 'Ouvrage';
+
+  @override
+  String get holdMemberLabel => 'Membre';
+
+  @override
+  String get holdSelectItem => 'Sélectionner un ouvrage';
+
+  @override
+  String get holdSelectMember => 'Sélectionner un membre';
+
+  @override
+  String get holdNeedSelection => 'Choisissez un ouvrage et un membre.';
+
+  @override
+  String get holdNothingReady => 'Aucune réservation en attente de retrait';
+
+  @override
+  String get holdPolicy => 'Politique de réservation';
+
+  @override
+  String get holdPolicyTooltip =>
+      'Définir le délai de retrait et la limite de file (administrateurs uniquement)';
+
+  @override
+  String get holdPolicySaved => 'Politique de réservation mise à jour';
+
+  @override
+  String get holdPickupDays => 'Délai de retrait (jours)';
+
+  @override
+  String get holdQueueCap => 'Réservations max par ouvrage';
+
+  @override
+  String get holdNoItems => 'Aucun ouvrage chargé pour créer une réservation.';
+
+  @override
+  String get holdNoMembers => 'Aucun membre chargé pour créer une réservation.';
+
+  @override
+  String get reports => 'Rapports';
+
+  @override
+  String get reportSelectKind => 'Type de rapport';
+
+  @override
+  String get reportKindCirculation => 'Circulation';
+
+  @override
+  String get reportKindOverdue => 'Articles en retard';
+
+  @override
+  String get reportKindInventory => 'Inventaire';
+
+  @override
+  String get reportKindFines => 'Amendes';
+
+  @override
+  String get reportKindMembers => 'Meilleurs emprunteurs';
+
+  @override
+  String get reportRun => 'Générer le rapport';
+
+  @override
+  String get reportFrom => 'Du';
+
+  @override
+  String get reportTo => 'Au';
+
+  @override
+  String get reportGeneratedLabel => 'Généré';
+
+  @override
+  String get reportPeriodLabel => 'Période';
+
+  @override
+  String get reportDateHint => 'AAAA-MM-JJ';
+
+  @override
+  String get reportWindowNote => 'Ce rapport couvre une période donnée.';
+
+  @override
+  String get reportInvalidDates => 'Saisissez une date valide (AAAA-MM-JJ).';
+
+  @override
+  String get reportNoData => 'Aucun enregistrement pour ce rapport';
+
+  @override
+  String get reportSummary => 'Résumé';
+
+  @override
+  String reportGeneratedAt(String when) {
+    return 'Généré $when';
+  }
+
+  @override
+  String get reportExportCsv => 'Exporter CSV';
+
+  @override
+  String get reportExportPdf => 'Exporter PDF';
+
+  @override
+  String reportSaved(String path) {
+    return 'Enregistré dans $path';
+  }
+
+  @override
+  String get reportFailed => 'Impossible d\'exécuter le rapport.';
+
+  @override
+  String get reportExportFailed => 'Impossible d\'exporter le rapport.';
+
+  @override
+  String get onlyStaffRunReports =>
+      'Seul le personnel peut exécuter des rapports.';
+
+  @override
+  String get exportDiagnostics => 'Exporter les diagnostics';
+
+  @override
+  String diagnosticsSaved(String path) {
+    return 'Diagnostics enregistrés dans $path';
+  }
+
+  @override
+  String get diagnosticsFailed => 'Impossible d\'exporter les diagnostics.';
+
+  @override
+  String get connectionMode => 'Mode de connexion';
+
+  @override
+  String get hostModeOption => 'Hôte (PC principal — serveur)';
+
+  @override
+  String get clientModeOption => 'Client (PC agent)';
+
+  @override
+  String get hostIpLabel => 'Adresse IP de l\'hôte';
+
+  @override
+  String get hostIpHelper =>
+      'Saisissez l\'adresse IP du PC principal (ex. : 192.168.1.50)';
+
+  @override
+  String get appearance => 'Apparence';
+
+  @override
+  String get appearanceHint =>
+      'Thème et identité de cet appareil. Non partagés avec les autres PC.';
+
+  @override
+  String get themeLabel => 'Thème';
+
+  @override
+  String get themeSystem => 'Système';
+
+  @override
+  String get themeLight => 'Clair';
+
+  @override
+  String get themeDark => 'Sombre';
+
+  @override
+  String get accentColor => 'Couleur d\'accentuation';
+
+  @override
+  String get brandName => 'Nom de la marque';
+
+  @override
+  String get brandNameHint =>
+      'Nom du produit affiché dans la barre de titre (administrateurs uniquement)';
+
+  @override
+  String get featuresTitle => 'Fonctionnalités';
+
+  @override
+  String get featureFlagsHint =>
+      'Activez ou désactivez les écrans optionnels. Les changements s\'appliquent immédiatement.';
+
+  @override
+  String get brandNameUpdated => 'Nom de la marque mis à jour';
+
+  @override
+  String get commandPalette => 'Palette de commandes';
+
+  @override
+  String get paletteSearchHint => 'Tapez pour rechercher des commandes…';
+
+  @override
+  String get paletteNoMatches => 'Aucune commande correspondante';
+
+  @override
+  String get systemHealthTitle => 'État du système';
+
+  @override
+  String get healthAppVersion => 'Version de l\'application';
+
+  @override
+  String get healthDatabaseSchema => 'Version du schéma de base';
+
+  @override
+  String get healthOperatingMode => 'Mode de fonctionnement';
+
+  @override
+  String get healthLanServer => 'Serveur LAN';
+
+  @override
+  String get healthServerRunning => 'À l\'écoute';
+
+  @override
+  String get healthServerStopped => 'Non à l\'écoute';
+
+  @override
+  String get healthConnection => 'Connexion';
+
+  @override
+  String get healthConnectedClients => 'Clients connectés';
+
+  @override
+  String healthClientCount(int n) {
+    return '$n actif(s)';
+  }
+
+  @override
+  String get healthLastBackup => 'Dernière sauvegarde';
+
+  @override
+  String get healthNever => 'Jamais';
+
+  @override
+  String get healthBackupFresh => 'Récente';
+
+  @override
+  String get healthBackupStale => 'En retard';
+
+  @override
+  String get notifications => 'Notifications';
+
+  @override
+  String get notifNone => 'Rien ne nécessite votre attention';
+
+  @override
+  String get notifLoading => 'Vérification…';
+
+  @override
+  String notifOverdue(int n) {
+    return '$n prêt(s) en retard';
+  }
+
+  @override
+  String notifHoldsReady(int n) {
+    return '$n réservation(s) prête(s) au retrait';
+  }
+
+  @override
+  String notifFinesPending(int n) {
+    return '$n amende(s) à régler';
+  }
+
+  @override
+  String get chat => 'Messagerie du personnel';
+
+  @override
+  String get chatInputHint => 'Message…';
+
+  @override
+  String get chatSend => 'Envoyer';
+
+  @override
+  String get chatEmpty => 'Aucun message.';
+
+  @override
+  String get chatUnavailable =>
+      'La messagerie est indisponible pour le moment.';
+
+  @override
+  String helpVersionFooter(String version) {
+    return 'Gestionnaire de Bibliothèque v$version';
+  }
+
+  @override
+  String get settingsCatGeneral => 'Général';
+
+  @override
+  String get settingsCatLibrary => 'Bibliothèque';
+
+  @override
+  String get settingsCatData => 'Données & Sauvegarde';
+
+  @override
+  String get settingsCatSecurity => 'Sécurité';
+
+  @override
+  String get settingsCatAdvanced => 'Avancé';
+
+  @override
+  String get settingsSearchHint => 'Rechercher dans les paramètres';
+
+  @override
+  String get settingsUnsaved => 'Modifications non enregistrées';
+
+  @override
+  String get settingsRevert => 'Annuler les modifications';
+
+  @override
+  String get memberDetail => 'Profil du membre';
+
+  @override
+  String get memberNotFound => 'Membre introuvable';
+
+  @override
+  String get registered => 'Inscrit le';
+
+  @override
+  String get memberLoans => 'Emprunts actifs';
+
+  @override
+  String memberOverdueAlert(int n) {
+    return '$n article(s) en retard nécessitent une attention';
+  }
+
+  @override
+  String get noLoansForMember => 'Aucun emprunt pour ce membre';
+
+  @override
+  String get dueDate => 'Échéance';
+
+  @override
+  String get renewLoan => 'Renouveler cet emprunt';
+
+  @override
+  String get memberFines => 'Amendes';
+
+  @override
+  String get finePending => 'En attente';
+
+  @override
+  String get noPendingFines => 'Aucune amende en attente';
+
+  @override
+  String get memberReservations => 'Réservations';
+
+  @override
+  String get noActiveReservations => 'Aucune réservation active';
+
+  @override
+  String get holdReadyForPickup => 'Prêt à retirer';
+
+  @override
+  String get holdQueued => 'En file d\'attente';
+
+  @override
+  String get statusAvailable => 'Disponible';
+
+  @override
+  String get statusQueued => 'En file';
+
+  @override
+  String get needsAttention => 'Nécessite une attention';
+
+  @override
+  String get checkoutAction => 'Emprunt';
+
+  @override
+  String get reserveAction => 'Réserver';
+
+  @override
+  String copiesAvailableLabel(int a, int t) {
+    return '$a sur $t exemplaires disponibles';
+  }
+
+  @override
+  String get noCopiesAvailableForCheckout =>
+      'Aucun exemplaire disponible pour l\'emprunt.';
+
+  @override
+  String get reserveSuccess => 'Réservation effectuée.';
+
+  @override
+  String get noMembersMatchSearch =>
+      'Aucun membre ne correspond à la recherche.';
+
+  @override
+  String paginationSummary(int from, int to, int total) {
+    return 'Affichage $from–$to sur $total articles';
+  }
+
+  @override
+  String get keyboardShortcutsTitle => 'Raccourcis clavier';
+
+  @override
+  String get keyboardShortcutsContent =>
+      'Ctrl+K ouvre la palette de commandes. Entrée exécute le premier résultat. Échap ferme les dialogues. Tab passe entre les champs ; les flèches naviguent dans les listes.';
+
+  @override
+  String get historySubjectPlaceholder =>
+      'Filtrer par code ou identifiant de membre...';
+
+  @override
+  String get seeAllHistory => 'Voir tout l\'historique';
+
+  @override
+  String get noHistoryForRecord => 'Aucune activité récente pour cette fiche.';
+
+  @override
+  String get queueMoveUp => 'Monter dans la file';
+
+  @override
+  String get queueMoveDown => 'Descendre dans la file';
+
+  @override
+  String get queueOrderByItem => 'Filtrer par article pour réordonner la file';
+
+  @override
+  String get queueMoved => 'Ordre de la file mis à jour.';
+
+  @override
+  String get queueMoveFailed => 'Impossible de réordonner la file.';
+
+  @override
+  String get navCollapse => 'Réduire le menu';
+
+  @override
+  String get navExpand => 'Développer le menu';
+
+  @override
+  String get deleteMember => 'Supprimer le membre';
+
+  @override
+  String get confirmDeleteMember =>
+      'Voulez-vous vraiment supprimer ce membre ? Ses emprunts et réservations doivent être réglés d\'abord.';
+
+  @override
+  String confirmDeleteItemNamed(String item) {
+    return 'Voulez-vous vraiment supprimer cet article ($item) ?';
+  }
+
+  @override
+  String reportGeneratedOn(String when) {
+    return 'Généré le $when';
+  }
+
+  @override
+  String userJoinedOn(String when) {
+    return 'Inscrit le $when';
+  }
+
+  @override
+  String get noNamedAccounts => 'Aucun compte nommé pour le moment';
+
+  @override
+  String get noNamedAccountsHint =>
+      'Vous êtes connecté en tant qu\'administrateur intégré. Créez ci-dessous des comptes staff ou viewer pour accorder un accès limité à d\'autres utilisateurs.';
 }

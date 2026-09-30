@@ -10,6 +10,7 @@
   "location": "Location",
   "rate": "Rate",
   "stockLocation": "Stock Location",
+  "stock": "Stock",
   "save": "Save",
   "cancel": "Cancel",
   "confirmDelete": "Are you sure you want to delete this item?",
@@ -18,6 +19,12 @@
   "generateReport": "Generate Report",
   "codeRequired": "Code is required",
   "designationRequired": "Designation is required",
+  "wholeNumberRequired": "Whole number required",
+  "numberRequired": "Number required",
+  "mustBeNonNegative": "Must be greater than or equal to 0",
+  "newValue": "New Value",
+  "attributeOptionsNote": "These options appear in the dropdowns when adding or editing a book.",
+  "usbScannerNote": "USB scanners act as keyboards. Just scan!",
   "settings": "Settings",
   "inventory": "Inventory",
   "fullCodeLabel": "Full Code",
@@ -32,6 +39,7 @@
   "actions": "Actions",
   "dataProtection": "Data Protection",
   "backupDatabase": "Backup Database",
+  "selectBackupDatabase": "Select Backup Database",
   "restoreDatabase": "Restore Database",
   "manageVariables": "Manage Variables",
   "manageAttributes": "Manage Attributes",
@@ -51,6 +59,7 @@
   "eraseWarning": "WARNING: This will permanently delete all items and reset settings. This action cannot be undone.",
   "connected": "Connected",
   "disconnected": "Disconnected",
+  "reconnecting": "Reconnecting…",
   "connectionType": "Connection Type",
   "hostMode": "Server (Host)",
   "clientMode": "Client",
@@ -89,6 +98,23 @@
   "allTypes": "All Types",
   "noItemsFound": "No items found",
   "backupSuccess": "Backup created successfully!",
+  "backupFailed": "Backup failed.",
+  "restoreFailed": "Restore failed.",
+  "retry": "Retry",
+  "noPhone": "No phone",
+  "scannerError": "Scanner error: {code}",
+  "@scannerError": {
+    "placeholders": {
+      "code": {"type": "String"}
+    }
+  },
+  "selectedItemLabel": "Selected: {name} ({status})",
+  "@selectedItemLabel": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "status": {"type": "String"}
+    }
+  },
   "restoreSuccess": "Database restored successfully!",
   "setPassword": "Set a password",
   "importExcel": "Import from Excel (.xlsx)",
@@ -105,6 +131,30 @@
   "statusEmprunte": "Borrowed",
   "statusReserve": "Reserved",
   "statusEndommage": "Damaged",
+  "statusEnReparation": "In repair",
+  "statusPerdu": "Lost",
+  "statusArchive": "Archived",
+  "itemCopies": "Copies",
+  "copyNumberLabel": "Copy {n}",
+  "@copyNumberLabel": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "copyBarcodeMissing": "No copy barcode",
+  "changeCopyState": "Change condition",
+  "copyLockedTooltip": "Checked-out or reserved copies must be changed via loans / holds",
+  "copyStateUpdated": "Copy updated",
+  "addCopy": "Add copy",
+  "removeCopy": "Remove copy",
+  "setCopyBarcode": "Set copy barcode",
+  "copyBarcodeSave": "Save",
+  "removeCopyConfirm": "Remove this physical copy? This cannot be undone.",
+  "copyAdded": "Copy added",
+  "copyRemoved": "Copy removed",
+  "copyBarcodeSaved": "Copy barcode updated",
   "itemProfile": "Item Profile",
   "itemDetails": "Item Details",
   "editItemDetails": "Edit Details",
@@ -148,6 +198,10 @@
   },
   "connectedDevices": "Connected Devices",
   "connectedViaLan": "Connected via LAN",
+    "noConnectedDevices": "No devices are connected right now.",
+  "noCopiesYet": "No copies recorded yet.",
+  "memberIdAuto": "ID (auto-generated)",
+  "memberIdCode": "ID / Code",
   "scanWithUsbOrType": "Use a USB Scanner or type code",
   "scanOrTypeHint": "Scan code or type here...",
   "requiredField": "Required field",
@@ -176,6 +230,15 @@
   "itemNotFound": "Item not found",
   "itemNotAvailable": "Item is not available.",
   "noActiveLoan": "No active loan found for this item.",
+  "activeLoans": "Active Loans",
+  "noActiveLoans": "No active loans.",
+  "overdue": "Overdue",
+  "renew": "Renew",
+  "renewSuccess": "Loan renewed successfully",
+  "colMember": "Member",
+  "colItem": "Item",
+  "loanDateCol": "Loan Date",
+  "dueDateCol": "Due Date",
   "selectCamera": "Select Camera",
   "cameraFront": "Front Camera",
   "cameraBack": "Back Camera",
@@ -196,6 +259,10 @@
   "setupLanguageDesc": "Choose your preferred language for the application.",
   "setupPasswordDesc": "Set an administrative password to protect your data.",
   "setupConfigDesc": "Configure basic library prefixes and attributes.",
+  "configPrefixesLabel": "Code prefixes (LIV, REV, etc.)",
+  "configPrefixesDesc": "Default values will be initialized.",
+  "configAttributesLabel": "Dynamic attributes",
+  "configAttributesDesc": "Locations, statuses, and stocks.",
   "setupComplete": "Setup Complete!",
   "setupCompleteDesc": "You are now ready to use the Library Management System.",
   "helpMembersTitle": "Managing Members",
@@ -214,6 +281,14 @@
   "updateAvailable": "Update Available",
   "noUpdateAvailable": "You are using the latest version.",
   "updateNow": "Update Now",
+  "updateNotConfigured": "Automatic update checking is not configured for this deployment.",
+  "updateCheckFailed": "Could not reach the update server. Please try again later.",
+  "updateFoundVersion": "Version {version} is now available.",
+  "@updateFoundVersion": {
+    "placeholders": {
+      "version": {"type": "String"}
+    }
+  },
   "enableLanAccess": "Enable LAN Access",
   "enableLanAccessDescription": "Allow other PCs to connect by adding Windows Firewall rules (requires Admin).",
   "lanAccessEnabled": "LAN access enabled.",
@@ -228,5 +303,355 @@
   "helpSyncTitle": "LAN Synchronization",
   "helpSyncContent": "1. One machine must be set as the 'Host' (Server) while others are 'Clients'.\n2. Clients connect using the Host's IP address. Pair automatically by scanning the Host's sync QR code.\n3. Changes on any device are mirrored to the server via local network protocols.",
   "helpBarcodeTitle": "Barcode Scanning",
-  "helpBarcodeContent": "1. Integrated Camera: Supports front/back/external camera toggling with LED flash support.\n2. USB Scanners: Plug-and-play support in any search field.\n3. Multiple Devices: Switch between available cameras using the device selection dropdown in the scanner window."
+  "helpBarcodeContent": "1. Integrated Camera: Supports front/back/external camera toggling with LED flash support.\n2. USB Scanners: Plug-and-play support in any search field.\n3. Multiple Devices: Switch between available cameras using the device selection dropdown in the scanner window.",
+  "errNetwork": "Cannot reach the server. Check the connection and try again.",
+  "errAuth": "This action requires administrator authentication.",
+  "errConflict": "Conflict: the record was changed by someone else or already exists.",
+  "errNotFound": "The requested record was not found.",
+  "errBadRequest": "The request was rejected as invalid.",
+  "errServerError": "The server reported an error. Please try again.",
+  "errGeneric": "Something went wrong. Please try again.",
+  "errServerNotInitialized": "No LAN server has been set up on this PC.",
+  "errServerStartFailed": "The LAN server could not be started. Another program may already be using this port.",
+  "errHostOnlyFeature": "This is available only on the host PC (the one running the library).",
+
+  "usersAndRoles": "Users & Roles",
+  "account": "Account",
+  "role": "Role",
+  "roleAdmin": "Admin",
+  "roleStaff": "Staff",
+  "roleViewer": "Viewer",
+  "roleAdminDescription": "Full access, including user management and settings",
+  "roleStaffDescription": "Can borrow, return and edit catalogue, members and loans",
+  "roleViewerDescription": "Read-only: can look, cannot change anything",
+  "signedInAs": "Signed in as {user} ({role})",
+  "@signedInAs": {
+    "placeholders": {
+      "user": {"type": "String"},
+      "role": {"type": "String"}
+    }
+  },
+  "signIn": "Sign in",
+  "signOut": "Sign out",
+  "username": "Username",
+  "password": "Password",
+  "newPassword": "New password",
+  "createAccount": "Create account",
+  "removeAccount": "Remove account",
+  "changeRole": "Change role",
+  "changePassword": "Change password",
+  "removeAccountConfirm": "Remove the account \"{user}\"? Any device signed in with it will be disconnected.",
+  "@removeAccountConfirm": {
+    "placeholders": {
+      "user": {"type": "String"}
+    }
+  },
+  "passwordMinLength": "Use at least {n} characters.",
+  "@passwordMinLength": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "usernameRules": "3-32 characters: letters, digits, dot, underscore or hyphen; must start with a letter or digit; lowercase.",
+  "onlyAdminManagesUsers": "Only an administrator can manage accounts and roles.",
+  "readOnlyMode": "You are signed in with a read-only account. Editing is disabled.",
+  "readAccountFailed": "Could not load the account list.",
+  "signInFailed": "Sign-in failed. Check the username and password.",
+  "pairAsRole": "Grant this device the selected role when it pairs",
+  "readOnlyAccount": "Read-only account",
+  "noAccounts": "No accounts yet",
+
+  "fines": "Fines",
+  "fineNoFines": "No fines recorded",
+  "fineStatusPending": "Pending",
+  "fineStatusPaid": "Paid",
+  "fineStatusWaived": "Waived",
+  "fineCollectedBy": "Handled by",
+  "fineAmountLabel": "Amount",
+  "fineMemberLabel": "Member",
+  "fineReasonLabel": "Reason",
+  "fineDateLabel": "Date",
+  "fineStatusLabel": "Status",
+  "fineCollect": "Collect",
+  "fineWaive": "Waive",
+  "fineFilterAll": "All fines",
+  "fineOutstanding": "Outstanding: {amount}",
+  "@fineOutstanding": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "fineCollectConfirm": "Record payment of {amount} for this fine?",
+  "@fineCollectConfirm": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "fineWaiveConfirm": "Waive this fine of {amount}? No money will be collected.",
+  "@fineWaiveConfirm": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "finePolicy": "Fine policy",
+  "fineRatePerDay": "Rate per overdue day",
+  "fineCurrency": "Currency",
+  "finePolicySaved": "Fine policy updated",
+  "finePolicyDisabledHint": "Fines are disabled (rate 0). Set a rate to start charging overdue returns.",
+  "fineSettled": "Fine updated",
+  "finePolicyTooltip": "Set the overdue rate and currency (administrators only)",
+  "onlyStaffManageFines": "Only staff can view or settle fines.",
+  "fineViewFailed": "Could not load fines.",
+
+  "reservations": "Reservations",
+  "holdNoHolds": "No holds recorded",
+  "holdStatusQueued": "In line",
+  "holdStatusAvailable": "Ready for pickup",
+  "holdStatusFulfilled": "Collected",
+  "holdStatusCancelled": "Cancelled",
+  "holdStatusExpired": "Expired",
+  "holdPlace": "Place hold",
+  "holdCancel": "Cancel",
+  "holdCancelConfirm": "Cancel the hold for {member} on {item}?",
+  "@holdCancelConfirm": {
+    "placeholders": {
+      "member": {"type": "String"},
+      "item": {"type": "String"}
+    }
+  },
+  "holdPlaced": "Hold placed",
+  "holdCancelled": "Hold cancelled",
+  "holdViewFailed": "Could not load holds.",
+  "holdPlaceFailed": "Could not place the hold.",
+  "onlyStaffManageHolds": "Only staff can view or manage holds.",
+  "holdFilterAll": "All holds",
+  "holdFilterOpen": "Open holds",
+  "holdFilterReady": "Ready for pickup",
+  "holdQueuePosition": "#{position} in line",
+  "@holdQueuePosition": {
+    "placeholders": {
+      "position": {"type": "String"}
+    }
+  },
+  "holdPickupBy": "Pick up by {date}",
+  "@holdPickupBy": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "holdItemLabel": "Item",
+  "holdMemberLabel": "Member",
+  "holdSelectItem": "Select an item",
+  "holdSelectMember": "Select a member",
+  "holdNeedSelection": "Choose both an item and a member.",
+  "holdNothingReady": "Nothing is waiting for pickup",
+  "holdPolicy": "Hold policy",
+  "holdPolicyTooltip": "Set the pickup window and queue cap (administrators only)",
+  "holdPolicySaved": "Hold policy updated",
+  "holdPickupDays": "Pickup window (days)",
+  "holdQueueCap": "Max holds per title",
+  "holdNoItems": "No catalogue items are loaded to place a hold.",
+  "holdNoMembers": "No members are loaded to place a hold.",
+
+  "reports": "Reports",
+  "reportSelectKind": "Report type",
+  "reportKindCirculation": "Circulation",
+  "reportKindOverdue": "Overdue items",
+  "reportKindInventory": "Inventory",
+  "reportKindFines": "Fines",
+  "reportKindMembers": "Top borrowers",
+  "reportRun": "Run report",
+  "reportFrom": "From",
+  "reportTo": "To",
+  "reportGeneratedLabel": "Generated",
+  "reportPeriodLabel": "Period",
+  "reportDateHint": "YYYY-MM-DD",
+  "reportWindowNote": "This report covers a date range.",
+  "reportInvalidDates": "Enter a valid date (YYYY-MM-DD).",
+  "reportNoData": "No records for this report",
+  "reportSummary": "Summary",
+  "reportGeneratedAt": "Generated {when}",
+  "@reportGeneratedAt": {
+    "placeholders": {
+      "when": {"type": "String"}
+    }
+  },
+  "reportExportCsv": "Export CSV",
+  "reportExportPdf": "Export PDF",
+  "reportSaved": "Saved to {path}",
+  "@reportSaved": {
+    "placeholders": {
+      "path": {"type": "String"}
+    }
+  },
+  "reportFailed": "Could not run the report.",
+  "reportExportFailed": "Could not export the report.",
+  "onlyStaffRunReports": "Only staff can run reports.",
+  "exportDiagnostics": "Export diagnostics",
+  "diagnosticsSaved": "Diagnostics saved to {path}",
+  "@diagnosticsSaved": {
+    "placeholders": {
+      "path": {"type": "String"}
+    }
+  },
+  "diagnosticsFailed": "Could not export diagnostics.",
+
+  "connectionMode": "Connection mode",
+  "hostModeOption": "Host (main PC — server)",
+  "clientModeOption": "Client (staff PC)",
+  "hostIpLabel": "Host IP address",
+  "hostIpHelper": "Enter the IP address of the main PC (e.g., 192.168.1.50)",
+  "appearance": "Appearance",
+  "appearanceHint": "Theme and branding for this device. These are not shared with other PCs.",
+  "themeLabel": "Theme",
+  "themeSystem": "System",
+  "themeLight": "Light",
+  "themeDark": "Dark",
+  "accentColor": "Accent color",
+  "brandName": "Brand name",
+  "brandNameHint": "Product name shown in the title bar (administrators only)",
+  "featuresTitle": "Features",
+  "featureFlagsHint": "Turn optional screens on or off. Changes apply immediately.",
+  "brandNameUpdated": "Brand name updated",
+
+  "commandPalette": "Command palette",
+  "paletteSearchHint": "Type to search commands…",
+  "paletteNoMatches": "No matching commands",
+
+  "systemHealthTitle": "System health",
+  "healthAppVersion": "App version",
+  "healthDatabaseSchema": "Database schema version",
+  "healthOperatingMode": "Operating mode",
+  "healthLanServer": "LAN server",
+  "healthServerRunning": "Listening",
+  "healthServerStopped": "Not listening",
+  "healthConnection": "Connection",
+  "healthConnectedClients": "Connected clients",
+  "healthClientCount": "{n} active",
+  "@healthClientCount": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "healthLastBackup": "Last backup",
+  "healthNever": "Never",
+  "healthBackupFresh": "Fresh",
+  "healthBackupStale": "Overdue",
+  "notifications": "Notifications",
+  "notifNone": "Nothing needs attention",
+  "notifLoading": "Checking…",
+  "notifOverdue": "{n} overdue loan(s)",
+  "@notifOverdue": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "notifHoldsReady": "{n} hold(s) ready for pickup",
+  "@notifHoldsReady": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "notifFinesPending": "{n} fine(s) awaiting settlement",
+  "@notifFinesPending": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "chat": "Staff chat",
+  "chatInputHint": "Message…",
+  "chatSend": "Send",
+  "chatEmpty": "No messages yet.",
+  "chatUnavailable": "Chat is unavailable right now.",
+  "helpVersionFooter": "Library Manager v{version}",
+  "@helpVersionFooter": {
+    "placeholders": {
+      "version": {"type": "String"}
+    }
+  },
+  "settingsCatGeneral": "General",
+  "settingsCatLibrary": "Library",
+  "settingsCatData": "Data & Backup",
+  "settingsCatSecurity": "Security",
+  "settingsCatAdvanced": "Advanced",
+  "settingsSearchHint": "Search settings",
+  "settingsUnsaved": "Unsaved changes",
+  "settingsRevert": "Revert",
+  "memberDetail": "Member Profile",
+  "memberNotFound": "Member not found",
+  "registered": "Registered",
+  "memberLoans": "Active Loans",
+  "memberOverdueAlert": "{n} overdue item(s) need attention",
+  "@memberOverdueAlert": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "noLoansForMember": "No loans for this member",
+  "dueDate": "Due",
+  "renewLoan": "Renew this loan",
+  "memberFines": "Fines",
+  "finePending": "Pending",
+  "noPendingFines": "No pending fines",
+  "memberReservations": "Reservations",
+  "noActiveReservations": "No active reservations",
+  "holdReadyForPickup": "Ready for pickup",
+  "holdQueued": "In queue",
+  "statusAvailable": "Available",
+  "statusQueued": "Queued",
+  "needsAttention": "Needs attention",
+  "checkoutAction": "Checkout",
+  "reserveAction": "Reserve",
+  "copiesAvailableLabel": "{a} of {t} copies available",
+  "@copiesAvailableLabel": {
+    "placeholders": {
+      "a": {"type": "int"},
+      "t": {"type": "int"}
+    }
+  },
+  "noCopiesAvailableForCheckout": "No copies currently available for checkout.",
+  "reserveSuccess": "Reservation placed.",
+  "noMembersMatchSearch": "No members match your search.",
+  "paginationSummary": "Showing {from}–{to} of {total} items",
+  "@paginationSummary": {
+    "placeholders": {
+      "from": {"type": "int"},
+      "to": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "keyboardShortcutsTitle": "Keyboard shortcuts",
+  "keyboardShortcutsContent": "Ctrl+K opens the command palette. Enter runs the top result. Esc closes dialogs. Tab moves between fields; arrow keys navigate lists.",
+  "historySubjectPlaceholder": "Filter by code or member ID...",
+  "seeAllHistory": "See all history",
+  "noHistoryForRecord": "No recent activity for this record.",
+  "queueMoveUp": "Move up in queue",
+  "queueMoveDown": "Move down in queue",
+  "queueOrderByItem": "Filter by item to reorder the queue",
+  "queueMoved": "Queue order updated.",
+  "queueMoveFailed": "Could not reorder the queue.",
+  "navCollapse": "Collapse menu",
+  "navExpand": "Expand menu",
+  "deleteMember": "Delete Member",
+  "confirmDeleteMember": "Are you sure you want to delete this member? Their loans and holds must be settled first.",
+  "confirmDeleteItemNamed": "Are you sure you want to delete this item ({item})?",
+  "@confirmDeleteItemNamed": {
+    "placeholders": {
+      "item": {"type": "String"}
+    }
+  },
+  "reportGeneratedOn": "Generated {when}",
+  "@reportGeneratedOn": {
+    "placeholders": {
+      "when": {"type": "String"}
+    }
+  },
+  "userJoinedOn": "Joined {when}",
+  "@userJoinedOn": {
+    "placeholders": {
+      "when": {"type": "String"}
+    }
+  },
+  "noNamedAccounts": "No named accounts yet",
+  "noNamedAccountsHint": "You are signed in as the built-in administrator. Create staff or viewer accounts below to grant scoped access to other users."
 }

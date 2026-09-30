@@ -42,6 +42,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get stockLocation => 'Stock Location';
 
   @override
+  String get stock => 'Stock';
+
+  @override
   String get save => 'Save';
 
   @override
@@ -64,6 +67,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get designationRequired => 'Designation is required';
+
+  @override
+  String get wholeNumberRequired => 'Whole number required';
+
+  @override
+  String get numberRequired => 'Number required';
+
+  @override
+  String get mustBeNonNegative => 'Must be greater than or equal to 0';
+
+  @override
+  String get newValue => 'New Value';
+
+  @override
+  String get attributeOptionsNote =>
+      'These options appear in the dropdowns when adding or editing a book.';
+
+  @override
+  String get usbScannerNote => 'USB scanners act as keyboards. Just scan!';
 
   @override
   String get settings => 'Settings';
@@ -108,6 +130,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backupDatabase => 'Backup Database';
 
   @override
+  String get selectBackupDatabase => 'Select Backup Database';
+
+  @override
   String get restoreDatabase => 'Restore Database';
 
   @override
@@ -140,10 +165,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminPassword => 'Admin Password';
 
   @override
-  String get changePassword => 'Change Password';
+  String get changePassword => 'Change password';
 
   @override
-  String get newPassword => 'New Password';
+  String get newPassword => 'New password';
 
   @override
   String get wrongPassword => 'Wrong Password';
@@ -166,6 +191,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get disconnected => 'Disconnected';
+
+  @override
+  String get reconnecting => 'Reconnecting…';
 
   @override
   String get connectionType => 'Connection Type';
@@ -282,6 +310,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backupSuccess => 'Backup created successfully!';
 
   @override
+  String get backupFailed => 'Backup failed.';
+
+  @override
+  String get restoreFailed => 'Restore failed.';
+
+  @override
+  String get retry => 'Retry';
+
+  @override
+  String get noPhone => 'No phone';
+
+  @override
+  String scannerError(String code) {
+    return 'Scanner error: $code';
+  }
+
+  @override
+  String selectedItemLabel(String name, String status) {
+    return 'Selected: $name ($status)';
+  }
+
+  @override
   String get restoreSuccess => 'Database restored successfully!';
 
   @override
@@ -329,6 +379,61 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get statusEndommage => 'Damaged';
+
+  @override
+  String get statusEnReparation => 'In repair';
+
+  @override
+  String get statusPerdu => 'Lost';
+
+  @override
+  String get statusArchive => 'Archived';
+
+  @override
+  String get itemCopies => 'Copies';
+
+  @override
+  String copyNumberLabel(int n) {
+    return 'Copy $n';
+  }
+
+  @override
+  String get copyBarcodeMissing => 'No copy barcode';
+
+  @override
+  String get changeCopyState => 'Change condition';
+
+  @override
+  String get copyLockedTooltip =>
+      'Checked-out or reserved copies must be changed via loans / holds';
+
+  @override
+  String get copyStateUpdated => 'Copy updated';
+
+  @override
+  String get addCopy => 'Add copy';
+
+  @override
+  String get removeCopy => 'Remove copy';
+
+  @override
+  String get setCopyBarcode => 'Set copy barcode';
+
+  @override
+  String get copyBarcodeSave => 'Save';
+
+  @override
+  String get removeCopyConfirm =>
+      'Remove this physical copy? This cannot be undone.';
+
+  @override
+  String get copyAdded => 'Copy added';
+
+  @override
+  String get copyRemoved => 'Copy removed';
+
+  @override
+  String get copyBarcodeSaved => 'Copy barcode updated';
 
   @override
   String get itemProfile => 'Item Profile';
@@ -447,6 +552,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get connectedViaLan => 'Connected via LAN';
 
   @override
+  String get noConnectedDevices => 'No devices are connected right now.';
+
+  @override
+  String get noCopiesYet => 'No copies recorded yet.';
+
+  @override
+  String get memberIdAuto => 'ID (auto-generated)';
+
+  @override
+  String get memberIdCode => 'ID / Code';
+
+  @override
   String get scanWithUsbOrType => 'Use a USB Scanner or type code';
 
   @override
@@ -528,6 +645,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noActiveLoan => 'No active loan found for this item.';
 
   @override
+  String get activeLoans => 'Active Loans';
+
+  @override
+  String get noActiveLoans => 'No active loans.';
+
+  @override
+  String get overdue => 'Overdue';
+
+  @override
+  String get renew => 'Renew';
+
+  @override
+  String get renewSuccess => 'Loan renewed successfully';
+
+  @override
+  String get colMember => 'Member';
+
+  @override
+  String get colItem => 'Item';
+
+  @override
+  String get loanDateCol => 'Loan Date';
+
+  @override
+  String get dueDateCol => 'Due Date';
+
+  @override
   String get selectCamera => 'Select Camera';
 
   @override
@@ -591,6 +735,18 @@ class AppLocalizationsEn extends AppLocalizations {
       'Configure basic library prefixes and attributes.';
 
   @override
+  String get configPrefixesLabel => 'Code prefixes (LIV, REV, etc.)';
+
+  @override
+  String get configPrefixesDesc => 'Default values will be initialized.';
+
+  @override
+  String get configAttributesLabel => 'Dynamic attributes';
+
+  @override
+  String get configAttributesDesc => 'Locations, statuses, and stocks.';
+
+  @override
   String get setupComplete => 'Setup Complete!';
 
   @override
@@ -651,6 +807,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get updateNow => 'Update Now';
 
   @override
+  String get updateNotConfigured =>
+      'Automatic update checking is not configured for this deployment.';
+
+  @override
+  String get updateCheckFailed =>
+      'Could not reach the update server. Please try again later.';
+
+  @override
+  String updateFoundVersion(String version) {
+    return 'Version $version is now available.';
+  }
+
+  @override
   String get enableLanAccess => 'Enable LAN Access';
 
   @override
@@ -673,4 +842,736 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get appDefinitionContent =>
       'Library Manager is a professional desktop solution designed for Algerian libraries and documentation centers. It provides specialized tools for inventory management, LAN-based synchronization, and barcode tracking. The system supports full English, French, and Arabic categorization following national standards.';
+
+  @override
+  String get errNetwork =>
+      'Cannot reach the server. Check the connection and try again.';
+
+  @override
+  String get errAuth => 'This action requires administrator authentication.';
+
+  @override
+  String get errConflict =>
+      'Conflict: the record was changed by someone else or already exists.';
+
+  @override
+  String get errNotFound => 'The requested record was not found.';
+
+  @override
+  String get errBadRequest => 'The request was rejected as invalid.';
+
+  @override
+  String get errServerError =>
+      'The server reported an error. Please try again.';
+
+  @override
+  String get errGeneric => 'Something went wrong. Please try again.';
+
+  @override
+  String get errServerNotInitialized =>
+      'No LAN server has been set up on this PC.';
+
+  @override
+  String get errServerStartFailed =>
+      'The LAN server could not be started. Another program may already be using this port.';
+
+  @override
+  String get errHostOnlyFeature =>
+      'This is available only on the host PC (the one running the library).';
+
+  @override
+  String get usersAndRoles => 'Users & Roles';
+
+  @override
+  String get account => 'Account';
+
+  @override
+  String get role => 'Role';
+
+  @override
+  String get roleAdmin => 'Admin';
+
+  @override
+  String get roleStaff => 'Staff';
+
+  @override
+  String get roleViewer => 'Viewer';
+
+  @override
+  String get roleAdminDescription =>
+      'Full access, including user management and settings';
+
+  @override
+  String get roleStaffDescription =>
+      'Can borrow, return and edit catalogue, members and loans';
+
+  @override
+  String get roleViewerDescription =>
+      'Read-only: can look, cannot change anything';
+
+  @override
+  String signedInAs(String user, String role) {
+    return 'Signed in as $user ($role)';
+  }
+
+  @override
+  String get signIn => 'Sign in';
+
+  @override
+  String get signOut => 'Sign out';
+
+  @override
+  String get username => 'Username';
+
+  @override
+  String get password => 'Password';
+
+  @override
+  String get createAccount => 'Create account';
+
+  @override
+  String get removeAccount => 'Remove account';
+
+  @override
+  String get changeRole => 'Change role';
+
+  @override
+  String removeAccountConfirm(String user) {
+    return 'Remove the account \"$user\"? Any device signed in with it will be disconnected.';
+  }
+
+  @override
+  String passwordMinLength(int n) {
+    return 'Use at least $n characters.';
+  }
+
+  @override
+  String get usernameRules =>
+      '3-32 characters: letters, digits, dot, underscore or hyphen; must start with a letter or digit; lowercase.';
+
+  @override
+  String get onlyAdminManagesUsers =>
+      'Only an administrator can manage accounts and roles.';
+
+  @override
+  String get readOnlyMode =>
+      'You are signed in with a read-only account. Editing is disabled.';
+
+  @override
+  String get readAccountFailed => 'Could not load the account list.';
+
+  @override
+  String get signInFailed => 'Sign-in failed. Check the username and password.';
+
+  @override
+  String get pairAsRole => 'Grant this device the selected role when it pairs';
+
+  @override
+  String get readOnlyAccount => 'Read-only account';
+
+  @override
+  String get noAccounts => 'No accounts yet';
+
+  @override
+  String get fines => 'Fines';
+
+  @override
+  String get fineNoFines => 'No fines recorded';
+
+  @override
+  String get fineStatusPending => 'Pending';
+
+  @override
+  String get fineStatusPaid => 'Paid';
+
+  @override
+  String get fineStatusWaived => 'Waived';
+
+  @override
+  String get fineCollectedBy => 'Handled by';
+
+  @override
+  String get fineAmountLabel => 'Amount';
+
+  @override
+  String get fineMemberLabel => 'Member';
+
+  @override
+  String get fineReasonLabel => 'Reason';
+
+  @override
+  String get fineDateLabel => 'Date';
+
+  @override
+  String get fineStatusLabel => 'Status';
+
+  @override
+  String get fineCollect => 'Collect';
+
+  @override
+  String get fineWaive => 'Waive';
+
+  @override
+  String get fineFilterAll => 'All fines';
+
+  @override
+  String fineOutstanding(String amount) {
+    return 'Outstanding: $amount';
+  }
+
+  @override
+  String fineCollectConfirm(String amount) {
+    return 'Record payment of $amount for this fine?';
+  }
+
+  @override
+  String fineWaiveConfirm(String amount) {
+    return 'Waive this fine of $amount? No money will be collected.';
+  }
+
+  @override
+  String get finePolicy => 'Fine policy';
+
+  @override
+  String get fineRatePerDay => 'Rate per overdue day';
+
+  @override
+  String get fineCurrency => 'Currency';
+
+  @override
+  String get finePolicySaved => 'Fine policy updated';
+
+  @override
+  String get finePolicyDisabledHint =>
+      'Fines are disabled (rate 0). Set a rate to start charging overdue returns.';
+
+  @override
+  String get fineSettled => 'Fine updated';
+
+  @override
+  String get finePolicyTooltip =>
+      'Set the overdue rate and currency (administrators only)';
+
+  @override
+  String get onlyStaffManageFines => 'Only staff can view or settle fines.';
+
+  @override
+  String get fineViewFailed => 'Could not load fines.';
+
+  @override
+  String get reservations => 'Reservations';
+
+  @override
+  String get holdNoHolds => 'No holds recorded';
+
+  @override
+  String get holdStatusQueued => 'In line';
+
+  @override
+  String get holdStatusAvailable => 'Ready for pickup';
+
+  @override
+  String get holdStatusFulfilled => 'Collected';
+
+  @override
+  String get holdStatusCancelled => 'Cancelled';
+
+  @override
+  String get holdStatusExpired => 'Expired';
+
+  @override
+  String get holdPlace => 'Place hold';
+
+  @override
+  String get holdCancel => 'Cancel';
+
+  @override
+  String holdCancelConfirm(String member, String item) {
+    return 'Cancel the hold for $member on $item?';
+  }
+
+  @override
+  String get holdPlaced => 'Hold placed';
+
+  @override
+  String get holdCancelled => 'Hold cancelled';
+
+  @override
+  String get holdViewFailed => 'Could not load holds.';
+
+  @override
+  String get holdPlaceFailed => 'Could not place the hold.';
+
+  @override
+  String get onlyStaffManageHolds => 'Only staff can view or manage holds.';
+
+  @override
+  String get holdFilterAll => 'All holds';
+
+  @override
+  String get holdFilterOpen => 'Open holds';
+
+  @override
+  String get holdFilterReady => 'Ready for pickup';
+
+  @override
+  String holdQueuePosition(String position) {
+    return '#$position in line';
+  }
+
+  @override
+  String holdPickupBy(String date) {
+    return 'Pick up by $date';
+  }
+
+  @override
+  String get holdItemLabel => 'Item';
+
+  @override
+  String get holdMemberLabel => 'Member';
+
+  @override
+  String get holdSelectItem => 'Select an item';
+
+  @override
+  String get holdSelectMember => 'Select a member';
+
+  @override
+  String get holdNeedSelection => 'Choose both an item and a member.';
+
+  @override
+  String get holdNothingReady => 'Nothing is waiting for pickup';
+
+  @override
+  String get holdPolicy => 'Hold policy';
+
+  @override
+  String get holdPolicyTooltip =>
+      'Set the pickup window and queue cap (administrators only)';
+
+  @override
+  String get holdPolicySaved => 'Hold policy updated';
+
+  @override
+  String get holdPickupDays => 'Pickup window (days)';
+
+  @override
+  String get holdQueueCap => 'Max holds per title';
+
+  @override
+  String get holdNoItems => 'No catalogue items are loaded to place a hold.';
+
+  @override
+  String get holdNoMembers => 'No members are loaded to place a hold.';
+
+  @override
+  String get reports => 'Reports';
+
+  @override
+  String get reportSelectKind => 'Report type';
+
+  @override
+  String get reportKindCirculation => 'Circulation';
+
+  @override
+  String get reportKindOverdue => 'Overdue items';
+
+  @override
+  String get reportKindInventory => 'Inventory';
+
+  @override
+  String get reportKindFines => 'Fines';
+
+  @override
+  String get reportKindMembers => 'Top borrowers';
+
+  @override
+  String get reportRun => 'Run report';
+
+  @override
+  String get reportFrom => 'From';
+
+  @override
+  String get reportTo => 'To';
+
+  @override
+  String get reportGeneratedLabel => 'Generated';
+
+  @override
+  String get reportPeriodLabel => 'Period';
+
+  @override
+  String get reportDateHint => 'YYYY-MM-DD';
+
+  @override
+  String get reportWindowNote => 'This report covers a date range.';
+
+  @override
+  String get reportInvalidDates => 'Enter a valid date (YYYY-MM-DD).';
+
+  @override
+  String get reportNoData => 'No records for this report';
+
+  @override
+  String get reportSummary => 'Summary';
+
+  @override
+  String reportGeneratedAt(String when) {
+    return 'Generated $when';
+  }
+
+  @override
+  String get reportExportCsv => 'Export CSV';
+
+  @override
+  String get reportExportPdf => 'Export PDF';
+
+  @override
+  String reportSaved(String path) {
+    return 'Saved to $path';
+  }
+
+  @override
+  String get reportFailed => 'Could not run the report.';
+
+  @override
+  String get reportExportFailed => 'Could not export the report.';
+
+  @override
+  String get onlyStaffRunReports => 'Only staff can run reports.';
+
+  @override
+  String get exportDiagnostics => 'Export diagnostics';
+
+  @override
+  String diagnosticsSaved(String path) {
+    return 'Diagnostics saved to $path';
+  }
+
+  @override
+  String get diagnosticsFailed => 'Could not export diagnostics.';
+
+  @override
+  String get connectionMode => 'Connection mode';
+
+  @override
+  String get hostModeOption => 'Host (main PC — server)';
+
+  @override
+  String get clientModeOption => 'Client (staff PC)';
+
+  @override
+  String get hostIpLabel => 'Host IP address';
+
+  @override
+  String get hostIpHelper =>
+      'Enter the IP address of the main PC (e.g., 192.168.1.50)';
+
+  @override
+  String get appearance => 'Appearance';
+
+  @override
+  String get appearanceHint =>
+      'Theme and branding for this device. These are not shared with other PCs.';
+
+  @override
+  String get themeLabel => 'Theme';
+
+  @override
+  String get themeSystem => 'System';
+
+  @override
+  String get themeLight => 'Light';
+
+  @override
+  String get themeDark => 'Dark';
+
+  @override
+  String get accentColor => 'Accent color';
+
+  @override
+  String get brandName => 'Brand name';
+
+  @override
+  String get brandNameHint =>
+      'Product name shown in the title bar (administrators only)';
+
+  @override
+  String get featuresTitle => 'Features';
+
+  @override
+  String get featureFlagsHint =>
+      'Turn optional screens on or off. Changes apply immediately.';
+
+  @override
+  String get brandNameUpdated => 'Brand name updated';
+
+  @override
+  String get commandPalette => 'Command palette';
+
+  @override
+  String get paletteSearchHint => 'Type to search commands…';
+
+  @override
+  String get paletteNoMatches => 'No matching commands';
+
+  @override
+  String get systemHealthTitle => 'System health';
+
+  @override
+  String get healthAppVersion => 'App version';
+
+  @override
+  String get healthDatabaseSchema => 'Database schema version';
+
+  @override
+  String get healthOperatingMode => 'Operating mode';
+
+  @override
+  String get healthLanServer => 'LAN server';
+
+  @override
+  String get healthServerRunning => 'Listening';
+
+  @override
+  String get healthServerStopped => 'Not listening';
+
+  @override
+  String get healthConnection => 'Connection';
+
+  @override
+  String get healthConnectedClients => 'Connected clients';
+
+  @override
+  String healthClientCount(int n) {
+    return '$n active';
+  }
+
+  @override
+  String get healthLastBackup => 'Last backup';
+
+  @override
+  String get healthNever => 'Never';
+
+  @override
+  String get healthBackupFresh => 'Fresh';
+
+  @override
+  String get healthBackupStale => 'Overdue';
+
+  @override
+  String get notifications => 'Notifications';
+
+  @override
+  String get notifNone => 'Nothing needs attention';
+
+  @override
+  String get notifLoading => 'Checking…';
+
+  @override
+  String notifOverdue(int n) {
+    return '$n overdue loan(s)';
+  }
+
+  @override
+  String notifHoldsReady(int n) {
+    return '$n hold(s) ready for pickup';
+  }
+
+  @override
+  String notifFinesPending(int n) {
+    return '$n fine(s) awaiting settlement';
+  }
+
+  @override
+  String get chat => 'Staff chat';
+
+  @override
+  String get chatInputHint => 'Message…';
+
+  @override
+  String get chatSend => 'Send';
+
+  @override
+  String get chatEmpty => 'No messages yet.';
+
+  @override
+  String get chatUnavailable => 'Chat is unavailable right now.';
+
+  @override
+  String helpVersionFooter(String version) {
+    return 'Library Manager v$version';
+  }
+
+  @override
+  String get settingsCatGeneral => 'General';
+
+  @override
+  String get settingsCatLibrary => 'Library';
+
+  @override
+  String get settingsCatData => 'Data & Backup';
+
+  @override
+  String get settingsCatSecurity => 'Security';
+
+  @override
+  String get settingsCatAdvanced => 'Advanced';
+
+  @override
+  String get settingsSearchHint => 'Search settings';
+
+  @override
+  String get settingsUnsaved => 'Unsaved changes';
+
+  @override
+  String get settingsRevert => 'Revert';
+
+  @override
+  String get memberDetail => 'Member Profile';
+
+  @override
+  String get memberNotFound => 'Member not found';
+
+  @override
+  String get registered => 'Registered';
+
+  @override
+  String get memberLoans => 'Active Loans';
+
+  @override
+  String memberOverdueAlert(int n) {
+    return '$n overdue item(s) need attention';
+  }
+
+  @override
+  String get noLoansForMember => 'No loans for this member';
+
+  @override
+  String get dueDate => 'Due';
+
+  @override
+  String get renewLoan => 'Renew this loan';
+
+  @override
+  String get memberFines => 'Fines';
+
+  @override
+  String get finePending => 'Pending';
+
+  @override
+  String get noPendingFines => 'No pending fines';
+
+  @override
+  String get memberReservations => 'Reservations';
+
+  @override
+  String get noActiveReservations => 'No active reservations';
+
+  @override
+  String get holdReadyForPickup => 'Ready for pickup';
+
+  @override
+  String get holdQueued => 'In queue';
+
+  @override
+  String get statusAvailable => 'Available';
+
+  @override
+  String get statusQueued => 'Queued';
+
+  @override
+  String get needsAttention => 'Needs attention';
+
+  @override
+  String get checkoutAction => 'Checkout';
+
+  @override
+  String get reserveAction => 'Reserve';
+
+  @override
+  String copiesAvailableLabel(int a, int t) {
+    return '$a of $t copies available';
+  }
+
+  @override
+  String get noCopiesAvailableForCheckout =>
+      'No copies currently available for checkout.';
+
+  @override
+  String get reserveSuccess => 'Reservation placed.';
+
+  @override
+  String get noMembersMatchSearch => 'No members match your search.';
+
+  @override
+  String paginationSummary(int from, int to, int total) {
+    return 'Showing $from–$to of $total items';
+  }
+
+  @override
+  String get keyboardShortcutsTitle => 'Keyboard shortcuts';
+
+  @override
+  String get keyboardShortcutsContent =>
+      'Ctrl+K opens the command palette. Enter runs the top result. Esc closes dialogs. Tab moves between fields; arrow keys navigate lists.';
+
+  @override
+  String get historySubjectPlaceholder => 'Filter by code or member ID...';
+
+  @override
+  String get seeAllHistory => 'See all history';
+
+  @override
+  String get noHistoryForRecord => 'No recent activity for this record.';
+
+  @override
+  String get queueMoveUp => 'Move up in queue';
+
+  @override
+  String get queueMoveDown => 'Move down in queue';
+
+  @override
+  String get queueOrderByItem => 'Filter by item to reorder the queue';
+
+  @override
+  String get queueMoved => 'Queue order updated.';
+
+  @override
+  String get queueMoveFailed => 'Could not reorder the queue.';
+
+  @override
+  String get navCollapse => 'Collapse menu';
+
+  @override
+  String get navExpand => 'Expand menu';
+
+  @override
+  String get deleteMember => 'Delete Member';
+
+  @override
+  String get confirmDeleteMember =>
+      'Are you sure you want to delete this member? Their loans and holds must be settled first.';
+
+  @override
+  String confirmDeleteItemNamed(String item) {
+    return 'Are you sure you want to delete this item ($item)?';
+  }
+
+  @override
+  String reportGeneratedOn(String when) {
+    return 'Generated $when';
+  }
+
+  @override
+  String userJoinedOn(String when) {
+    return 'Joined $when';
+  }
+
+  @override
+  String get noNamedAccounts => 'No named accounts yet';
+
+  @override
+  String get noNamedAccountsHint =>
+      'You are signed in as the built-in administrator. Create staff or viewer accounts below to grant scoped access to other users.';
 }

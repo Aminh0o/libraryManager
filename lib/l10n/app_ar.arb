@@ -10,6 +10,7 @@
   "location": "الموقع",
   "rate": "المعدل",
   "stockLocation": "موقع المخزن",
+  "stock": "المخزن",
   "save": "حفظ",
   "cancel": "إلغاء",
   "confirmDelete": "هل أنت متأكد من حذف هذا العنصر؟",
@@ -18,6 +19,12 @@
   "generateReport": "توليد تقرير",
   "codeRequired": "الرمز مطلوب",
   "designationRequired": "التسمية مطلوبة",
+  "wholeNumberRequired": "عدد صحيح مطلوب",
+  "numberRequired": "رقم مطلوب",
+  "mustBeNonNegative": "يجب أن يكون أكبر من أو يساوي 0",
+  "newValue": "قيمة جديدة",
+  "attributeOptionsNote": "تظهر هذه الخيارات في القوائم المنسدلة عند إضافة كتاب أو تعديلَه.",
+  "usbScannerNote": "أجهزة قراءة USB تعمل كلوحة مفاتيح. ما عليك سوى المسح!",
   "settings": "الإعدادات",
   "inventory": "المخزون",
   "fullCodeLabel": "الرمز الكامل",
@@ -32,6 +39,7 @@
   "actions": "الإجراءات",
   "dataProtection": "حماية البيانات",
   "backupDatabase": "نسخ احتياطي لقاعدة البيانات",
+  "selectBackupDatabase": "اختر قاعدة البيانات للنسخ الاحتياطي",
   "restoreDatabase": "استعادة قاعدة البيانات",
   "manageVariables": "إدارة المتغيرات",
   "manageAttributes": "إدارة الخصائص",
@@ -51,6 +59,7 @@
   "eraseWarning": "تحذير: سيؤدي هذا إلى حذف جميع العناصر نهائيًا وإعادة ضبط الإعدادات. لا يمكن التراجع عن هذا الإجراء.",
   "connected": "متصل",
   "disconnected": "غير متصل",
+  "reconnecting": "إعادة الاتصال…",
   "connectionType": "نوع الاتصال",
   "hostMode": "خادم (مضيف)",
   "clientMode": "عميل",
@@ -89,6 +98,12 @@
   "allTypes": "جميع الأنواع",
   "noItemsFound": "لم يتم العثور على عناصر",
   "backupSuccess": "تم إنشاء النسخة الاحتياطية بنجاح!",
+  "backupFailed": "فشل النسخ الاحتياطي.",
+  "restoreFailed": "فشل الاستعادة.",
+  "retry": "إعادة المحاولة",
+  "noPhone": "لا يوجد هاتف",
+  "scannerError": "خطأ في الماسح: {code}",
+  "selectedItemLabel": "المحدد: {name} ({status})",
   "restoreSuccess": "تم استعادة قاعدة البيانات بنجاح!",
   "setPassword": "تعيين كلمة المرور",
   "importExcel": "استيراد من Excel (.xlsx)",
@@ -105,6 +120,23 @@
   "statusEmprunte": "معار",
   "statusReserve": "محجوز",
   "statusEndommage": "تالف",
+  "statusEnReparation": "قيد الإصلاح",
+  "statusPerdu": "مفقود",
+  "statusArchive": "مؤرشف",
+  "itemCopies": "النسخ",
+  "copyNumberLabel": "نسخة {n}",
+  "copyBarcodeMissing": "لا يوجد رمز شريطي",
+  "changeCopyState": "تغيير الحالة",
+  "copyLockedTooltip": "يجب تغيير النسخ المستعارة أو المحجوزة عبر الإعارة/الحجز",
+  "copyStateUpdated": "تم تحديث النسخة",
+  "addCopy": "إضافة نسخة",
+  "removeCopy": "إزالة هذه النسخة",
+  "setCopyBarcode": "رمز النسخة",
+  "copyBarcodeSave": "حفظ",
+  "removeCopyConfirm": "هل تريد إزالة هذه النسخة المادية؟ لا يمكن التراجع عن هذا الإجراء.",
+  "copyAdded": "تمت إضافة النسخة",
+  "copyRemoved": "تمت إزالة النسخة",
+  "copyBarcodeSaved": "تم تحديث رمز النسخة",
   "itemProfile": "ملف تعريف العنصر",
   "itemDetails": "تفاصيل العنصر",
   "editItemDetails": "تعديل التفاصيل",
@@ -148,6 +180,10 @@
   },
   "connectedDevices": "الأجهزة المتصلة",
   "connectedViaLan": "متصل عبر الشبكة المحلية",
+    "noConnectedDevices": "لا توجد أجهزة متصلة الآن.",
+      "noCopiesYet": "لا توجد نسخ مسجلة بعد.",
+      "memberIdAuto": "المعرّف (تلقائي)",
+      "memberIdCode": "المعرّف / الرمز",
   "scanWithUsbOrType": "استخدم ماسح USB أو اكتب الرمز",
   "scanOrTypeHint": "امسح الرمز أو اكتب هنا...",
   "requiredField": "حقل مطلوب",
@@ -176,6 +212,15 @@
   "itemNotFound": "العنصر غير موجود",
   "itemNotAvailable": "هذا العنصر غير متاح",
   "noActiveLoan": "لا يوجد إعارة نشطة لهذا العنصر",
+  "activeLoans": "الإعارات النشطة",
+  "noActiveLoans": "لا توجد إعارات نشطة.",
+  "overdue": "متأخر",
+  "renew": "تجديد",
+  "renewSuccess": "تم تجديد الإعارة بنجاح",
+  "colMember": "العضو",
+  "colItem": "العنصر",
+  "loanDateCol": "تاريخ الإعارة",
+  "dueDateCol": "تاريخ الاستحقاق",
   "selectCamera": "اختر الكاميرا",
   "cameraFront": "الكاميرا الأمامية",
   "cameraBack": "الكاميرا الخلفية",
@@ -196,6 +241,10 @@
   "setupLanguageDesc": "اختر لغتك المفضلة للتطبيق.",
   "setupPasswordDesc": "تعيين كلمة مرور إدارية لحماية بياناتك.",
   "setupConfigDesc": "تكوين البادئات والسمات الأساسية للمكتبة.",
+  "configPrefixesLabel": "بادئات الرموز (LIV، REV، إلخ)",
+  "configPrefixesDesc": "سيتم تهيئة القيم الافتراضية.",
+  "configAttributesLabel": "السمات الديناميكية",
+  "configAttributesDesc": "المواقع والحالات والمخزون.",
   "setupComplete": "اكتمل الإعداد!",
   "setupCompleteDesc": "أنت الآن جاهز لاستخدام نظام إدارة المكتبة.",
   "helpMembersTitle": "إدارة الأعضاء",
@@ -214,6 +263,9 @@
   "updateAvailable": "تحديث متاح",
   "noUpdateAvailable": "أنت تستخدم أحدث إصدار.",
   "updateNow": "تحديث الآن",
+  "updateNotConfigured": "التحقق التلقائي من التحديثات غير مُهيَّأ لهذا النشر.",
+  "updateCheckFailed": "تعذر الوصول إلى خادم التحديث. حاول مرة أخرى لاحقًا.",
+  "updateFoundVersion": "الإصدار {version} متاح الآن.",
   "enableLanAccess": "تفعيل الوصول عبر الشبكة المحلية",
   "enableLanAccessDescription": "السماح لأجهزة أخرى بالاتصال عبر إضافة قواعد جدار حماية ويندوز (يتطلب صلاحيات المسؤول).",
   "lanAccessEnabled": "تم تفعيل الوصول عبر الشبكة المحلية.",
@@ -228,5 +280,322 @@
   "helpSyncTitle": "المزامنة عبر الشبكة المحلية (LAN)",
   "helpSyncContent": "1. يجب إعداد جهاز واحد كـ 'مضيف' (جهاز رئيسي) بينما تكون الأجهزة الأخرى 'عملاء'.\n2. يتصل العملاء عبر عنوان IP الخاص بالمضيف. يمكن الاقتران تلقائياً بمسح رمز QR.\n3. تنعكس التغييرات من أي جهاز على الخادم عبر الشبكة المحلية في الوقت الفعلي.",
   "helpBarcodeTitle": "مسح الباركود",
-  "helpBarcodeContent": "1. الكاميرا المدمجة: تدعم التبديل بين الكاميرات الأمامية/الخلفية/الخارجية مع دعم الفلاش.\n2. الماسحات الضوئية USB: دعم التوصيل والتشغيل المباشر في أي حقل بحث.\n3. أجهزة متعددة: التبديل بين الكاميرات المتاحة عبر القائمة المنسدلة في نافذة مسح الباركود."
+  "helpBarcodeContent": "1. الكاميرا المدمجة: تدعم التبديل بين الكاميرات الأمامية/الخلفية/الخارجية مع دعم الفلاش.\n2. الماسحات الضوئية USB: دعم التوصيل والتشغيل المباشر في أي حقل بحث.\n3. أجهزة متعددة: التبديل بين الكاميرات المتاحة عبر القائمة المنسدلة في نافذة مسح الباركود.",
+  "errNetwork": "لا يمكن الوصول إلى الخادم. تحقق من الاتصال وحاول مرة أخرى.",
+  "errAuth": "يتطلب هذا الإجراء مصادقة المسؤول.",
+  "errConflict": "تعارض: تم تعديل السجل بواسطة شخص آخر أو أنه موجود بالفعل.",
+  "errNotFound": "السجل المطلوب غير موجود.",
+  "errBadRequest": "تم رفض الطلب لأنه غير صالح.",
+  "errServerError": "أبلغ الخادم عن خطأ. يرجى المحاولة مرة أخرى.",
+  "errGeneric": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
+  "errServerNotInitialized": "لم يتم إعداد أي خادم على الشبكة المحلية في هذا الجهاز.",
+  "errServerStartFailed": "تعذّر تشغيل خادم الشبكة المحلية. قد يكون برنامج آخر يستخدم هذا المنفذ بالفعل.",
+  "errHostOnlyFeature": "هذه الميزة متاحة على جهاز المضيف فقط (الجهاز الذي يدير المكتبة).",
+
+  "usersAndRoles": "المستخدمون والأدوار",
+  "account": "الحساب",
+  "role": "الدور",
+  "roleAdmin": "مدير",
+  "roleStaff": "موظف",
+  "roleViewer": "قارئ",
+  "roleAdminDescription": "وصول كامل، بما في ذلك إدارة الحسابات والإعدادات",
+  "roleStaffDescription": "يمكنه الإعارة والإرجاع وتعديل الفهرس والأعضاء والقروض",
+  "roleViewerDescription": "للقراءة فقط: يمكنه العرض، لا يمكنه تعديل أي شيء",
+  "signedInAs": "تم تسجيل الدخول كـ {user} ({role})",
+  "@signedInAs": {
+    "placeholders": {
+      "user": {"type": "String"},
+      "role": {"type": "String"}
+    }
+  },
+  "signIn": "تسجيل الدخول",
+  "signOut": "تسجيل الخروج",
+  "username": "اسم المستخدم",
+  "password": "كلمة المرور",
+  "newPassword": "كلمة المرور الجديدة",
+  "createAccount": "إنشاء حساب",
+  "removeAccount": "إزالة الحساب",
+  "changeRole": "تغيير الدور",
+  "changePassword": "تغيير كلمة المرور",
+  "removeAccountConfirm": "إزالة الحساب \"{user}\"؟ سيتم فصل أي جهاز مسجّل الدخول به.",
+  "@removeAccountConfirm": {
+    "placeholders": {
+      "user": {"type": "String"}
+    }
+  },
+  "passwordMinLength": "استخدم {n} أحرف على الأقل.",
+  "@passwordMinLength": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "usernameRules": "3-32 حرفًا: أحرف وأرقام ونقطة وشرطة سفلية وشرطة؛ يجب أن يبدأ بحرف أو رقم؛ بأحرف صغيرة.",
+  "onlyAdminManagesUsers": "يمكن للمدير فقط إدارة الحسابات والأدوار.",
+  "readOnlyMode": "أنت مسجّل الدخول بحساب للقراءة فقط. التحرير معطّل.",
+  "readAccountFailed": "تعذّر تحميل قائمة الحسابات.",
+  "signInFailed": "فشل تسجيل الدخول. تحقق من اسم المستخدم وكلمة المرور.",
+  "pairAsRole": "امنح هذا الجهاز الدور المحدد عند الاقتران",
+  "readOnlyAccount": "حساب للقراءة فقط",
+  "noAccounts": "لا يوجد أي حساب بعد",
+
+  "fines": "الغرامات",
+  "fineNoFines": "لا توجد غرامات مسجّلة",
+  "fineStatusPending": "قيد الانتظار",
+  "fineStatusPaid": "مدفوعة",
+  "fineStatusWaived": "معفّى عنها",
+  "fineCollectedBy": "أنجزها",
+  "fineAmountLabel": "المبلغ",
+  "fineMemberLabel": "العضو",
+  "fineReasonLabel": "السبب",
+  "fineDateLabel": "التاريخ",
+  "fineStatusLabel": "الحالة",
+  "fineCollect": "تحصيل",
+  "fineWaive": "إعفاء",
+  "fineFilterAll": "كل الغرامات",
+  "fineOutstanding": "المتبقي: {amount}",
+  "@fineOutstanding": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "fineCollectConfirm": "تسجيل دفعة قدرها {amount} لهذه الغرامة؟",
+  "@fineCollectConfirm": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "fineWaiveConfirm": "الإعفاء من هذه الغرامة البالغة {amount}؟ لن يتم تحصيل أي مبلغ.",
+  "@fineWaiveConfirm": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "finePolicy": "سياسة الغرامات",
+  "fineRatePerDay": "المعدل عن كل يوم تأخير",
+  "fineCurrency": "العملة",
+  "finePolicySaved": "تم تحديث سياسة الغرامات",
+  "finePolicyDisabledHint": "الغرامات معطّلة (المعدل 0). حدّد معدلاً لبدء احتساب الإرجاعات المتأخرة.",
+  "fineSettled": "تم تحديث الغرامة",
+  "finePolicyTooltip": "تعيين معدل التأخير والعملة (المديرون فقط)",
+  "onlyStaffManageFines": "يمكن للموظفين فقط عرض الغرامات أو تسويتها.",
+  "fineViewFailed": "تعذّر تحميل الغرامات.",
+
+  "reservations": "الحجوزات",
+  "holdNoHolds": "لا توجد حجوزات مسجّلة",
+  "holdStatusQueued": "في قائمة الانتظار",
+  "holdStatusAvailable": "جاهز للاستلام",
+  "holdStatusFulfilled": "تم الاستلام",
+  "holdStatusCancelled": "ملغى",
+  "holdStatusExpired": "منتهي",
+  "holdPlace": "حجز",
+  "holdCancel": "إلغاء",
+  "holdCancelConfirm": "هل تريد إلغاء حجز {member} للعنوان {item}؟",
+  "@holdCancelConfirm": {
+    "placeholders": {
+      "member": {"type": "String"},
+      "item": {"type": "String"}
+    }
+  },
+  "holdPlaced": "تم تسجيل الحجز",
+  "holdCancelled": "تم إلغاء الحجز",
+  "holdViewFailed": "تعذّر تحميل الحجوزات.",
+  "holdPlaceFailed": "تعذّر تسجيل الحجز.",
+  "onlyStaffManageHolds": "يمكن للموظفين فقط إدارة الحجوزات.",
+  "holdFilterAll": "كل الحجوزات",
+  "holdFilterOpen": "الحجوزات المفتوحة",
+  "holdFilterReady": "جاهزة للاستلام",
+  "holdQueuePosition": "الترقية #{position} في القائمة",
+  "@holdQueuePosition": {
+    "placeholders": {
+      "position": {"type": "String"}
+    }
+  },
+  "holdPickupBy": "يُستلم قبل {date}",
+  "@holdPickupBy": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "holdItemLabel": "العنوان",
+  "holdMemberLabel": "العضو",
+  "holdSelectItem": "اختر عنوانًا",
+  "holdSelectMember": "اختر عضوًا",
+  "holdNeedSelection": "اختر عنوانًا وعضوًا.",
+  "holdNothingReady": "لا يوجد حجز بانتظار الاستلام",
+  "holdPolicy": "سياسة الحجز",
+  "holdPolicyTooltip": "تعيين مهلة الاستلام والحد الأقصى للقائمة (المديرون فقط)",
+  "holdPolicySaved": "تم تحديث سياسة الحجز",
+  "holdPickupDays": "مهلة الاستلام (بالأيام)",
+  "holdQueueCap": "أقصى حجوزات لكل عنوان",
+  "holdNoItems": "لا توجد عناوين محمّلة لإنشاء حجز.",
+  "holdNoMembers": "لا يوجد أعضاء محمّلون لإنشاء حجز.",
+
+  "reports": "التقارير",
+  "reportSelectKind": "نوع التقرير",
+  "reportKindCirculation": "التداول",
+  "reportKindOverdue": "العناصر المتأخرة",
+  "reportKindInventory": "المخزون",
+  "reportKindFines": "الغرامات",
+  "reportKindMembers": "أكثر الأعضاء استعارة",
+  "reportRun": "إنشاء التقرير",
+  "reportFrom": "من",
+  "reportTo": "إلى",
+  "reportGeneratedLabel": "تم الإنشاء",
+  "reportPeriodLabel": "الفترة",
+  "reportDateHint": "سنة-شهر-يوم",
+  "reportWindowNote": "يشمل هذا التقرير نطاقًا زمنيًا.",
+  "reportInvalidDates": "أدخل تاريخًا صالحًا (سنة-شهر-يوم).",
+  "reportNoData": "لا توجد سجلات لهذا التقرير",
+  "reportSummary": "الملخص",
+  "reportGeneratedAt": "تم الإنشاء {when}",
+  "@reportGeneratedAt": {
+    "placeholders": {
+      "when": {"type": "String"}
+    }
+  },
+  "reportExportCsv": "تصدير CSV",
+  "reportExportPdf": "تصدير PDF",
+  "reportSaved": "تم الحفظ في {path}",
+  "@reportSaved": {
+    "placeholders": {
+      "path": {"type": "String"}
+    }
+  },
+  "reportFailed": "تعذر إنشاء التقرير.",
+  "reportExportFailed": "تعذر تصدير التقرير.",
+  "onlyStaffRunReports": "الموظفون فقط يمكنهم إنشاء التقارير.",
+  "exportDiagnostics": "تصدير التشخيصات",
+  "diagnosticsSaved": "تم حفظ التشخيصات في {path}",
+  "@diagnosticsSaved": {
+    "placeholders": {
+      "path": {"type": "String"}
+    }
+  },
+  "diagnosticsFailed": "تعذر تصدير التشخيصات.",
+
+  "connectionMode": "وضع الاتصال",
+  "hostModeOption": "المضيف (الحاسوب الرئيسي — الخادم)",
+  "clientModeOption": "العميل (حاسوب الموظف)",
+  "hostIpLabel": "عنوان IP للمضيف",
+  "hostIpHelper": "أدخل عنوان IP للحاسوب الرئيسي (مثال: 192.168.1.50)",
+  "appearance": "المظهر",
+  "appearanceHint": "السمة وهوية هذا الجهاز. غير مشتركة مع أجهزة أخرى.",
+  "themeLabel": "السمة",
+  "themeSystem": "النظام",
+  "themeLight": "فاتح",
+  "themeDark": "داكن",
+  "accentColor": "لون التمييز",
+  "brandName": "اسم العلامة",
+  "brandNameHint": "اسم المنتج المعروض في شريط العنوان (المسؤولون فقط)",
+  "featuresTitle": "الميزات",
+  "featureFlagsHint": "فعّل أو عطّل الشاشات الاختيارية. التغييرات تُطبَّق فورًا.",
+  "brandNameUpdated": "تم تحديث اسم العلامة",
+
+  "commandPalette": "لوحة الأوامر",
+  "paletteSearchHint": "اكتب للبحث عن أوامر…",
+  "paletteNoMatches": "لا توجد أوامر مطابقة",
+
+  "systemHealthTitle": "صحة النظام",
+  "healthAppVersion": "إصدار التطبيق",
+  "healthDatabaseSchema": "إصدار مخطط قاعدة البيانات",
+  "healthOperatingMode": "وضع التشغيل",
+  "healthLanServer": "خادم الشبكة المحلية",
+  "healthServerRunning": "يُصغي",
+  "healthServerStopped": "لا يُصغي",
+  "healthConnection": "الاتصال",
+  "healthConnectedClients": "العملاء المتصلون",
+  "healthClientCount": "{n} نشط",
+  "healthLastBackup": "آخر نسخة احتياطية",
+  "healthNever": "أبدًا",
+  "healthBackupFresh": "حديثة",
+  "healthBackupStale": "متأخرة",
+  "notifications": "الإشعارات",
+  "notifNone": "لا شيء يتطلب انتباهك",
+  "notifLoading": "جارٍ التحقق…",
+  "notifOverdue": "{n} إعارة متأخرة",
+  "notifHoldsReady": "{n} حجز جاهز للاستلام",
+  "notifFinesPending": "{n} غرامة بانتظار السداد",
+  "chat": "دردشة الموظفين",
+  "chatInputHint": "رسالة…",
+  "chatSend": "إرسال",
+  "chatEmpty": "لا توجد رسائل بعد.",
+  "chatUnavailable": "الدردشة غير متاحة الآن.",
+  "helpVersionFooter": "مدير المكتبة v{version}",
+  "@helpVersionFooter": {
+    "placeholders": {
+      "version": {"type": "String"}
+    }
+  },
+  "settingsCatGeneral": "عام",
+  "settingsCatLibrary": "المكتبة",
+  "settingsCatData": "البيانات والنسخ الاحتياطي",
+  "settingsCatSecurity": "الأمان",
+  "settingsCatAdvanced": "متقدم",
+  "settingsSearchHint": "البحث في الإعدادات",
+  "settingsUnsaved": "تغييرات غير محفوظة",
+  "settingsRevert": "تراجع",
+  "memberDetail": "ملف العضو",
+  "memberNotFound": "العضو غير موجود",
+  "registered": "تاريخ التسجيل",
+  "memberLoans": "الاستعارات النشطة",
+  "memberOverdueAlert": "{n} عنصر(عناصر) متأخرة تحتاج انتباه",
+  "@memberOverdueAlert": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "noLoansForMember": "لا توجد استعارات لهذا العضو",
+  "dueDate": "الاستحقاق",
+  "renewLoan": "تجديد هذا القرض",
+  "memberFines": "الغرامات",
+  "finePending": "معلقة",
+  "noPendingFines": "لا توجد غرامات معلقة",
+  "memberReservations": "الحجوزات",
+  "noActiveReservations": "لا توجد حجوزات نشطة",
+  "holdReadyForPickup": "جاهز للاستلام",
+  "holdQueued": "في الانتظار",
+  "statusAvailable": "متاح",
+  "statusQueued": "مؤجل",
+  "needsAttention": "يحتاج انتباه",
+  "checkoutAction": "إعارة",
+  "reserveAction": "حجز",
+  "copiesAvailableLabel": "{a} من {t} نسخ متاحة",
+  "noCopiesAvailableForCheckout": "لا توجد نسخ متاحة للإعارة حالياً.",
+  "reserveSuccess": "تم إنشاء الحجز.",
+  "noMembersMatchSearch": "لا يوجد أعضاء مطابقون للبحث.",
+  "paginationSummary": "عرض {from}–{to} من {total} عنصر",
+  "keyboardShortcutsTitle": "اختصارات لوحة المفاتيح",
+  "keyboardShortcutsContent": "Ctrl+K يفتح لوحة الأوامر. Enter ينفذ أعلى نتيجة. Esc يغلب النوافذ. Tab ينتقل بين الحقول؛ الأسهم تتنقل في القوائم.",
+  "historySubjectPlaceholder": "تصفية حسب الرمز أو هوية العضو...",
+  "seeAllHistory": "عرض كل السجل",
+  "noHistoryForRecord": "لا يوجد نشاط حديث لهذا السجل.",
+  "queueMoveUp": "تحريك لأعلى في الطابور",
+  "queueMoveDown": "تحريك لأسفل في الطابور",
+  "queueOrderByItem": "رشح حسب العنصر لإعادة ترتيب الطابور",
+  "queueMoved": "تم تحديث ترتيب الطابور.",
+  "queueMoveFailed": "تعذر إعادة ترتيب الطابور.",
+  "navCollapse": "طي القائمة",
+  "navExpand": "توسيع القائمة",
+  "deleteMember": "حذف العضو",
+  "confirmDeleteMember": "هل أنت متأكد من حذف هذا العضو؟ يجب تسديد القراءات والحجوزات أولاً.",
+  "confirmDeleteItemNamed": "هل أنت متأكد من حذف هذا العنصر ({item})؟",
+  "@confirmDeleteItemNamed": {
+    "placeholders": {
+      "item": {"type": "String"}
+    }
+  },
+  "reportGeneratedOn": "تم الإنشاء في {when}",
+  "@reportGeneratedOn": {
+    "placeholders": {
+      "when": {"type": "String"}
+    }
+  },
+  "userJoinedOn": "انضم في {when}",
+  "@userJoinedOn": {
+    "placeholders": {
+      "when": {"type": "String"}
+    }
+  },
+  "noNamedAccounts": "لا توجد حسابات مسماة بعد",
+  "noNamedAccountsHint": "أنت مسجل الدخول كمسؤول مدمج. أنشئ حسابات موظفين أو عرض أدناه لمنح وصول محدود لمستخدمين آخرين."
 }

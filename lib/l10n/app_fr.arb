@@ -10,6 +10,7 @@
   "location": "Emplacement",
   "rate": "Taux",
   "stockLocation": "Emplacement Stock",
+  "stock": "Stock",
   "save": "Enregistrer",
   "cancel": "Annuler",
   "confirmDelete": "Êtes-vous sûr de vouloir supprimer cet élément ?",
@@ -18,6 +19,12 @@
   "generateReport": "Générer un rapport",
   "codeRequired": "Le code est requis",
   "designationRequired": "La désignation est requise",
+  "wholeNumberRequired": "Nombre entier requis",
+  "numberRequired": "Nombre requis",
+  "mustBeNonNegative": "Doit etre superieur ou egal a 0",
+  "newValue": "Nouvelle valeur",
+  "attributeOptionsNote": "Ces options apparaîtront dans les listes déroulantes lors de l'ajout ou de la modification d'un livre.",
+  "usbScannerNote": "Les lecteurs USB agissent comme des claviers. Il suffit de scanner !",
   "settings": "Paramètres",
   "inventory": "Inventaire",
   "fullCodeLabel": "Code Complet",
@@ -32,6 +39,7 @@
   "actions": "Actions",
   "dataProtection": "Protection des Données",
   "backupDatabase": "Sauvegarder la base de données",
+  "selectBackupDatabase": "Sélectionner la base de sauvegarde",
   "restoreDatabase": "Restaurer la base de données",
   "manageVariables": "Gérer les Variables",
   "manageAttributes": "Gérer les Attributs",
@@ -51,6 +59,7 @@
   "eraseWarning": "ATTENTION : Cela supprimera définitivement tous les éléments et réinitialisera les paramètres. Cette action est irréversible.",
   "connected": "Connecté",
   "disconnected": "Déconnecté",
+  "reconnecting": "Reconnexion…",
   "connectionType": "Type de connexion",
   "hostMode": "Serveur (Hôte)",
   "clientMode": "Client",
@@ -89,6 +98,12 @@
   "allTypes": "Tous les types",
   "noItemsFound": "Aucun élément trouvé",
   "backupSuccess": "Sauvegarde créée avec succès !",
+  "backupFailed": "Échec de la sauvegarde.",
+  "restoreFailed": "Échec de la restauration.",
+  "retry": "Réessayer",
+  "noPhone": "Aucun téléphone",
+  "scannerError": "Erreur du scanner : {code}",
+  "selectedItemLabel": "Sélectionné : {name} ({status})",
   "restoreSuccess": "Base de données restaurée avec succès !",
   "setPassword": "Définir un mot de passe",
   "importExcel": "Importer depuis Excel (.xlsx)",
@@ -105,6 +120,23 @@
   "statusEmprunte": "Emprunté",
   "statusReserve": "Réservé",
   "statusEndommage": "Endommagé",
+  "statusEnReparation": "En réparation",
+  "statusPerdu": "Perdu",
+  "statusArchive": "Archivé",
+  "itemCopies": "Exemplaires",
+  "copyNumberLabel": "Exemplaire {n}",
+  "copyBarcodeMissing": "Aucun code-barres",
+  "changeCopyState": "Changer l'état",
+  "copyLockedTooltip": "Les exemplaires empruntés ou réservés doivent être modifiés via les prêts / réservations",
+  "copyStateUpdated": "Exemplaire mis à jour",
+  "addCopy": "Ajouter un exemplaire",
+  "removeCopy": "Retirer cet exemplaire",
+  "setCopyBarcode": "Code-barres de l'exemplaire",
+  "copyBarcodeSave": "Enregistrer",
+  "removeCopyConfirm": "Retirer cet exemplaire physique ? Cette action est irréversible.",
+  "copyAdded": "Exemplaire ajouté",
+  "copyRemoved": "Exemplaire retiré",
+  "copyBarcodeSaved": "Code-barres de l'exemplaire mis à jour",
   "itemProfile": "Profil de l'élément",
   "itemDetails": "Détails de l'élément",
   "editItemDetails": "Modifier les détails",
@@ -148,6 +180,10 @@
   },
   "connectedDevices": "Appareils Connectés",
   "connectedViaLan": "Connecté via LAN",
+    "noConnectedDevices": "Aucun appareil n'est connecté actuellement.",
+      "noCopiesYet": "Aucun exemplaire enregistré pour le moment.",
+      "memberIdAuto": "ID (généré automatiquement)",
+      "memberIdCode": "ID / Code",
   "scanWithUsbOrType": "Utilisez un scanner USB ou tapez le code",
   "scanOrTypeHint": "Scanner ou taper le code ici...",
   "requiredField": "Champ requis",
@@ -176,6 +212,15 @@
   "itemNotFound": "Article non trouvé",
   "itemNotAvailable": "Cet article n'est pas disponible.",
   "noActiveLoan": "Aucun emprunt actif trouvé pour cet article.",
+  "activeLoans": "Emprunts actifs",
+  "noActiveLoans": "Aucun emprunt actif.",
+  "overdue": "En retard",
+  "renew": "Renouveler",
+  "renewSuccess": "Emprunt renouvelé avec succès",
+  "colMember": "Membre",
+  "colItem": "Article",
+  "loanDateCol": "Date de prêt",
+  "dueDateCol": "Date d'échéance",
   "selectCamera": "Sélectionner une caméra",
   "cameraFront": "Caméra avant",
   "cameraBack": "Caméra arrière",
@@ -196,6 +241,10 @@
   "setupLanguageDesc": "Choisissez votre langue préférée pour l'application.",
   "setupPasswordDesc": "Définissez un mot de passe administrateur pour protéger vos données.",
   "setupConfigDesc": "Configurez les préfixes et attributs de base de la bibliothèque.",
+  "configPrefixesLabel": "Préfixes de code (LIV, REV, etc.)",
+  "configPrefixesDesc": "Les valeurs par défaut seront initialisées.",
+  "configAttributesLabel": "Attributs dynamiques",
+  "configAttributesDesc": "Emplacements, statuts et stocks.",
   "setupComplete": "Configuration Terminée !",
   "setupCompleteDesc": "Vous êtes maintenant prêt à utiliser le Système de Gestion de Bibliothèque.",
   "helpMembersTitle": "Gestion des Membres",
@@ -214,6 +263,9 @@
   "updateAvailable": "Mise à Jour Disponible",
   "noUpdateAvailable": "Vous utilisez la dernière version.",
   "updateNow": "Mettre à Jour Maintenant",
+  "updateNotConfigured": "La vérification automatique des mises à jour n'est pas configurée pour ce déploiement.",
+  "updateCheckFailed": "Impossible de joindre le serveur de mise à jour. Réessayez plus tard.",
+  "updateFoundVersion": "La version {version} est disponible.",
   "enableLanAccess": "Activer l'accès LAN",
   "enableLanAccessDescription": "Autoriser la connexion des autres PC en ajoutant des règles Windows Firewall (Admin requis).",
   "lanAccessEnabled": "Accès LAN activé.",
@@ -228,5 +280,322 @@
   "helpSyncTitle": "Synchronisation LAN",
   "helpSyncContent": "1. Une machine doit être configurée comme 'Hôte' (Serveur) tandis que les autres sont 'Clients'.\n2. Les Clients se connectent via l'IP de l'Hôte. Appariement automatique possible via QR code.\n3. Toute modification est répercutée sur le serveur via le réseau local en temps réel.",
   "helpBarcodeTitle": "Lecture de Codes-barres",
-  "helpBarcodeContent": "1. Caméra intégrée : Supporte le basculement avant/arrière/externe avec flash LED.\n2. Lecteurs USB : Support Plug-and-play dans n'importe quel champ de recherche.\n3. Multi-appareils : Basculez entre les caméras disponibles via le menu déroulant dans la fenêtre de scan."
+  "helpBarcodeContent": "1. Caméra intégrée : Supporte le basculement avant/arrière/externe avec flash LED.\n2. Lecteurs USB : Support Plug-and-play dans n'importe quel champ de recherche.\n3. Multi-appareils : Basculez entre les caméras disponibles via le menu déroulant dans la fenêtre de scan.",
+  "errNetwork": "Serveur injoignable. Vérifiez la connexion et réessayez.",
+  "errAuth": "Cette action nécessite une authentification administrateur.",
+  "errConflict": "Conflit : l'enregistrement a été modifié par quelqu'un d'autre ou existe déjà.",
+  "errNotFound": "L'enregistrement demandé est introuvable.",
+  "errBadRequest": "La requête a été rejetée comme invalide.",
+  "errServerError": "Le serveur a signalé une erreur. Veuillez réessayer.",
+  "errGeneric": "Une erreur est survenue. Veuillez réessayer.",
+  "errServerNotInitialized": "Aucun serveur LAN n'a été configuré sur ce PC.",
+  "errServerStartFailed": "Le serveur LAN n'a pas pu démarrer. Un autre programme utilise peut-être déjà ce port.",
+  "errHostOnlyFeature": "Cette fonctionnalité est disponible uniquement sur le PC hôte (celui qui gère la bibliothèque).",
+
+  "usersAndRoles": "Utilisateurs et rôles",
+  "account": "Compte",
+  "role": "Rôle",
+  "roleAdmin": "Administrateur",
+  "roleStaff": "Personnel",
+  "roleViewer": "Lecteur",
+  "roleAdminDescription": "Accès complet, y compris la gestion des comptes et les paramètres",
+  "roleStaffDescription": "Peut emprunter, retourner et modifier le catalogue, les membres et les prêts",
+  "roleViewerDescription": "Lecture seule : peut consulter, ne peut rien modifier",
+  "signedInAs": "Connecté en tant que {user} ({role})",
+  "@signedInAs": {
+    "placeholders": {
+      "user": {"type": "String"},
+      "role": {"type": "String"}
+    }
+  },
+  "signIn": "Se connecter",
+  "signOut": "Se déconnecter",
+  "username": "Nom d'utilisateur",
+  "password": "Mot de passe",
+  "newPassword": "Nouveau mot de passe",
+  "createAccount": "Créer un compte",
+  "removeAccount": "Supprimer le compte",
+  "changeRole": "Modifier le rôle",
+  "changePassword": "Modifier le mot de passe",
+  "removeAccountConfirm": "Supprimer le compte « {user} » ? Tout appareil connecté avec ce compte sera déconnecté.",
+  "@removeAccountConfirm": {
+    "placeholders": {
+      "user": {"type": "String"}
+    }
+  },
+  "passwordMinLength": "Utilisez au moins {n} caractères.",
+  "@passwordMinLength": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "usernameRules": "3 à 32 caractères : lettres, chiffres, point, tiret bas ou trait d'union ; doit commencer par une lettre ou un chiffre ; en minuscules.",
+  "onlyAdminManagesUsers": "Seul un administrateur peut gérer les comptes et les rôles.",
+  "readOnlyMode": "Vous êtes connecté avec un compte en lecture seule. Modification désactivée.",
+  "readAccountFailed": "Impossible de charger la liste des comptes.",
+  "signInFailed": "Échec de la connexion. Vérifiez le nom d'utilisateur et le mot de passe.",
+  "pairAsRole": "Accorder cet rôle à l'appareil lors de l'appairage",
+  "readOnlyAccount": "Compte en lecture seule",
+  "noAccounts": "Aucun compte pour le moment",
+
+  "fines": "Amendes",
+  "fineNoFines": "Aucune amende enregistrée",
+  "fineStatusPending": "En attente",
+  "fineStatusPaid": "Payée",
+  "fineStatusWaived": "Annulée",
+  "fineCollectedBy": "Traitée par",
+  "fineAmountLabel": "Montant",
+  "fineMemberLabel": "Membre",
+  "fineReasonLabel": "Motif",
+  "fineDateLabel": "Date",
+  "fineStatusLabel": "Statut",
+  "fineCollect": "Encaisser",
+  "fineWaive": "Annuler",
+  "fineFilterAll": "Toutes les amendes",
+  "fineOutstanding": "Reste dû : {amount}",
+  "@fineOutstanding": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "fineCollectConfirm": "Enregistrer le paiement de {amount} pour cette amende ?",
+  "@fineCollectConfirm": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "fineWaiveConfirm": "Annuler cette amende de {amount} ? Aucun montant ne sera perçu.",
+  "@fineWaiveConfirm": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "finePolicy": "Politique des amendes",
+  "fineRatePerDay": "Taux par jour de retard",
+  "fineCurrency": "Devise",
+  "finePolicySaved": "Politique des amendes mise à jour",
+  "finePolicyDisabledHint": "Les amendes sont désactivées (taux 0). Définissez un taux pour facturer les retours en retard.",
+  "fineSettled": "Amende mise à jour",
+  "finePolicyTooltip": "Définir le taux de retard et la devise (administrateurs uniquement)",
+  "onlyStaffManageFines": "Seuls le personnel peut voir ou régler les amendes.",
+  "fineViewFailed": "Impossible de charger les amendes.",
+
+  "reservations": "Réservations",
+  "holdNoHolds": "Aucune réservation enregistrée",
+  "holdStatusQueued": "En file d'attente",
+  "holdStatusAvailable": "Prêt à retirer",
+  "holdStatusFulfilled": "Retirée",
+  "holdStatusCancelled": "Annulée",
+  "holdStatusExpired": "Expirée",
+  "holdPlace": "Réserver",
+  "holdCancel": "Annuler",
+  "holdCancelConfirm": "Annuler la réservation de {member} pour {item} ?",
+  "@holdCancelConfirm": {
+    "placeholders": {
+      "member": {"type": "String"},
+      "item": {"type": "String"}
+    }
+  },
+  "holdPlaced": "Réservation enregistrée",
+  "holdCancelled": "Réservation annulée",
+  "holdViewFailed": "Impossible de charger les réservations.",
+  "holdPlaceFailed": "Impossible d'enregistrer la réservation.",
+  "onlyStaffManageHolds": "Seul le personnel peut gérer les réservations.",
+  "holdFilterAll": "Toutes les réservations",
+  "holdFilterOpen": "Réservations ouvertes",
+  "holdFilterReady": "Prêtes à retirer",
+  "holdQueuePosition": "N° {position} dans la file",
+  "@holdQueuePosition": {
+    "placeholders": {
+      "position": {"type": "String"}
+    }
+  },
+  "holdPickupBy": "À retirer avant le {date}",
+  "@holdPickupBy": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "holdItemLabel": "Ouvrage",
+  "holdMemberLabel": "Membre",
+  "holdSelectItem": "Sélectionner un ouvrage",
+  "holdSelectMember": "Sélectionner un membre",
+  "holdNeedSelection": "Choisissez un ouvrage et un membre.",
+  "holdNothingReady": "Aucune réservation en attente de retrait",
+  "holdPolicy": "Politique de réservation",
+  "holdPolicyTooltip": "Définir le délai de retrait et la limite de file (administrateurs uniquement)",
+  "holdPolicySaved": "Politique de réservation mise à jour",
+  "holdPickupDays": "Délai de retrait (jours)",
+  "holdQueueCap": "Réservations max par ouvrage",
+  "holdNoItems": "Aucun ouvrage chargé pour créer une réservation.",
+  "holdNoMembers": "Aucun membre chargé pour créer une réservation.",
+
+  "reports": "Rapports",
+  "reportSelectKind": "Type de rapport",
+  "reportKindCirculation": "Circulation",
+  "reportKindOverdue": "Articles en retard",
+  "reportKindInventory": "Inventaire",
+  "reportKindFines": "Amendes",
+  "reportKindMembers": "Meilleurs emprunteurs",
+  "reportRun": "Générer le rapport",
+  "reportFrom": "Du",
+  "reportTo": "Au",
+  "reportGeneratedLabel": "Généré",
+  "reportPeriodLabel": "Période",
+  "reportDateHint": "AAAA-MM-JJ",
+  "reportWindowNote": "Ce rapport couvre une période donnée.",
+  "reportInvalidDates": "Saisissez une date valide (AAAA-MM-JJ).",
+  "reportNoData": "Aucun enregistrement pour ce rapport",
+  "reportSummary": "Résumé",
+  "reportGeneratedAt": "Généré {when}",
+  "@reportGeneratedAt": {
+    "placeholders": {
+      "when": {"type": "String"}
+    }
+  },
+  "reportExportCsv": "Exporter CSV",
+  "reportExportPdf": "Exporter PDF",
+  "reportSaved": "Enregistré dans {path}",
+  "@reportSaved": {
+    "placeholders": {
+      "path": {"type": "String"}
+    }
+  },
+  "reportFailed": "Impossible d'exécuter le rapport.",
+  "reportExportFailed": "Impossible d'exporter le rapport.",
+  "onlyStaffRunReports": "Seul le personnel peut exécuter des rapports.",
+  "exportDiagnostics": "Exporter les diagnostics",
+  "diagnosticsSaved": "Diagnostics enregistrés dans {path}",
+  "@diagnosticsSaved": {
+    "placeholders": {
+      "path": {"type": "String"}
+    }
+  },
+  "diagnosticsFailed": "Impossible d'exporter les diagnostics.",
+
+  "connectionMode": "Mode de connexion",
+  "hostModeOption": "Hôte (PC principal — serveur)",
+  "clientModeOption": "Client (PC agent)",
+  "hostIpLabel": "Adresse IP de l'hôte",
+  "hostIpHelper": "Saisissez l'adresse IP du PC principal (ex. : 192.168.1.50)",
+  "appearance": "Apparence",
+  "appearanceHint": "Thème et identité de cet appareil. Non partagés avec les autres PC.",
+  "themeLabel": "Thème",
+  "themeSystem": "Système",
+  "themeLight": "Clair",
+  "themeDark": "Sombre",
+  "accentColor": "Couleur d'accentuation",
+  "brandName": "Nom de la marque",
+  "brandNameHint": "Nom du produit affiché dans la barre de titre (administrateurs uniquement)",
+  "featuresTitle": "Fonctionnalités",
+  "featureFlagsHint": "Activez ou désactivez les écrans optionnels. Les changements s'appliquent immédiatement.",
+  "brandNameUpdated": "Nom de la marque mis à jour",
+
+  "commandPalette": "Palette de commandes",
+  "paletteSearchHint": "Tapez pour rechercher des commandes…",
+  "paletteNoMatches": "Aucune commande correspondante",
+
+  "systemHealthTitle": "État du système",
+  "healthAppVersion": "Version de l'application",
+  "healthDatabaseSchema": "Version du schéma de base",
+  "healthOperatingMode": "Mode de fonctionnement",
+  "healthLanServer": "Serveur LAN",
+  "healthServerRunning": "À l'écoute",
+  "healthServerStopped": "Non à l'écoute",
+  "healthConnection": "Connexion",
+  "healthConnectedClients": "Clients connectés",
+  "healthClientCount": "{n} actif(s)",
+  "healthLastBackup": "Dernière sauvegarde",
+  "healthNever": "Jamais",
+  "healthBackupFresh": "Récente",
+  "healthBackupStale": "En retard",
+  "notifications": "Notifications",
+  "notifNone": "Rien ne nécessite votre attention",
+  "notifLoading": "Vérification…",
+  "notifOverdue": "{n} prêt(s) en retard",
+  "notifHoldsReady": "{n} réservation(s) prête(s) au retrait",
+  "notifFinesPending": "{n} amende(s) à régler",
+  "chat": "Messagerie du personnel",
+  "chatInputHint": "Message…",
+  "chatSend": "Envoyer",
+  "chatEmpty": "Aucun message.",
+  "chatUnavailable": "La messagerie est indisponible pour le moment.",
+  "helpVersionFooter": "Gestionnaire de Bibliothèque v{version}",
+  "@helpVersionFooter": {
+    "placeholders": {
+      "version": {"type": "String"}
+    }
+  },
+  "settingsCatGeneral": "Général",
+  "settingsCatLibrary": "Bibliothèque",
+  "settingsCatData": "Données & Sauvegarde",
+  "settingsCatSecurity": "Sécurité",
+  "settingsCatAdvanced": "Avancé",
+  "settingsSearchHint": "Rechercher dans les paramètres",
+  "settingsUnsaved": "Modifications non enregistrées",
+  "settingsRevert": "Annuler les modifications",
+  "memberDetail": "Profil du membre",
+  "memberNotFound": "Membre introuvable",
+  "registered": "Inscrit le",
+  "memberLoans": "Emprunts actifs",
+  "memberOverdueAlert": "{n} article(s) en retard nécessitent une attention",
+  "@memberOverdueAlert": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "noLoansForMember": "Aucun emprunt pour ce membre",
+  "dueDate": "Échéance",
+  "renewLoan": "Renouveler cet emprunt",
+  "memberFines": "Amendes",
+  "finePending": "En attente",
+  "noPendingFines": "Aucune amende en attente",
+  "memberReservations": "Réservations",
+  "noActiveReservations": "Aucune réservation active",
+  "holdReadyForPickup": "Prêt à retirer",
+  "holdQueued": "En file d'attente",
+  "statusAvailable": "Disponible",
+  "statusQueued": "En file",
+  "needsAttention": "Nécessite une attention",
+  "checkoutAction": "Emprunt",
+  "reserveAction": "Réserver",
+  "copiesAvailableLabel": "{a} sur {t} exemplaires disponibles",
+  "noCopiesAvailableForCheckout": "Aucun exemplaire disponible pour l'emprunt.",
+  "reserveSuccess": "Réservation effectuée.",
+  "noMembersMatchSearch": "Aucun membre ne correspond à la recherche.",
+  "paginationSummary": "Affichage {from}–{to} sur {total} articles",
+  "keyboardShortcutsTitle": "Raccourcis clavier",
+  "keyboardShortcutsContent": "Ctrl+K ouvre la palette de commandes. Entrée exécute le premier résultat. Échap ferme les dialogues. Tab passe entre les champs ; les flèches naviguent dans les listes.",
+  "historySubjectPlaceholder": "Filtrer par code ou identifiant de membre...",
+  "seeAllHistory": "Voir tout l'historique",
+  "noHistoryForRecord": "Aucune activité récente pour cette fiche.",
+  "queueMoveUp": "Monter dans la file",
+  "queueMoveDown": "Descendre dans la file",
+  "queueOrderByItem": "Filtrer par article pour réordonner la file",
+  "queueMoved": "Ordre de la file mis à jour.",
+  "queueMoveFailed": "Impossible de réordonner la file.",
+  "navCollapse": "Réduire le menu",
+  "navExpand": "Développer le menu",
+  "deleteMember": "Supprimer le membre",
+  "confirmDeleteMember": "Voulez-vous vraiment supprimer ce membre ? Ses emprunts et réservations doivent être réglés d'abord.",
+  "confirmDeleteItemNamed": "Voulez-vous vraiment supprimer cet article ({item}) ?",
+  "@confirmDeleteItemNamed": {
+    "placeholders": {
+      "item": {"type": "String"}
+    }
+  },
+  "reportGeneratedOn": "Généré le {when}",
+  "@reportGeneratedOn": {
+    "placeholders": {
+      "when": {"type": "String"}
+    }
+  },
+  "userJoinedOn": "Inscrit le {when}",
+  "@userJoinedOn": {
+    "placeholders": {
+      "when": {"type": "String"}
+    }
+  },
+  "noNamedAccounts": "Aucun compte nommé pour le moment",
+  "noNamedAccountsHint": "Vous êtes connecté en tant qu'administrateur intégré. Créez ci-dessous des comptes staff ou viewer pour accorder un accès limité à d'autres utilisateurs."
 }
