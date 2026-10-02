@@ -6,6 +6,38 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.1.3] — 2026-10-02
+
+Codename *named-account sign-in*. Closes the field report that a staff account
+created on the host could not sign in from a client PC: the client showed
+"Sign-in failed. Check the username and password." — which reads as "does not
+exist" — even when the credentials were correct.
+
+### Fixed
+
+- **Case-insensitive named-account login.** Accounts are stored normalized
+  (lowercase) by `addUser`, but `AuthService.login`, `verifyUserPassword`,
+  `removeUser`, `changeUserRole` and `setUserPassword` matched the username
+  **case-sensitively** against that store. A host-created account for "Fatima"
+  (stored as `fatima`) therefore could never be signed into by typing "Fatima",
+  and the same account looked "missing" to role and password administration.
+  Every identity lookup now normalizes through `UserRecord.normalizeUsername`,
+  so host-created staff accounts sign in from any client regardless of the case
+  typed. Credential verification is unchanged — a wrong password is still
+  refused — and the SEC-03 contract (never reveal whether an account exists)
+  is preserved.
+
+- **Client sign-in box.** The client sign-in dialog normalizes the typed
+  username before calling the host, so the retry and error path behave
+  identically whatever case the operator enters.
+
+### Tests
+
+- Added regression coverage for mixed-case sign-in and mixed-case admin
+  operations in `test/services/auth_service_roles_test.dart`.
+
+---
+
 ## [1.1.2] — 2026-09-30
 
 Codename *pairing reliability*. Closes the field report that a client could not
