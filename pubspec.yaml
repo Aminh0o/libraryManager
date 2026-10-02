@@ -49,7 +49,7 @@ dependencies:
   shelf_router: ^1.1.4
   http: ^1.2.0
   shared_preferences: ^2.2.2
-  file_picker: ^10.3.10
+  file_picker: ^11.0.3
   excel: ^4.0.6
   mobile_scanner: 5.2.3
   permission_handler: ^12.0.1
