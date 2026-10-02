@@ -358,6 +358,64 @@ void main() {
     });
   });
 
+  group('case-insensitive sign-in (host-created account on a client PC)', () {
+    // Regression: addUser stores the normalized (lowercase) name, but login
+    // and the admin operations receive the username AS TYPED -- a staff
+    // account created for "Mary" could never sign in as "Mary" from a client.
+    test('a mixed-case login matches the normalized stored account', () async {
+      await auth.addUser('Mary.Jones', _pw, UserRole.staff);
+      final res = await auth.login('Mary.Jones', _pw, sourceKey: 'src-a');
+      expect(
+        res.isSuccess,
+        isTrue,
+        reason: 'identities are case-insensitive by storage contract',
+      );
+      expect(res.principal!.username, 'mary.jones');
+      expect(res.principal!.role, UserRole.staff);
+    });
+
+    test('whitespace-padded and uppercase legacy admin logins still work',
+        () async {
+      expect(
+        (await auth.login('Admin', 'root-admin', sourceKey: 'src-b')).isSuccess,
+        isTrue,
+      );
+      expect(
+        (await auth.login('  admin  ', 'root-admin', sourceKey: 'src-c'))
+            .isSuccess,
+        isTrue,
+      );
+    });
+
+    test('wrong password on a mixed-case login is still denied', () async {
+      await auth.addUser('casey', _pw, UserRole.viewer);
+      final res = await auth.login('Casey', 'wrong-password', sourceKey: 'd');
+      expect(
+        res.status,
+        AuthStatus.invalidCredentials,
+        reason: 'normalisation must not weaken the credential check',
+      );
+    });
+
+    test('admin operations match a mixed-case username against the store',
+        () async {
+      await auth.addUser('worker', _pw, UserRole.staff);
+      await auth.setUserPassword('Worker', 'newpassword1');
+      expect(
+        (await auth.login('worker', 'newpassword1', sourceKey: 'src-e'))
+            .isSuccess,
+        isTrue,
+      );
+      await auth.changeUserRole('WORKER', UserRole.viewer);
+      expect(
+        (await auth.users()).firstWhere((u) => u.username == 'worker').role,
+        UserRole.viewer,
+      );
+      await auth.removeUser('Worker');
+      expect(jsonSafeUsers(await auth.users()), isNot(contains('worker')));
+    });
+  });
+
   group('username input policy is injection-safe by construction', () {
     test('SQL-shaped and path-shaped usernames are all rejected', () async {
       for (final evil in [

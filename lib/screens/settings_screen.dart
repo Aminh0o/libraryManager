@@ -1549,7 +1549,12 @@ class _SignInDialogState extends State<_SignInDialog> {
     final p = _password.text;
     if (u.isEmpty || p.isEmpty) return;
     setState(() => _busy = true);
-    final session = await widget.provider.loginUser(username: u, password: p);
+    // Accounts are stored lowercase; normalise here as well so the retry and
+    // the error path behave identically whatever case the operator typed.
+    final session = await widget.provider.loginUser(
+      username: UserRecord.normalizeUsername(u),
+      password: p,
+    );
     if (!mounted) return;
     Navigator.pop(context, session != null);
   }

@@ -320,6 +320,11 @@ class AuthService {
     required String sourceKey,
   }) async {
     await ensureLoaded();
+    // Accounts are stored normalized (lowercase) by addUser; login can arrive
+    // as typed (client dialog, HTTP body), so normalize here too -- otherwise
+    // 'Mary' would never match the stored 'mary' and a valid host-created
+    // account would be rejected from a client PC.
+    username = UserRecord.normalizeUsername(username);
     final now = _now();
 
     final entry = _throttle.putIfAbsent(sourceKey, () => _Throttle());
@@ -370,6 +375,7 @@ class AuthService {
   /// covers through the legacy credential path).
   Future<bool> verifyUserPassword(String username, String password) async {
     await ensureLoaded();
+    username = UserRecord.normalizeUsername(username);
     if (!_users.containsKey(username)) return false;
     final hash = await _store.userHash(username);
     return hash != null && hash.isNotEmpty && _hasher.verify(password, hash);
@@ -415,8 +421,9 @@ class AuthService {
   }
 
   /// Deletes a named account and revokes every token belonging to it.
-  Future<void> removeUser(String username) async {
+  Future<void> removeUser(String usernameRaw) async {
     await ensureLoaded();
+    final username = UserRecord.normalizeUsername(usernameRaw);
     if (username == adminUsername && !_users.containsKey(adminUsername)) {
       throw UserAdminException(
         'The built-in administrator cannot be deleted (reset its password instead).',
@@ -437,8 +444,9 @@ class AuthService {
   /// that user, so a demotion takes effect on the client's next request
   /// rather than only after re-login (the stored principals map is the live
   /// authorization source). Refuses to demote the last administrator.
-  Future<void> changeUserRole(String username, UserRole role) async {
+  Future<void> changeUserRole(String usernameRaw, UserRole role) async {
     await ensureLoaded();
+    final username = UserRecord.normalizeUsername(usernameRaw);
     final current = _users[username];
     if (current == null) {
       throw UserAdminException(
@@ -477,8 +485,9 @@ class AuthService {
   /// that user's tokens (the classic credential-compromise response); the
   /// legacy bootstrap path is different (setPassword) and keeps its historical
   /// no-revoke behavior for already-paired clients.
-  Future<void> setUserPassword(String username, String password) async {
+  Future<void> setUserPassword(String usernameRaw, String password) async {
     await ensureLoaded();
+    final username = UserRecord.normalizeUsername(usernameRaw);
     if (password.length < UserRecord.minPasswordLength) {
       throw UserAdminException(
         'Password must be at least ${UserRecord.minPasswordLength} characters.',
