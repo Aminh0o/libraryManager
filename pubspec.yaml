@@ -64,7 +64,7 @@ dev_dependencies:
 
   # Used directly by file-backed DB tests to point path_provider at a temp dir
   # so backup/restore run against a real database (Phase 9.1).
-  path_provider_platform_interface: ^2.1.2
+  path_provider_platform_interface: ^2.1.3
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
