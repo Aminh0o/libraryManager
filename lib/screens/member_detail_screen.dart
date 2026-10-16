@@ -6,7 +6,9 @@ import '../models/loan.dart';
 import '../models/member.dart';
 import '../models/reservation.dart';
 import '../providers/library_provider.dart';
+import '../services/circulation_documents.dart';
 import '../services/error_messages.dart';
+import '../services/receipt_payload.dart';
 import '../ui/app_tokens.dart';
 import '../widgets/app_states.dart';
 import '../widgets/app_status_chip.dart';
@@ -96,6 +98,52 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
     }
   }
 
+  // §6.12 member-card print. Side-effect-free (no mutation, staff-gated like
+  // every slip) so re-printing a card never alters the member record (§274).
+  // The printed machine code carries ONLY the member's own library-card id —
+  // the same number already printed in plain text on the card and the value
+  // the desk scans at a terminal. Honesty note (adversarial review P2): that
+  // id is a conventional SEQUENTIAL card number, so it is NOT secret and NOT
+  // unguessable; it is nonetheless NOT PII (no name/contact/balance) and no
+  // in-app scanner acts on a decoded receipt code, so enumeration of the id
+  // grants nothing the physical card does not already show. The strict receipt
+  // codec is used to (a) keep PII out of the code and (b) keep receipt codes
+  // distinct from LAN-pairing codes (§282/§284) — NOT to make the id opaque. A
+  // non-conforming id simply prints without a QR rather than smuggling text.
+  Future<void> _printMemberCard(Member member) async {
+    final provider = context.read<LibraryProvider>();
+    final l10n = AppLocalizations.of(context)!;
+    final scaffold = ScaffoldMessenger.of(context);
+    String? qr;
+    try {
+      qr = encodeReceiptPayload(
+        type: ReceiptDocType.card,
+        ref: member.memberId,
+      );
+    } catch (_) {
+      qr = null; // id not eligible for a machine code; card still prints
+    }
+    final slip = CirculationSlip(
+      docType: ReceiptDocType.card,
+      title: l10n.printMemberCard,
+      generatedAt: DateTime.now().toLocal().toString().split('.').first,
+      reference: member.memberId,
+      profileName: member.fullName,
+      status: l10n.memberDetail,
+      lines: <SlipLine>[(label: l10n.colMember, value: member.memberId)],
+      codePayload: qr,
+      barcodeValue: member.memberId,
+    );
+    try {
+      final path = await provider.printCirculationSlip(slip);
+      if (path != null) {
+        scaffold.showSnackBar(SnackBar(content: Text(l10n.reportSaved(path))));
+      }
+    } catch (e) {
+      scaffold.showSnackBar(SnackBar(content: Text(describeError(l10n, e))));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -120,7 +168,18 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.memberDetail)),
+      appBar: AppBar(
+        title: Text(l10n.memberDetail),
+        actions: [
+          if (provider.canWrite)
+            IconButton(
+              key: const Key('printMemberCard'),
+              tooltip: l10n.printMemberCard,
+              icon: const Icon(Icons.credit_card),
+              onPressed: () => _printMemberCard(member),
+            ),
+        ],
+      ),
       body: RefreshIndicator(
         onRefresh: _load,
         child: SingleChildScrollView(

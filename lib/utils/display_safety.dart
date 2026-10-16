@@ -22,3 +22,27 @@ String safeText(Object? value, {String fallback = '\u2014'}) {
   final trimmed = value.trim();
   return trimmed.isEmpty ? fallback : trimmed;
 }
+
+/// Neutralizes spreadsheet formula injection (CWE-1236 / OWASP CSV Injection).
+/// If a cell's trimmed content starts with `=`, `@`, `\t`, `\r`, or starts
+/// with `+` or `-` when not a valid standalone number, prepend a single quote `'`
+/// so spreadsheet tools treat it strictly as text.
+String sanitizeCsvCell(String value) {
+  if (value.isEmpty) return value;
+  final first = value[0];
+  if (first == '=' || first == '@' || first == '\t' || first == '\r') {
+    return "'$value";
+  }
+  final trimmed = value.trim();
+  if (trimmed.isNotEmpty) {
+    final trimmedFirst = trimmed[0];
+    if (trimmedFirst == '=' || trimmedFirst == '@') {
+      return "'$value";
+    }
+    if ((trimmedFirst == '+' || trimmedFirst == '-') &&
+        double.tryParse(trimmed) == null) {
+      return "'$value";
+    }
+  }
+  return value;
+}

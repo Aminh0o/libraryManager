@@ -68,6 +68,25 @@ void main() {
       final lines = const LineSplitter().convert(ReportExport.toCsv(r));
       expect(lines[1], 'From,,To,');
     });
+
+    test('sanitizes formula injection prefixes in rows and title', () {
+      const r = Report(
+        kind: ReportKind.inventory,
+        title: '=MaliciousTitle',
+        generatedAt: '2026-09-22T10:00:00',
+        columns: ['Code', 'Designation'],
+        rows: [
+          ['@cmd', '+cmd|evil'],
+          ['=1+1', '-12.50'],
+        ],
+      );
+      final csv = ReportExport.toCsv(r);
+      expect(csv, contains("'=MaliciousTitle"));
+      expect(csv, contains("'@cmd"));
+      expect(csv, contains("'+cmd|evil"));
+      expect(csv, contains("'=1+1"));
+      expect(csv, contains('-12.50'));
+    });
   });
 
   group('toPdfBytes', () {

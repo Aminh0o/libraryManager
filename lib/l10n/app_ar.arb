@@ -266,6 +266,23 @@
   "updateNotConfigured": "التحقق التلقائي من التحديثات غير مُهيَّأ لهذا النشر.",
   "updateCheckFailed": "تعذر الوصول إلى خادم التحديث. حاول مرة أخرى لاحقًا.",
   "updateFoundVersion": "الإصدار {version} متاح الآن.",
+  "updateDownload": "تنزيل التحديث",
+  "updateDownloading": "جارٍ التنزيل… {percent}%",
+  "@updateDownloading": {
+    "placeholders": {
+      "percent": {"type": "String"}
+    }
+  },
+  "updateDownloaded": "تم التنزيل والتحقق: {path}",
+  "@updateDownloaded": {
+    "placeholders": {
+      "path": {"type": "String"}
+    }
+  },
+  "updateDownloadFailed": "فشلة عملية التنزيل. حاول مرة أخرى لاحقًا.",
+  "updateChecksumMismatch": "لم يجتَز التنزيل فحص السلامة وتم حذفه. لم يُثبَّت أي شيء.",
+  "updateReveal": "إظهار الملف",
+  "updateManualInstallHint": "للتثبيت: أغلق هذا التطبيق، ثم فك ضغط الملف المنزَّل إلى مجلد التطبيقات، ثم شغّل library_manager.exe. يقوم هذا التحديث بتنزيل الحزمة والتحقق من بصمتها؛ لكنه لا يستبدل التطبيق قيد التشغيل تلقائيًا.",
   "enableLanAccess": "تفعيل الوصول عبر الشبكة المحلية",
   "enableLanAccessDescription": "السماح لأجهزة أخرى بالاتصال عبر إضافة قواعد جدار حماية ويندوز (يتطلب صلاحيات المسؤول).",
   "lanAccessEnabled": "تم تفعيل الوصول عبر الشبكة المحلية.",
@@ -480,6 +497,10 @@
   "reportFailed": "تعذر إنشاء التقرير.",
   "reportExportFailed": "تعذر تصدير التقرير.",
   "onlyStaffRunReports": "الموظفون فقط يمكنهم إنشاء التقارير.",
+  "printReceipt": "طباعة الإيصال",
+  "printFailed": "تعذّر تحضير الإيصال.",
+  "printMemberCard": "طباعة بطاقة العضو",
+  "printHoldTicket": "طباعة تذكرة الحجز",
   "exportDiagnostics": "تصدير التشخيصات",
   "diagnosticsSaved": "تم حفظ التشخيصات في {path}",
   "@diagnosticsSaved": {

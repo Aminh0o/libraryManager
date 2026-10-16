@@ -820,6 +820,33 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get updateDownload => 'Download update';
+
+  @override
+  String updateDownloading(String percent) {
+    return 'Downloading… $percent%';
+  }
+
+  @override
+  String updateDownloaded(String path) {
+    return 'Downloaded and verified: $path';
+  }
+
+  @override
+  String get updateDownloadFailed => 'Download failed. Please try again later.';
+
+  @override
+  String get updateChecksumMismatch =>
+      'The download failed its integrity check and was discarded. Nothing was installed.';
+
+  @override
+  String get updateReveal => 'Show file';
+
+  @override
+  String get updateManualInstallHint =>
+      'To install: close this app, unzip the downloaded file into your apps folder, then run library_manager.exe. This update downloads the package and verifies its checksum; it does not replace the running app automatically.';
+
+  @override
   String get enableLanAccess => 'Enable LAN Access';
 
   @override
@@ -1296,6 +1323,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onlyStaffRunReports => 'Only staff can run reports.';
+
+  @override
+  String get printReceipt => 'Print receipt';
+
+  @override
+  String get printFailed => 'Could not prepare the receipt.';
+
+  @override
+  String get printMemberCard => 'Print member card';
+
+  @override
+  String get printHoldTicket => 'Print hold ticket';
 
   @override
   String get exportDiagnostics => 'Export diagnostics';

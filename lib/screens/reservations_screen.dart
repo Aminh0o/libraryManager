@@ -9,7 +9,9 @@ import '../models/member.dart';
 import '../models/reservation.dart';
 import '../providers/library_provider.dart';
 import '../services/api_service.dart' show ApiException;
+import '../services/circulation_documents.dart';
 import '../services/error_messages.dart';
+import '../services/receipt_payload.dart';
 import '../ui/app_tokens.dart';
 import '../widgets/app_states.dart';
 import '../widgets/app_status_chip.dart';
@@ -250,6 +252,46 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
       if (i.code == code) return i.designation;
     }
     return code;
+  }
+
+  // §6.12 hold-ticket print. A side-effect-free presentation of an already-
+  // committed reservation: it calls provider.printCirculationSlip (no mutation,
+  // staff-enforced) so reprinting a ticket can never place or move a hold
+  // (§274). Every field comes from the authoritative in-memory Reservation the
+  // row is showing, so the tile and the PDF agree (§263). The barcode is the
+  // item code the desk scans at pickup; no QR is emitted, so no guessable id
+  // and no PII is encoded (§284).
+  Future<void> _printHoldTicket(Reservation hold) async {
+    final provider = Provider.of<LibraryProvider>(context, listen: false);
+    final l10n = AppLocalizations.of(context)!;
+    final scaffold = ScaffoldMessenger.of(context);
+    final deadline = _date(hold.availableUntil);
+    final slip = CirculationSlip(
+      docType: ReceiptDocType.hold,
+      title: l10n.printHoldTicket,
+      generatedAt: DateTime.now().toLocal().toString().split('.').first,
+      reference: hold.id?.toString(),
+      profileName: _memberLabel(provider.members, hold.memberId),
+      status: _statusLabel(hold.status, l10n),
+      lines: <SlipLine>[
+        (label: l10n.colMember, value: hold.memberId),
+        (label: l10n.code, value: hold.itemCode),
+      ],
+      items: <String>[_itemLabel(provider.items, hold.itemCode)],
+      notes: <String>[
+        if (hold.status == ReservationStatus.available && deadline.isNotEmpty)
+          l10n.holdPickupBy(deadline),
+      ],
+      barcodeValue: hold.itemCode,
+    );
+    try {
+      final path = await provider.printCirculationSlip(slip);
+      if (path != null) {
+        scaffold.showSnackBar(SnackBar(content: Text(l10n.reportSaved(path))));
+      }
+    } catch (e) {
+      scaffold.showSnackBar(SnackBar(content: Text(describeError(l10n, e))));
+    }
   }
 
   String _date(String? iso) {
@@ -510,15 +552,32 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
             onPressed: _busy ? null : () => _cancel(hold),
           )
         : null;
-    // Terminal rows show the chip alone; live rows show [chip · cancel].
+    // §6.12 print hold ticket — available on every row (a terminal hold can
+    // still be re-printed for the patron record); it never mutates.
+    final printBtn = IconButton(
+      key: Key('hold-print-${hold.id}'),
+      tooltip: l10n.printHoldTicket,
+      icon: const Icon(Icons.receipt_long_outlined),
+      onPressed: _busy ? null : () => _printHoldTicket(hold),
+    );
+    // Terminal rows show [chip · print]; live rows show [chip · cancel · print].
     final base = cancel == null
-        ? chip
+        ? Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              chip,
+              const SizedBox(width: AppSpacing.xs),
+              printBtn,
+            ],
+          )
         : Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               chip,
               const SizedBox(width: AppSpacing.xs),
               cancel,
+              const SizedBox(width: AppSpacing.xs),
+              printBtn,
             ],
           );
     if (!showReorder) return base;

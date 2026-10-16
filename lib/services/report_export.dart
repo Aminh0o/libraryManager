@@ -5,6 +5,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../models/report.dart';
+import '../utils/display_safety.dart';
 
 /// NET-11 (P20): compose the report PDF OFF the UI isolate. For a large result
 /// set, `package:pdf`'s table layout + byte encoding is pure, synchronous CPU
@@ -63,19 +64,26 @@ class ReportExport {
   static String toCsv(Report r, {Map<String, String>? labels}) {
     final L = _labels(labels);
     final rows = <List<String>>[
-      [r.title],
-      [L['from']!, r.from ?? '', L['to']!, r.to ?? ''],
-      [L['generated']!, r.generatedAt],
+      [sanitizeCsvCell(r.title)],
+      [
+        L['from']!,
+        sanitizeCsvCell(r.from ?? ''),
+        L['to']!,
+        sanitizeCsvCell(r.to ?? ''),
+      ],
+      [L['generated']!, sanitizeCsvCell(r.generatedAt)],
       const <String>[],
     ];
     if (r.summary.isNotEmpty) {
       for (final e in r.summary.entries) {
-        rows.add([e.key, e.value]);
+        rows.add([sanitizeCsvCell(e.key), sanitizeCsvCell(e.value)]);
       }
       rows.add(const <String>[]);
     }
-    rows.add(r.columns);
-    rows.addAll(r.rows);
+    rows.add(r.columns.map(sanitizeCsvCell).toList());
+    for (final row in r.rows) {
+      rows.add(row.map(sanitizeCsvCell).toList());
+    }
     return const ListToCsvConverter().convert(rows);
   }
 

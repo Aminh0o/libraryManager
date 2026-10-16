@@ -14,7 +14,7 @@ publish_to: 'none'
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.1.3+7
+version: 1.1.4+8
 
 environment:
   sdk: ^3.10.1
@@ -42,6 +42,10 @@ dependencies:
   intl: ^0.20.0
   data_table_2: ^2.5.8
   pdf: ^3.10.8
+  # Direct: the printed-slip QR / barcode renderer used by
+  # lib/services/circulation_documents.dart (already present transitively via
+  # pdf; declared explicitly because we import package:barcode directly).
+  barcode: ^2.2.9
   printing: ^5.11.1
   csv: ^6.0.0
   google_fonts: ^6.1.0

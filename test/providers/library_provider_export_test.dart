@@ -198,6 +198,26 @@ void main() {
       expect(csv, contains('0001,,LIV,Book 1,1,R1,10.0,S1,Disponible'));
     });
 
+    test('sanitizes formula injection prefixes in inventory fields', () {
+      final malicious = LibraryItem(
+        code: '=0001',
+        barcode: '@12345',
+        codeType: '+LIV',
+        designation: '-cmd|evil',
+        quantite: 1,
+        emplacement: '\tRoom1',
+        taux: 10,
+        emplacementStock: '\rShelf1',
+        status: 'Disponible',
+      );
+      final csv = provider.csvContent([malicious]);
+      expect(csv, contains("'=0001"));
+      expect(csv, contains("'@12345"));
+      expect(csv, contains("'+LIV"));
+      expect(csv, contains("'-cmd|evil"));
+      expect(csv, contains("'\tRoom1"));
+    });
+
     // NET-11 (P20): the whole-catalogue export now composes its text on a
     // worker isolate. These pins prove the off-isolate path cannot silently
     // diverge from the on-isolate one it replaced.

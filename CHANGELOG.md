@@ -6,6 +6,39 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.1.4] — 2026-10-16
+
+Codename *download-and-verify*. Turns the update check into a real updater and
+puts the circulation paperwork in the operator's hands.
+
+### Added
+
+- **In-app download with checksum verification.** The updater no longer just
+  opens a browser page: it now streams the GitHub release package
+  (`LibraryManager-<ver>-windows-x64.zip`) into the user's Documents, verifies
+  its SHA-256 against the release's published `.sha256sum` sibling, and only
+  then hands the verified file over with clear manual-install steps. The feed is
+  HTTPS-only, a size cap bounds the download, the download is cancel- and
+  resume-safe, and the destination directory is created on demand. When no
+  checksum asset is published, the download is refused rather than offered
+  unverifiable. The app never auto-extracts, replaces the running executable, or
+  elevates — installing stays a deliberate, user-visible act.
+- **Printable circulation receipts in the UI.** Return/renewal receipts, hold
+  tickets and the member card are now reachable from their own screens (loan,
+  reservations, member detail), gated to writable sessions, and write a real PDF
+  to a location the operator chooses. Receipts carry the circulation facts, not
+  PII, and use the strict receipt payload codec.
+
+### Verified
+
+- LAN pairing/sharing re-confirmed end to end: role-gated single-use pairing
+  code, real bound-port advertisement, broadcast plus subnet-scan discovery,
+  per-source wrong-code lockout, bearer token (no password on the wire), the
+  `LanServerErrorKind` reachability taxonomy and the in-app pairing self-diagnostic
+  / firewall helper.
+
+---
+
 ## [1.1.3] — 2026-10-02
 
 Codename *named-account sign-in*. Closes the field report that a staff account
@@ -225,7 +258,7 @@ English, French and Arabic.
   concurrency.
 - **Users & roles** — admin / staff / viewer enforced identically on the
   SQLite host path and the HTTP surface; PBKDF2-HMAC-SHA256 with per-user
-  salt and 210 000 rounds; last-admin guard; reserved-name guard.
+  salt and 150 000 rounds; last-admin guard; reserved-name guard.
 - **Chat** — peer-to-peer staff channel on the LAN, authenticated via the
   same token as circulation.
 - **Localisation** — full EN / FR / AR with RTL layout on Arabic.

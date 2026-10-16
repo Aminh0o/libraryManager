@@ -266,6 +266,23 @@
   "updateNotConfigured": "La vérification automatique des mises à jour n'est pas configurée pour ce déploiement.",
   "updateCheckFailed": "Impossible de joindre le serveur de mise à jour. Réessayez plus tard.",
   "updateFoundVersion": "La version {version} est disponible.",
+  "updateDownload": "Télécharger la mise à jour",
+  "updateDownloading": "Téléchargement… {percent}%",
+  "@updateDownloading": {
+    "placeholders": {
+      "percent": {"type": "String"}
+    }
+  },
+  "updateDownloaded": "Téléchargé et vérifié : {path}",
+  "@updateDownloaded": {
+    "placeholders": {
+      "path": {"type": "String"}
+    }
+  },
+  "updateDownloadFailed": "Échec du téléchargement. Réessayez plus tard.",
+  "updateChecksumMismatch": "Le téléchargement a échoué au contrôle d'intégrité et a été supprimé. Rien n'a été installé.",
+  "updateReveal": "Afficher le fichier",
+  "updateManualInstallHint": "Pour installer : fermez l'application, décompressez le fichier téléchargé dans votre dossier d'applications, puis lancez library_manager.exe. Cette mise à jour télécharge le paquet et vérifie son empreinte ; elle ne remplace pas l'application en cours automatiquement.",
   "enableLanAccess": "Activer l'accès LAN",
   "enableLanAccessDescription": "Autoriser la connexion des autres PC en ajoutant des règles Windows Firewall (Admin requis).",
   "lanAccessEnabled": "Accès LAN activé.",
@@ -480,6 +497,10 @@
   "reportFailed": "Impossible d'exécuter le rapport.",
   "reportExportFailed": "Impossible d'exporter le rapport.",
   "onlyStaffRunReports": "Seul le personnel peut exécuter des rapports.",
+  "printReceipt": "Imprimer le reçu",
+  "printFailed": "Impossible de préparer le reçu.",
+  "printMemberCard": "Imprimer la carte de membre",
+  "printHoldTicket": "Imprimer le ticket de réservation",
   "exportDiagnostics": "Exporter les diagnostics",
   "diagnosticsSaved": "Diagnostics enregistrés dans {path}",
   "@diagnosticsSaved": {

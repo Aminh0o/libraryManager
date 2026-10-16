@@ -818,6 +818,34 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get updateDownload => 'تنزيل التحديث';
+
+  @override
+  String updateDownloading(String percent) {
+    return 'جارٍ التنزيل… $percent%';
+  }
+
+  @override
+  String updateDownloaded(String path) {
+    return 'تم التنزيل والتحقق: $path';
+  }
+
+  @override
+  String get updateDownloadFailed =>
+      'فشلة عملية التنزيل. حاول مرة أخرى لاحقًا.';
+
+  @override
+  String get updateChecksumMismatch =>
+      'لم يجتَز التنزيل فحص السلامة وتم حذفه. لم يُثبَّت أي شيء.';
+
+  @override
+  String get updateReveal => 'إظهار الملف';
+
+  @override
+  String get updateManualInstallHint =>
+      'للتثبيت: أغلق هذا التطبيق، ثم فك ضغط الملف المنزَّل إلى مجلد التطبيقات، ثم شغّل library_manager.exe. يقوم هذا التحديث بتنزيل الحزمة والتحقق من بصمتها؛ لكنه لا يستبدل التطبيق قيد التشغيل تلقائيًا.';
+
+  @override
   String get enableLanAccess => 'تفعيل الوصول عبر الشبكة المحلية';
 
   @override
@@ -1292,6 +1320,18 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get onlyStaffRunReports => 'الموظفون فقط يمكنهم إنشاء التقارير.';
+
+  @override
+  String get printReceipt => 'طباعة الإيصال';
+
+  @override
+  String get printFailed => 'تعذّر تحضير الإيصال.';
+
+  @override
+  String get printMemberCard => 'طباعة بطاقة العضو';
+
+  @override
+  String get printHoldTicket => 'طباعة تذكرة الحجز';
 
   @override
   String get exportDiagnostics => 'تصدير التشخيصات';

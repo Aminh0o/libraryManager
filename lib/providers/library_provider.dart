@@ -33,11 +33,14 @@ import '../services/sqflite_auth_store.dart';
 import '../services/app_logger.dart';
 import '../services/pairing_guard.dart';
 import '../services/pairing_protocol.dart';
+import '../services/lan_ip.dart';
 import '../services/report_export.dart';
+import '../services/circulation_documents.dart';
 import '../services/error_messages.dart';
 import '../config/app_info.dart';
 import '../config/network_config.dart';
 import '../l10n/app_localizations.dart';
+import '../utils/display_safety.dart';
 
 /// Tri-state LAN link health surfaced by [LibraryProvider.connectionStatus]
 /// (NET-07). Previously the header was a binary green/red: a CLIENT that lost
@@ -302,22 +305,20 @@ class LibraryProvider with ChangeNotifier {
         type: InternetAddressType.IPv4,
       );
 
-      final privateAddresses = <String>[];
-      final otherAddresses = <String>[];
-
+      // A machine often has several private IPv4 addresses — a real NIC plus
+      // virtual adapters (VirtualBox/VMware/Hyper-V/Tailscale/…). Advertising
+      // whichever `list` happens to return first could point a paired client at
+      // a host-only interface nothing else can reach, so rank by interface
+      // character instead of arrival order (see lan_ip.dart).
+      final candidates = <LanInterface>[];
       for (final interface in interfaces) {
         for (final addr in interface.addresses) {
-          final ip = addr.address;
-          if (_isPrivateIpv4(ip)) {
-            privateAddresses.add(ip);
-          } else {
-            otherAddresses.add(ip);
-          }
+          candidates.add(
+            LanInterface(name: interface.name, address: addr.address),
+          );
         }
       }
-
-      if (privateAddresses.isNotEmpty) return privateAddresses.first;
-      if (otherAddresses.isNotEmpty) return otherAddresses.first;
+      return selectLanIp(candidates);
     } catch (e) {
       appLog.warn('net', 'Error getting local IP', e);
     }
@@ -1387,6 +1388,44 @@ class LibraryProvider with ChangeNotifier {
     return filePath;
   }
 
+  /// PRINT-QR (§6.12): renders a circulation slip (loan / return / renewal /
+  /// hold ticket / member card) to a PDF and returns the written path, or
+  /// `null` if the user cancelled the save dialog. The slip is built by the
+  /// caller from ALREADY-COMMITTED, authoritative records — this method performs
+  /// NO mutation, so a reprint after a successful checkout/return can never
+  /// create a second loan or alter the original (§274/§304). Gated like a report
+  /// (a receipt carries the member's name and their loans, so it is staff-only;
+  /// a viewer's disabled button is NOT the enforcement) (§197/§298).
+  Future<String?> printCirculationSlip(
+    CirculationSlip slip, {
+    LibraryIdentity? library,
+  }) async {
+    if (!canWrite) {
+      throw StateError('Only staff can print circulation documents.');
+    }
+    final bytes = await CirculationDocuments.build(slip, library: library);
+    final fileName = _slipFileName(slip);
+    final filePath = await _exportTargetPath(fileName, const ['pdf']);
+    if (filePath == null) return null; // user cancelled -> nothing written
+    await File(filePath).writeAsBytes(bytes);
+    appLog.info('print', 'Circulation ${slip.docType.name} slip written');
+    return filePath;
+  }
+
+  /// A filesystem-safe, self-describing name for a printed slip. Carries the
+  /// document type and reference so a reprint is traceable, and strips anything
+  /// that is not a plain id character so an unexpected reference can never turn
+  /// into a path-traversal filename.
+  String _slipFileName(CirculationSlip slip) {
+    final safeRef = (slip.reference ?? '').replaceAll(
+      RegExp(r'[^A-Za-z0-9_-]'),
+      '',
+    );
+    final suffix = safeRef.isEmpty ? '' : '_$safeRef';
+    final tag = slip.reprint ? '_reprint' : '';
+    return 'library_${slip.docType.name}$suffix$tag.pdf';
+  }
+
   /// ARC-06: bundles a small, credential-free diagnostics report (app version,
   /// schema version, host/client mode, OS) plus the current + rotated log
   /// files (already secret-scrubbed by [AppLogger.readLogContents]) to a
@@ -2359,13 +2398,14 @@ class LibraryProvider with ChangeNotifier {
   }
 
   static String _csvField(String value) {
-    if (value.contains(',') ||
-        value.contains('"') ||
-        value.contains('\n') ||
-        value.contains('\r')) {
-      return '"${value.replaceAll('"', '""')}"';
+    final sanitized = sanitizeCsvCell(value);
+    if (sanitized.contains(',') ||
+        sanitized.contains('"') ||
+        sanitized.contains('\n') ||
+        sanitized.contains('\r')) {
+      return '"${sanitized.replaceAll('"', '""')}"';
     }
-    return value;
+    return sanitized;
   }
 
   /// Exposes the RFC-4180 quoting rule to [buildInventoryCsvOffIsolate]: a

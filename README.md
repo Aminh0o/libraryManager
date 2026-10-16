@@ -42,7 +42,7 @@ server granted it.
 | **Reports** | Twelve read-only analytical surfaces (loans by period, overdue, member activity, inventory valuation, fine ledger, hold turn-around, etc.), one-click CSV and PDF export, deterministic rendering shared with the on-screen table. |
 | **Multi-device LAN** | Turn any install into a **host** or connect a laptop as a **client**; pairing via QR or manual IP; per-device role binding; idempotency-key middleware so a flaky Wi-Fi never double-checks-out. |
 | **Users & roles** | Three-tier model — **admin / staff / viewer** — enforced identically on the host SQLite path and the HTTP surface, last-admin guard, reserved-name guard, PBKDF2-HMAC-SHA256 password hashing with a per-user salt. |
-| **Chat** | Peer-to-peer staff message channel on the LAN, delivered via the same authenticated token; supports text and file attachment with size cap. |
+| **Chat** | Peer-to-peer staff message channel on the LAN, delivered via the same authenticated token; ephemeral text messages with a 1,000-character cap and rolling buffer. |
 | **Localisation** | Fully localised in **English**, **Français** and **العربية**, including proper RTL layout for Arabic across every screen and every dialog. |
 | **Diagnostics** | Structured rolling app log, one-click diagnostics bundle (redacted), safe-mode repair, `VACUUM INTO` online backup with verification, restore with rollback. |
 | **Appearance** | Light / dark / system theme, accent colour, density, font scale — persisted per device, no rebuild required. |

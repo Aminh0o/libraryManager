@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/library_provider.dart';
 import '../services/error_messages.dart';
+import '../services/circulation_documents.dart';
+import '../services/receipt_payload.dart';
 import '../models/library_item.dart';
 import '../models/member.dart';
 import '../models/loan.dart';
@@ -167,6 +169,45 @@ class _LoanScreenState extends State<LoanScreen>
           context,
         ).showSnackBar(SnackBar(content: Text(describeError(l10n, e))));
       }
+    }
+  }
+
+  // PRINT-QR (§6.12): render a loan receipt from the ALREADY-COMMITTED, active
+  // loan. This builds the slip purely from authoritative `Loan` fields and
+  // formats dates exactly like the row above (the shared `_fmtDate`), so the
+  // table, the on-screen reference and the printed PDF can never disagree
+  // (§263). It calls provider.printCirculationSlip, which performs NO mutation
+  // and is staff-enforced server-side, so reprinting an existing loan can never
+  // create a second loan or alter the original (§274/§304). Cancellation simply
+  // returns null (no file, no error). The barcode is the copy/item code the
+  // circulation desk already scans; no QR is emitted, so no guessable
+  // sequential id and no PII is encoded (§284).
+  Future<void> _printReceipt(Loan loan) async {
+    final provider = Provider.of<LibraryProvider>(context, listen: false);
+    final l10n = AppLocalizations.of(context)!;
+    final scaffold = ScaffoldMessenger.of(context);
+    final slip = CirculationSlip(
+      docType: ReceiptDocType.loan,
+      title: l10n.printReceipt,
+      generatedAt: _fmtDate(DateTime.now()),
+      reference: loan.id?.toString(),
+      profileName: loan.memberName,
+      status: loan.isOverdue ? l10n.overdue : l10n.activeLoans,
+      lines: <SlipLine>[
+        (label: l10n.colMember, value: loan.memberId),
+        (label: l10n.loanDateCol, value: _fmtDate(loan.loanDate)),
+        (label: l10n.dueDateCol, value: _fmtDate(loan.dueDate)),
+      ],
+      items: <String>['${loan.itemTitle} (${loan.itemCode})'],
+      barcodeValue: loan.itemCode,
+    );
+    try {
+      final path = await provider.printCirculationSlip(slip);
+      if (path != null) {
+        scaffold.showSnackBar(SnackBar(content: Text(l10n.reportSaved(path))));
+      }
+    } catch (e) {
+      scaffold.showSnackBar(SnackBar(content: Text(describeError(l10n, e))));
     }
   }
 
@@ -466,6 +507,7 @@ class _LoanScreenState extends State<LoanScreen>
             l10n.dueDateCol,
             l10n.status,
             l10n.renew,
+            l10n.printReceipt,
           ])
             DataColumn(
               label: Text(
@@ -511,6 +553,21 @@ class _LoanScreenState extends State<LoanScreen>
                     onPressed: () => _renew(loan),
                     icon: const Icon(Icons.refresh, size: AppIcon.md),
                     label: Text(l10n.renew),
+                  ),
+                ),
+                // §6.12: a first-class receipt action on the committed loan,
+                // in its own column (cells must equal the 7 header cells).
+                // Enabled only for staff -- the provider enforces the same rule
+                // independently, so a disabled button is NOT the permission
+                // check (§197/§298). Reprinting performs no mutation (§274).
+                DataCell(
+                  TextButton.icon(
+                    key: Key('print_${loan.id ?? loan.itemCode}'),
+                    onPressed: provider.canWrite
+                        ? () => _printReceipt(loan)
+                        : null,
+                    icon: const Icon(Icons.receipt_long, size: AppIcon.md),
+                    label: Text(l10n.printReceipt),
                   ),
                 ),
               ],

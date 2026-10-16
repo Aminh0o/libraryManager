@@ -37,4 +37,28 @@ void main() {
       expect(safeText(null, fallback: ''), '');
     });
   });
+
+  group('sanitizeCsvCell', () {
+    test(
+      'neutralizes formula injection triggers by prefixing with a quote',
+      () {
+        expect(sanitizeCsvCell('=SUM(A1:A10)'), "'=SUM(A1:A10)");
+        expect(sanitizeCsvCell('@cmd'), "'@cmd");
+        expect(sanitizeCsvCell('\tcalc'), "'\tcalc");
+        expect(sanitizeCsvCell('\rcalc'), "'\rcalc");
+        expect(sanitizeCsvCell('+cmd|foo'), "'+cmd|foo");
+        expect(sanitizeCsvCell('-cmd|foo'), "'-cmd|foo");
+        expect(sanitizeCsvCell(' =1+1'), "' =1+1");
+      },
+    );
+
+    test('preserves legitimate numeric values and standard text', () {
+      expect(sanitizeCsvCell('123'), '123');
+      expect(sanitizeCsvCell('+123'), '+123');
+      expect(sanitizeCsvCell('-12.50'), '-12.50');
+      expect(sanitizeCsvCell('0'), '0');
+      expect(sanitizeCsvCell('Clean Book Title'), 'Clean Book Title');
+      expect(sanitizeCsvCell(''), '');
+    });
+  });
 }

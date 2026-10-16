@@ -1654,6 +1654,48 @@ abstract class AppLocalizations {
   /// **'Version {version} is now available.'**
   String updateFoundVersion(String version);
 
+  /// No description provided for @updateDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'Download update'**
+  String get updateDownload;
+
+  /// No description provided for @updateDownloading.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading… {percent}%'**
+  String updateDownloading(String percent);
+
+  /// No description provided for @updateDownloaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloaded and verified: {path}'**
+  String updateDownloaded(String path);
+
+  /// No description provided for @updateDownloadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Download failed. Please try again later.'**
+  String get updateDownloadFailed;
+
+  /// No description provided for @updateChecksumMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'The download failed its integrity check and was discarded. Nothing was installed.'**
+  String get updateChecksumMismatch;
+
+  /// No description provided for @updateReveal.
+  ///
+  /// In en, this message translates to:
+  /// **'Show file'**
+  String get updateReveal;
+
+  /// No description provided for @updateManualInstallHint.
+  ///
+  /// In en, this message translates to:
+  /// **'To install: close this app, unzip the downloaded file into your apps folder, then run library_manager.exe. This update downloads the package and verifies its checksum; it does not replace the running app automatically.'**
+  String get updateManualInstallHint;
+
   /// No description provided for @enableLanAccess.
   ///
   /// In en, this message translates to:
@@ -2511,6 +2553,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Only staff can run reports.'**
   String get onlyStaffRunReports;
+
+  /// No description provided for @printReceipt.
+  ///
+  /// In en, this message translates to:
+  /// **'Print receipt'**
+  String get printReceipt;
+
+  /// No description provided for @printFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not prepare the receipt.'**
+  String get printFailed;
+
+  /// No description provided for @printMemberCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Print member card'**
+  String get printMemberCard;
+
+  /// No description provided for @printHoldTicket.
+  ///
+  /// In en, this message translates to:
+  /// **'Print hold ticket'**
+  String get printHoldTicket;
 
   /// No description provided for @exportDiagnostics.
   ///

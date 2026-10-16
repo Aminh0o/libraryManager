@@ -828,6 +828,34 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get updateDownload => 'Télécharger la mise à jour';
+
+  @override
+  String updateDownloading(String percent) {
+    return 'Téléchargement… $percent%';
+  }
+
+  @override
+  String updateDownloaded(String path) {
+    return 'Téléchargé et vérifié : $path';
+  }
+
+  @override
+  String get updateDownloadFailed =>
+      'Échec du téléchargement. Réessayez plus tard.';
+
+  @override
+  String get updateChecksumMismatch =>
+      'Le téléchargement a échoué au contrôle d\'intégrité et a été supprimé. Rien n\'a été installé.';
+
+  @override
+  String get updateReveal => 'Afficher le fichier';
+
+  @override
+  String get updateManualInstallHint =>
+      'Pour installer : fermez l\'application, décompressez le fichier téléchargé dans votre dossier d\'applications, puis lancez library_manager.exe. Cette mise à jour télécharge le paquet et vérifie son empreinte ; elle ne remplace pas l\'application en cours automatiquement.';
+
+  @override
   String get enableLanAccess => 'Activer l\'accès LAN';
 
   @override
@@ -1310,6 +1338,18 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get onlyStaffRunReports =>
       'Seul le personnel peut exécuter des rapports.';
+
+  @override
+  String get printReceipt => 'Imprimer le reçu';
+
+  @override
+  String get printFailed => 'Impossible de préparer le reçu.';
+
+  @override
+  String get printMemberCard => 'Imprimer la carte de membre';
+
+  @override
+  String get printHoldTicket => 'Imprimer le ticket de réservation';
 
   @override
   String get exportDiagnostics => 'Exporter les diagnostics';

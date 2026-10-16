@@ -128,13 +128,21 @@ Write-Output "BLOCK=\$blockOk"
 ''';
 
     try {
+      // Run the probe via -EncodedCommand (UTF-16LE base64) exactly like
+      // [ensureLanFirewallRules], NOT through a shell. Passing the multi-line
+      // script to `powershell -Command` with `runInShell: true` routes it
+      // through cmd.exe, which mangles the newlines/quoting so stdout came back
+      // empty and the UI silently reported "not listening / rules missing" on a
+      // machine where both were fine. EncodedCommand hands PowerShell the exact
+      // bytes and needs no shell.
+      final encodedScript = base64.encode(_toUtf16LeBytes(script));
       final result = await Process.run('powershell', [
         '-NoProfile',
         '-ExecutionPolicy',
         'Bypass',
-        '-Command',
-        script,
-      ], runInShell: true);
+        '-EncodedCommand',
+        encodedScript,
+      ]);
 
       final output = result.stdout.toString();
       final udpListening = output.contains('UDP=true');

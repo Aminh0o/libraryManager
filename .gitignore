@@ -95,6 +95,9 @@ service-account*.json
 /backups/
 
 # ─── Local working notes, scratch, screenshots from ad-hoc audits ───────────
+# Internal audit / production-readiness evidence and working docs stay local;
+# the public repo ships code, README and CHANGELOG only.
+docs/
 *.log
 *.swp
 *.tmp

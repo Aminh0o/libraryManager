@@ -289,6 +289,23 @@
       "version": {"type": "String"}
     }
   },
+  "updateDownload": "Download update",
+  "updateDownloading": "Downloading… {percent}%",
+  "@updateDownloading": {
+    "placeholders": {
+      "percent": {"type": "String"}
+    }
+  },
+  "updateDownloaded": "Downloaded and verified: {path}",
+  "@updateDownloaded": {
+    "placeholders": {
+      "path": {"type": "String"}
+    }
+  },
+  "updateDownloadFailed": "Download failed. Please try again later.",
+  "updateChecksumMismatch": "The download failed its integrity check and was discarded. Nothing was installed.",
+  "updateReveal": "Show file",
+  "updateManualInstallHint": "To install: close this app, unzip the downloaded file into your apps folder, then run library_manager.exe. This update downloads the package and verifies its checksum; it does not replace the running app automatically.",
   "enableLanAccess": "Enable LAN Access",
   "enableLanAccessDescription": "Allow other PCs to connect by adding Windows Firewall rules (requires Admin).",
   "lanAccessEnabled": "LAN access enabled.",
@@ -503,6 +520,10 @@
   "reportFailed": "Could not run the report.",
   "reportExportFailed": "Could not export the report.",
   "onlyStaffRunReports": "Only staff can run reports.",
+  "printReceipt": "Print receipt",
+  "printFailed": "Could not prepare the receipt.",
+  "printMemberCard": "Print member card",
+  "printHoldTicket": "Print hold ticket",
   "exportDiagnostics": "Export diagnostics",
   "diagnosticsSaved": "Diagnostics saved to {path}",
   "@diagnosticsSaved": {

@@ -1,8 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
-import 'dart:io' show Platform;
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/library_provider.dart';
 import '../providers/appearance_controller.dart';
@@ -897,26 +899,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               );
               break;
             case UpdateStatus.available:
-              showDialog(
+              // The update is real: open a dialog that can download the actual
+              // release package over HTTPS and verify its published SHA-256
+              // before the user installs it. Falls back to a browser link when
+              // the feed exposes no downloadable/verifiable asset.
+              showDialog<void>(
                 context: context,
-                builder: (dialogContext) => AlertDialog(
-                  title: Text(l10n.updateAvailable),
-                  content: Text(l10n.updateFoundVersion(result.version ?? '')),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(dialogContext),
-                      child: Text(l10n.cancel),
-                    ),
-                    if (result.hasUpdate)
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pop(dialogContext);
-                          UpdateService.launchUpdate(result.url!);
-                        },
-                        child: Text(l10n.updateNow),
-                      ),
-                  ],
-                ),
+                builder: (dialogContext) =>
+                    UpdateDownloadDialog(result: result),
               );
               break;
           }
@@ -1810,6 +1800,199 @@ class _FeaturesSection extends StatelessWidget {
             ],
           ),
         ),
+      ],
+    );
+  }
+}
+
+/// The real update lifecycle (§6.13, and the audit's "updater is only a browser
+/// bookmark"). Given a check that found a downloadable release asset, this
+/// dialog streams the actual package down over HTTPS, shows byte progress, is
+/// cancellable, and *verifies its published SHA-256 before* it tells the user
+/// anything was obtained. A mismatch or failure never leaves a file behind and
+/// is reported honestly. Because a running Windows `.exe` cannot replace itself
+/// safely, the verified package is then handed to the user with explicit manual
+/// install steps (open its folder) — the app deliberately does NOT auto-extract
+/// or auto-elevate (see KNOWN_LIMITATIONS: distribution-trust boundary).
+class UpdateDownloadDialog extends StatefulWidget {
+  const UpdateDownloadDialog({super.key, required this.result});
+  final UpdateCheckResult result;
+
+  @override
+  State<UpdateDownloadDialog> createState() => _UpdateDownloadDialogState();
+}
+
+class _UpdateDownloadDialogState extends State<UpdateDownloadDialog> {
+  static const int _maxBytes = 512 * 1024 * 1024;
+  DownloadStatus? _status;
+  int _received = 0;
+  int? _total;
+  String? _destPath;
+  bool _cancelRequested = false;
+  bool _running = false;
+
+  Future<void> _start() async {
+    setState(() {
+      _running = true;
+      _status = null;
+      _destPath = null;
+      _received = 0;
+      _total = widget.result.artifact?.sizeBytes;
+      _cancelRequested = false;
+    });
+    final artifact = widget.result.artifact!;
+    final docs = await getApplicationDocumentsDirectory();
+    final name = UpdateService.sanitizeFileName(
+      artifact.fileName ?? 'library_manager_update.zip',
+    );
+    final dest = p.join(docs.path, 'updates', name);
+    final out = await UpdateService.downloadAndVerify(
+      artifact,
+      dest,
+      maxBytes: _maxBytes,
+      onProgress: (r, t) {
+        if (!mounted) return;
+        setState(() {
+          _received = r;
+          _total = t ?? _total;
+        });
+      },
+      isCancelled: () => _cancelRequested,
+    );
+    if (!mounted) return;
+    setState(() {
+      _running = false;
+      _status = out.status;
+      _destPath = out.path;
+    });
+  }
+
+  void _cancel() => setState(() => _cancelRequested = true);
+
+  int get _percent {
+    final t = _total;
+    if (t == null || t <= 0) return 0;
+    return ((_received / t) * 100).clamp(0, 100).round();
+  }
+
+  Future<void> _revealInFolder(String filePath) async {
+    try {
+      if (Platform.isWindows) {
+        await Process.run('explorer.exe', <String>[
+          '/select,"$filePath"',
+        ], runInShell: true);
+      } else if (Platform.isMacOS) {
+        await Process.run('open', <String>['-R', filePath]);
+      } else if (Platform.isLinux) {
+        await Process.run('xdg-open', <String>[p.dirname(filePath)]);
+      }
+    } catch (_) {
+      // Reveal is a convenience only; failure never blocks the manual flow.
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final version = widget.result.version ?? '';
+    final canDl = widget.result.canDownload;
+
+    Widget body;
+    if (_running) {
+      final t = _total;
+      body = Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(l10n.updateDownloading('$_percent%')),
+          const SizedBox(height: 12),
+          if (t != null && t > 0)
+            LinearProgressIndicator(value: _percent / 100)
+          else
+            const LinearProgressIndicator(),
+          const SizedBox(height: 8),
+          Text(
+            '${(_received / (1024 * 1024)).toStringAsFixed(1)} MB'
+            '${t != null ? ' / ${(t / (1024 * 1024)).toStringAsFixed(1)} MB' : ''}',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+      );
+    } else if (_status == DownloadStatus.verified && _destPath != null) {
+      body = Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.updateDownloaded(_destPath!),
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 12),
+          Text(l10n.updateManualInstallHint),
+        ],
+      );
+    } else if (_status == DownloadStatus.checksumMismatch) {
+      body = Text(l10n.updateChecksumMismatch);
+    } else if (_status == DownloadStatus.failed) {
+      body = Text(l10n.updateDownloadFailed);
+    } else {
+      // Idle: describe the update + the honest manual-install process.
+      body = Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.updateFoundVersion(version)),
+          const SizedBox(height: 12),
+          Text(l10n.updateManualInstallHint),
+        ],
+      );
+    }
+
+    return AlertDialog(
+      title: Text(l10n.updateAvailable),
+      content: SingleChildScrollView(child: body),
+      actions: <Widget>[
+        if (_running)
+          TextButton(
+            onPressed: _cancelRequested ? null : _cancel,
+            child: Text(l10n.cancel),
+          )
+        else
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l10n.cancel),
+          ),
+        if (_status == DownloadStatus.verified &&
+            !_running &&
+            _destPath != null)
+          TextButton(
+            key: const Key('updateReveal'),
+            onPressed: () => _revealInFolder(_destPath!),
+            child: Text(l10n.updateReveal),
+          ),
+        if (!_running &&
+            _status != null &&
+            _status != DownloadStatus.verified &&
+            canDl)
+          TextButton(
+            key: const Key('updateRetry'),
+            onPressed: _start,
+            child: Text(l10n.retry),
+          ),
+        if (!_running && _status == null && canDl)
+          FilledButton(
+            key: const Key('updateDownload'),
+            onPressed: _start,
+            child: Text(l10n.updateDownload),
+          ),
+        if (widget.result.hasUpdate && !canDl)
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              UpdateService.launchUpdate(widget.result.url!);
+            },
+            child: Text(l10n.updateNow),
+          ),
       ],
     );
   }

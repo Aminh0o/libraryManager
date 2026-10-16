@@ -1,9 +1,13 @@
 import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -226,6 +230,67 @@ Reservation _ready(int id, String item, String member) => Reservation(
   availableUntil: '2099-01-01T08:00:00Z',
 );
 
+/// Stands in for a working desktop save dialog: [result] is the path the user
+/// "picked", or null to simulate cancelling — the same harness the provider
+/// export tests use, so the print path is proven end-to-end without an OS dialog.
+class _FakeFilePicker extends FilePicker {
+  _FakeFilePicker(this.result);
+  final String? result;
+  @override
+  Future<String?> saveFile({
+    String? dialogTitle,
+    String? fileName,
+    String? initialDirectory,
+    FileType type = FileType.any,
+    List<String>? allowedExtensions,
+    Uint8List? bytes,
+    bool lockParentWindow = false,
+  }) async => result;
+}
+
+/// The between-tests default: no OS save handler (mirrors the provider export
+/// harness), so a non-print test never depends on an OS dialog.
+class _UnavailableFilePicker extends FilePicker {
+  @override
+  Future<String?> saveFile({
+    String? dialogTitle,
+    String? fileName,
+    String? initialDirectory,
+    FileType type = FileType.any,
+    List<String>? allowedExtensions,
+    Uint8List? bytes,
+    bool lockParentWindow = false,
+  }) async {
+    throw UnimplementedError('saveFile() not implemented in test');
+  }
+}
+
+/// The print path performs REAL async disk IO (PDF build + write). The tap is
+/// dispatched INSIDE runAsync so the screen's async callback is created in the
+/// real zone (a tap outside it anchors the chain in the FakeAsync zone, where
+/// dart:io completion never gets CPU); the real delay lets the write finish,
+/// then a normal pumpAndSettle paints the resulting snackbar on the fake clock.
+Future<void> _tapAndSettlePrint(WidgetTester tester, Finder button) async {
+  await tester.runAsync(() async {
+    await tester.tap(button);
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+  });
+  await tester.pumpAndSettle();
+}
+
+/// Windows keeps a briefly-opened file handle locked; retry the temp cleanup
+/// instead of failing the (already passed) test on teardown noise.
+Future<void> _deleteDirRetry(String path) async {
+  for (var i = 0; i < 10; i++) {
+    try {
+      Directory(path).deleteSync(recursive: true);
+      return;
+    } catch (_) {
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    }
+  }
+}
+
 Future<_HoldRepo> _pump(
   WidgetTester tester,
   _HoldRepo repo, {
@@ -383,6 +448,9 @@ void main() {
     expect(find.byKey(const Key('placeHoldFab')), findsNothing);
     expect(find.byKey(const Key('holdPolicyButton')), findsNothing);
     expect(find.byKey(const Key('hold-1')), findsNothing);
+    // The print-ticket affordance is part of the hold surface: a viewer is
+    // offered none of it (§6.12).
+    expect(find.byKey(const Key('hold-print-1')), findsNothing);
     // The queue is never read for a session that cannot see it.
     expect(repo.readAttempts, 0);
   });
@@ -589,6 +657,67 @@ void main() {
     expect(find.byKey(const Key('hold-41')), findsOneWidget);
     expect(find.byKey(const Key('hold-42')), findsOneWidget);
   });
+
+  testWidgets('every hold row carries a print-ticket affordance (§6.12)', (
+    tester,
+  ) async {
+    final repo = _HoldRepo(
+      holds: [_queued(61, 'ALG1', 'M-1'), _ready(62, 'ALG1', 'M-2')],
+    );
+    await _pump(tester, repo);
+
+    // Live rows show [chip · cancel · print]; the ticket never mutates, so it
+    // appears on every row the scope surfaces.
+    expect(find.byKey(const Key('hold-print-61')), findsOneWidget);
+    expect(find.byKey(const Key('hold-print-62')), findsOneWidget);
+  });
+
+  testWidgets('printing a hold ticket writes a real PDF and reports the path', (
+    tester,
+  ) async {
+    final dir = Directory.systemTemp.createTempSync('lm_hold_ticket');
+    final out = p.join(dir.path, 'library_hold_12.pdf');
+    addTearDown(() => _deleteDirRetry(dir.path));
+
+    final repo = _HoldRepo(
+      items: [_item('ALG1', 'Intro to Algorithms')],
+      members: [_member('M-1', 'Amina', 'B')],
+      holds: [_ready(12, 'ALG1', 'M-1')],
+    );
+    await _pump(tester, repo);
+    FilePicker.platform = _FakeFilePicker(out);
+    addTearDown(() => FilePicker.platform = _UnavailableFilePicker());
+
+    await _tapAndSettlePrint(tester, find.byKey(const Key('hold-print-12')));
+
+    // The honest success line names the chosen path, and the bytes really are
+    // a PDF on disk — the ticket is side-effect-free: the queue is unchanged.
+    expect(find.textContaining('Saved to'), findsOneWidget);
+    final bytes = await tester.runAsync(() => File(out).readAsBytes());
+    expect(utf8.decode(bytes!.sublist(0, 5)), '%PDF-');
+    expect(repo.holds.single.id, 12);
+    expect(repo.cancelAttempts, 0);
+  });
+
+  testWidgets(
+    'cancelling the save dialog writes nothing and never claims success',
+    (tester) async {
+      // The picker is present but the user dismisses it: provider returns null,
+      // the screen shows no 'Saved' snackbar (§ no false success).
+      final repo = _HoldRepo(
+        items: [_item('ALG1', 'Intro to Algorithms')],
+        members: [_member('M-1', 'Amina', 'B')],
+        holds: [_ready(13, 'ALG1', 'M-1')],
+      );
+      await _pump(tester, repo);
+      FilePicker.platform = _FakeFilePicker(null);
+      addTearDown(() => FilePicker.platform = _UnavailableFilePicker());
+
+      await _tapAndSettlePrint(tester, find.byKey(const Key('hold-print-13')));
+
+      expect(find.textContaining('Saved to'), findsNothing);
+    },
+  );
 
   testWidgets('a staff client sees the queue but NOT the admin policy editor', (
     tester,

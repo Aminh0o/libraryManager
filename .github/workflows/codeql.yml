@@ -30,9 +30,18 @@ jobs:
         with:
           languages: ${{ matrix.language }}
 
-      - name: Autobuild (c-cpp only)
+      - name: Setup Flutter (c-cpp only)
         if: matrix.language == 'c-cpp'
-        uses: github/codeql-action/autobuild@v3
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Build Windows C++ runner (c-cpp only)
+        if: matrix.language == 'c-cpp'
+        run: |
+          flutter pub get
+          flutter build windows --debug --no-pub
 
       - name: Perform analysis
         uses: github/codeql-action/analyze@v3

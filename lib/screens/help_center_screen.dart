@@ -21,6 +21,10 @@ class HelpCenterScreen extends StatelessWidget {
         children: [
           _buildAppDefinition(context, l10n),
           const SizedBox(height: AppSpacing.xxl),
+          _buildTutorialMap(context),
+          const SizedBox(height: AppSpacing.xxl),
+          _buildHardwareGuide(context),
+          const SizedBox(height: AppSpacing.xxl),
           _buildHelpSection(
             context,
             icon: Icons.people_outline,
@@ -150,6 +154,218 @@ class HelpCenterScreen extends StatelessWidget {
               AppSpacing.lg,
             ),
             child: Text(content, style: txt.bodyMedium?.copyWith(height: 1.5)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTutorialMap(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final txt = Theme.of(context).textTheme;
+
+    final steps = [
+      (
+        '1',
+        'System Initialization & Admin Setup',
+        'Complete first-run onboarding, establish a resilient administrator credential, and initialize the embedded SQLite engine.',
+        Icons.admin_panel_settings,
+      ),
+      (
+        '2',
+        'Catalog & Inventory Management',
+        'Add titles with ISBN-10/13 validation, generate unique barcodes, register individual copy condition notes, or bulk import via CSV.',
+        Icons.library_books,
+      ),
+      (
+        '3',
+        'Member Registration & QR Cards',
+        'Register patrons, configure borrowing tiers and limits, and generate official membership cards with opaque QR codes.',
+        Icons.badge,
+      ),
+      (
+        '4',
+        'Circulation Desk (Checkout & Returns)',
+        'Rapidly scan book barcodes via USB keyboard-wedge scanners, process returns, calculate overdue fines, and print official circulation receipts.',
+        Icons.swap_horiz,
+      ),
+      (
+        '5',
+        'Reservation Queues & Hold Tickets',
+        'Queue member reservations with FIFO ordering, automatic promotion upon return, walk-up protection, and printable hold pickup tickets.',
+        Icons.bookmark_added,
+      ),
+      (
+        '6',
+        'Financial Auditing & Reporting',
+        'Audit circulation history, track collected fines, and export injection-sanitized (CWE-1236) CSV and PDF analytics.',
+        Icons.assessment,
+      ),
+      (
+        '7',
+        'Multi-Station Private LAN Mode',
+        'Enable Windows Firewall rules to securely discover and sync workstations across the local subnet with Bearer authentication.',
+        Icons.lan,
+      ),
+      (
+        '8',
+        'Disaster Recovery & Snapshots',
+        'Create point-in-time database snapshots in WAL mode with pre-restore safety backups and zero data loss guarantees.',
+        Icons.backup,
+      ),
+      (
+        '9',
+        'In-App Verification & Updates',
+        'Check for official updates, stream downloads over HTTPS, and automatically verify SHA-256 integrity checksums.',
+        Icons.system_update,
+      ),
+    ];
+
+    return Card(
+      child: ExpansionTile(
+        initiallyExpanded: true,
+        leading: CircleAvatar(
+          backgroundColor: scheme.primary.withValues(alpha: 0.12),
+          child: Icon(
+            Icons.map_outlined,
+            color: scheme.primary,
+            size: AppIcon.md,
+          ),
+        ),
+        title: Text(
+          'Complete Operational Tutorial Map',
+          style: txt.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        subtitle: const Text(
+          'Sequential 9-step guide from initial setup to day-to-day desk operations',
+        ),
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.md,
+            ),
+            child: Column(
+              children: steps.map((s) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CircleAvatar(
+                        radius: 14,
+                        backgroundColor: scheme.primary,
+                        child: Text(
+                          s.$1,
+                          style: txt.labelSmall?.copyWith(
+                            color: scheme.onPrimary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              s.$2,
+                              style: txt.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              s.$3,
+                              style: txt.bodySmall?.copyWith(
+                                color: scheme.onSurfaceVariant,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHardwareGuide(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final txt = Theme.of(context).textTheme;
+
+    return Card(
+      child: ExpansionTile(
+        leading: CircleAvatar(
+          backgroundColor: scheme.secondary.withValues(alpha: 0.12),
+          child: Icon(
+            Icons.print_outlined,
+            color: scheme.secondary,
+            size: AppIcon.md,
+          ),
+        ),
+        title: Text(
+          'Hardware Peripherals & Desk Setup Guide',
+          style: txt.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        subtitle: const Text(
+          'Configuring USB Barcode Scanners, Thermal Receipt Printers, and Windows scaling',
+        ),
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.md,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '1. Barcode & QR Scanner Configuration (USB / Bluetooth HID)',
+                  style: txt.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Connect any standard USB or wireless handheld barcode scanner in HID Keyboard Wedge mode. Ensure the scanner is configured to transmit a trailing Enter key (\\r or \\n) suffix after every scan. This allows instant book and patron identification without touching the mouse.',
+                  style: txt.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  '2. Receipt Printer Setup (58mm / 80mm / A6 Office Paper)',
+                  style: txt.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Library Manager exports vector PDF slips for all loan receipts, return slips, hold pickup tickets, and member cards. To print directly to a thermal receipt printer (such as Epson POS or generic 80mm roll), set your printer default paper size to Roll Paper or A6 in Windows Settings > Printers.',
+                  style: txt.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  '3. High-DPI Display Scaling (100% to 200%)',
+                  style: txt.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'The user interface dynamically adjusts to Windows display scaling (100%, 125%, 150%, 200%) and supports full window resizing, multi-monitor dragging, and Dark/Light themes without visual tearing.',
+                  style: txt.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
