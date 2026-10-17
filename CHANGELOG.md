@@ -15,6 +15,13 @@ say in loan length, and reports every action with clear, semantic feedback.
 
 ### Added
 
+- **Native Windows installer (Inno Setup).** A professional `Setup.exe` with an
+  EN/FR/AR wizard, per-user or elevated install, Start Menu shortcut, optional
+  desktop icon, and full silent install/uninstall support
+  (`/VERYSILENT`). Built and Authenticode-signed by
+  `scripts/build_installer.ps1`; the installer carries the same signed binary
+  as the portable zip and installs into the standard Programs folder with a
+  registered entry in *Apps & Features*.
 - **Custom app logo (white-label).** Alongside the existing brand-name and
   accent-color controls, an administrator can now upload the library's own logo
   (PNG/JPG). The image is size-bounded, copied into the app's private branding
