@@ -6,6 +6,41 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.1.5] — 2026-10-17
+
+Codename *white-label-and-teach*. Closes the last "high-end product" gaps an
+operator hits before a real deployment: the product now teaches itself in all
+three languages, carries a customer's own brand, gives the circulation desk a
+say in loan length, and reports every action with clear, semantic feedback.
+
+### Added
+
+- **Custom app logo (white-label).** Alongside the existing brand-name and
+  accent-color controls, an administrator can now upload the library's own logo
+  (PNG/JPG). The image is size-bounded, copied into the app's private branding
+  folder so it survives the original being moved or deleted, shown in the
+  navigation header, and removable with one click. A missing or unreadable file
+  falls back to the built-in glyph — the header can never blank out.
+- **Selectable loan period at checkout.** The circulation desk can now choose a
+  7/15/30-day period when issuing a loan instead of a fixed 15-day default;
+  the due date is derived from that choice through the canonical loan state
+  machine, so fines, renewal and overdue tracking all follow it. Defaults to the
+  historical value, so nothing changes until the operator picks otherwise.
+
+### Improved
+
+- **The tutorial map and hardware guide are now localized.** They previously
+  rendered in English only, so French and Arabic operators opened the one screen
+  meant to *teach* them the product and got a language they might not read. All
+  nine tutorial steps, both card headers and the full hardware-desk guide now
+  ship in English, French and Arabic, and follow right-to-left layout.
+- **Semantic feedback everywhere.** A single toast surface now carries a
+  success / error / warning / information icon and colour, so a completed action
+  and a refused one are unmistakable at a glance in any language. Adopted across
+  the loan desk (checkout, return, renewal), settings saves and logo changes.
+
+---
+
 ## [1.1.4] — 2026-10-16
 
 Codename *download-and-verify*. Turns the update check into a real updater and

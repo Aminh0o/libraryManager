@@ -42,16 +42,6 @@ if ($null -eq $cert) {
         -NotAfter (Get-Date).AddYears(5)
     
     Write-Host "[+] Generated Certificate Thumbprint: $($cert.Thumbprint)" -ForegroundColor Green
-
-    # Trust the certificate locally so SmartScreen recognizes it
-    Write-Host "[*] Exporting public certificate to trust store..."
-    $certBytes = $cert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Cert)
-    $tempCertPath = [System.IO.Path]::GetTempFileName() + ".cer"
-    [System.IO.File]::WriteAllBytes($tempCertPath, $certBytes)
-
-    Import-Certificate -FilePath $tempCertPath -CertStoreLocation Cert:\CurrentUser\Root | Out-Null
-    Remove-Item $tempCertPath -Force
-    Write-Host "[+] Installed certificate into Trusted Root store." -ForegroundColor Green
 } else {
     Write-Host "[+] Found existing code-signing certificate: $($cert.Thumbprint)" -ForegroundColor Green
 }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show LogicalKeyboardKey;
@@ -46,6 +47,31 @@ class _HomeScreenState extends State<HomeScreen> {
   // icons-only (§12). The user's toggle is authoritative, but a narrow window
   // always forces a collapse (§38) so the work area is never starved.
   bool _railPinnedExtended = true;
+
+  /// Phase BRAND: the navigation header mark. Shows the operator's uploaded
+  /// logo (copied into the app folder by Settings) when one is set, and falls
+  /// back to the built-in book glyph otherwise — including when the file can no
+  /// longer be read, so a stale logo path can never blank the header.
+  Widget _brandMark(ColorScheme scheme) {
+    final path = context.read<AppearanceController>().logoPath;
+    final fallback = CircleAvatar(
+      backgroundColor: scheme.primaryContainer,
+      foregroundColor: scheme.onPrimaryContainer,
+      radius: 18,
+      child: Icon(Icons.library_books, size: AppIcon.md),
+    );
+    if (path == null) return fallback;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: Image.file(
+        File(path),
+        width: 36,
+        height: 36,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => fallback,
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -256,15 +282,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ? Row(
                             children: [
                               const SizedBox(width: AppSpacing.sm),
-                              CircleAvatar(
-                                backgroundColor: scheme.primaryContainer,
-                                foregroundColor: scheme.onPrimaryContainer,
-                                radius: 18,
-                                child: Icon(
-                                  Icons.library_books,
-                                  size: AppIcon.md,
-                                ),
-                              ),
+                              _brandMark(scheme),
                               const SizedBox(width: AppSpacing.md),
                               Flexible(
                                 child: Text(
@@ -292,15 +310,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         : Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              CircleAvatar(
-                                backgroundColor: scheme.primaryContainer,
-                                foregroundColor: scheme.onPrimaryContainer,
-                                radius: 18,
-                                child: Icon(
-                                  Icons.library_books,
-                                  size: AppIcon.md,
-                                ),
-                              ),
+                              _brandMark(scheme),
                               const SizedBox(height: AppSpacing.xs),
                               IconButton(
                                 key: const Key('railToggle'),

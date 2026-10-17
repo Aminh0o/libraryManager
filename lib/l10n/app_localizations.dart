@@ -1834,6 +1834,228 @@ abstract class AppLocalizations {
   /// **'Library Manager is a professional desktop solution designed for Algerian libraries and documentation centers. It provides specialized tools for inventory management, LAN-based synchronization, and barcode tracking. The system supports full English, French, and Arabic categorization following national standards.'**
   String get appDefinitionContent;
 
+  /// No description provided for @tutorialMapTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete Operational Tutorial Map'**
+  String get tutorialMapTitle;
+
+  /// No description provided for @tutorialMapSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sequential 9-step guide from initial setup to day-to-day desk operations'**
+  String get tutorialMapSubtitle;
+
+  /// No description provided for @tstep1Title.
+  ///
+  /// In en, this message translates to:
+  /// **'System Initialization & Admin Setup'**
+  String get tstep1Title;
+
+  /// No description provided for @tstep1Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete first-run onboarding, establish a resilient administrator credential, and initialize the embedded SQLite engine.'**
+  String get tstep1Body;
+
+  /// No description provided for @tstep2Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Catalog & Inventory Management'**
+  String get tstep2Title;
+
+  /// No description provided for @tstep2Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Add titles with ISBN-10/13 validation, generate unique barcodes, register individual copy condition notes, or bulk import via CSV.'**
+  String get tstep2Body;
+
+  /// No description provided for @tstep3Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Member Registration & QR Cards'**
+  String get tstep3Title;
+
+  /// No description provided for @tstep3Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Register patrons, configure borrowing tiers and limits, and generate official membership cards with opaque QR codes.'**
+  String get tstep3Body;
+
+  /// No description provided for @tstep4Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Circulation Desk (Checkout & Returns)'**
+  String get tstep4Title;
+
+  /// No description provided for @tstep4Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Rapidly scan book barcodes via USB keyboard-wedge scanners, process returns, calculate overdue fines, and print official circulation receipts.'**
+  String get tstep4Body;
+
+  /// No description provided for @tstep5Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Reservation Queues & Hold Tickets'**
+  String get tstep5Title;
+
+  /// No description provided for @tstep5Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue member reservations with FIFO ordering, automatic promotion upon return, walk-up protection, and printable hold pickup tickets.'**
+  String get tstep5Body;
+
+  /// No description provided for @tstep6Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Financial Auditing & Reporting'**
+  String get tstep6Title;
+
+  /// No description provided for @tstep6Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Audit circulation history, track collected fines, and export injection-sanitized (CWE-1236) CSV and PDF analytics.'**
+  String get tstep6Body;
+
+  /// No description provided for @tstep7Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Multi-Station Private LAN Mode'**
+  String get tstep7Title;
+
+  /// No description provided for @tstep7Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Windows Firewall rules to securely discover and sync workstations across the local subnet with Bearer authentication.'**
+  String get tstep7Body;
+
+  /// No description provided for @tstep8Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Disaster Recovery & Snapshots'**
+  String get tstep8Title;
+
+  /// No description provided for @tstep8Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Create point-in-time database snapshots in WAL mode with pre-restore safety backups and zero data loss guarantees.'**
+  String get tstep8Body;
+
+  /// No description provided for @tstep9Title.
+  ///
+  /// In en, this message translates to:
+  /// **'In-App Verification & Updates'**
+  String get tstep9Title;
+
+  /// No description provided for @tstep9Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Check for official updates, stream downloads over HTTPS, and automatically verify SHA-256 integrity checksums.'**
+  String get tstep9Body;
+
+  /// No description provided for @hardwareGuideTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hardware Peripherals & Desk Setup Guide'**
+  String get hardwareGuideTitle;
+
+  /// No description provided for @hardwareGuideSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Configuring USB Barcode Scanners, Thermal Receipt Printers, and Windows scaling'**
+  String get hardwareGuideSubtitle;
+
+  /// No description provided for @hwScanTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'1. Barcode & QR Scanner Configuration (USB / Bluetooth HID)'**
+  String get hwScanTitle;
+
+  /// No description provided for @hwScanBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect any standard USB or wireless handheld barcode scanner in HID Keyboard Wedge mode. Ensure the scanner transmits a trailing Enter key (carriage-return / line-feed) after every scan, enabling instant book and patron identification without touching the mouse.'**
+  String get hwScanBody;
+
+  /// No description provided for @hwPrintTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'2. Receipt Printer Setup (58mm / 80mm / A6 Office Paper)'**
+  String get hwPrintTitle;
+
+  /// No description provided for @hwPrintBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Library Manager exports vector PDF slips for all loan receipts, return slips, hold pickup tickets, and member cards. To print directly to a thermal receipt printer (such as Epson POS or generic 80mm roll), set your printer default paper size to Roll Paper or A6 in Windows Settings > Printers.'**
+  String get hwPrintBody;
+
+  /// No description provided for @hwDpiTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'3. High-DPI Display Scaling (100% to 200%)'**
+  String get hwDpiTitle;
+
+  /// No description provided for @hwDpiBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The user interface dynamically adjusts to Windows display scaling (100%, 125%, 150%, 200%) and supports full window resizing, multi-monitor dragging, and Dark/Light themes without visual tearing.'**
+  String get hwDpiBody;
+
+  /// No description provided for @appLogoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'App logo'**
+  String get appLogoTitle;
+
+  /// No description provided for @appLogoHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. Shown in the navigation header. PNG or JPG.'**
+  String get appLogoHint;
+
+  /// No description provided for @appLogoChoose.
+  ///
+  /// In en, this message translates to:
+  /// **'Select image'**
+  String get appLogoChoose;
+
+  /// No description provided for @appLogoClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove logo'**
+  String get appLogoClear;
+
+  /// No description provided for @appLogoUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Logo updated'**
+  String get appLogoUpdated;
+
+  /// No description provided for @appLogoTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'That image file is too large (max 2 MB).'**
+  String get appLogoTooLarge;
+
+  /// No description provided for @appLogoFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load that image.'**
+  String get appLogoFailed;
+
+  /// No description provided for @loanPeriodTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Loan period'**
+  String get loanPeriodTitle;
+
+  /// No description provided for @loanPeriodDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Due in {days} days'**
+  String loanPeriodDays(int days);
+
   /// No description provided for @errNetwork.
   ///
   /// In en, this message translates to:

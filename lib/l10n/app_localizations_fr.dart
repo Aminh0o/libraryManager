@@ -937,6 +937,139 @@ class AppLocalizationsFr extends AppLocalizations {
       'Library Manager est une solution de bureau professionnelle conçue pour les bibliothèques et centres de documentation algériens. Il fournit des outils spécialisés pour la gestion des stocks, la synchronisation via LAN et le suivi par codes-barres. Le système prend en charge la catégorisation complète en anglais, français et arabe selon les normes nationales.';
 
   @override
+  String get tutorialMapTitle => 'Carte complète du tutoriel opérationnel';
+
+  @override
+  String get tutorialMapSubtitle =>
+      'Guide séquentiel en 9 étapes, de l\'initialisation aux opérations quotidiennes du guichet';
+
+  @override
+  String get tstep1Title =>
+      'Initialisation du système et configuration administrateur';
+
+  @override
+  String get tstep1Body =>
+      'Terminez l\'installation au premier lancement, définissez un identifiant administrateur robuste et initialisez le moteur SQLite embarqué.';
+
+  @override
+  String get tstep2Title => 'Catalogue et gestion des stocks';
+
+  @override
+  String get tstep2Body =>
+      'Ajoutez des titres avec validation ISBN-10/13, générez des codes-barres uniques, enregistrez l\'état de chaque exemplaire, ou importez en masse via CSV.';
+
+  @override
+  String get tstep3Title => 'Inscription des membres et cartes QR';
+
+  @override
+  String get tstep3Body =>
+      'Inscrivez les lecteurs, configurez les niveaux et limites d\'emprunt, et générez des cartes de membre officielles avec codes QR opaques.';
+
+  @override
+  String get tstep4Title => 'Guichet de prêt (emprunts et retours)';
+
+  @override
+  String get tstep4Body =>
+      'Scannez rapidement les codes-barres via des lecteurs USB en mode clavier, traitez les retours, calculez les amendes de retard et imprimez les reçus officiels de circulation.';
+
+  @override
+  String get tstep5Title => 'Files de réservation et billets de retrait';
+
+  @override
+  String get tstep5Body =>
+      'Mettez les réservations en file par ordre FIFO, promotion automatique au retour, protection contre le retrait direct, et billets de retrait imprimables.';
+
+  @override
+  String get tstep6Title => 'Audit financier et rapports';
+
+  @override
+  String get tstep6Body =>
+      'Auditez l\'historique de circulation, suivez les amendes perçues et exportez des analyses CSV et PDF assainies contre l\'injection (CWE-1236).';
+
+  @override
+  String get tstep7Title => 'Mode LAN privé multi-postes';
+
+  @override
+  String get tstep7Body =>
+      'Activez les règles du pare-feu Windows pour découvrir et synchroniser en toute sécurité les postes du sous-réseau local avec authentification Bearer.';
+
+  @override
+  String get tstep8Title => 'Reprise après sinistre et instantanés';
+
+  @override
+  String get tstep8Body =>
+      'Créez des instantanés de base de données à un moment donné en mode WAL, avec sauvegardes de sécurité avant restauration et garantie de zéro perte de données.';
+
+  @override
+  String get tstep9Title => 'Vérification et mises à jour intégrées';
+
+  @override
+  String get tstep9Body =>
+      'Recherchez les mises à jour officielles, téléchargez via HTTPS et vérifiez automatiquement les sommes de contrôle d\'intégrité SHA-256.';
+
+  @override
+  String get hardwareGuideTitle =>
+      'Guide du matériel périphérique et de la configuration du guichet';
+
+  @override
+  String get hardwareGuideSubtitle =>
+      'Configuration des lecteurs de codes-barres USB, des imprimantes de reçus thermiques et de la mise à l\'échelle Windows';
+
+  @override
+  String get hwScanTitle =>
+      '1. Configuration du lecteur de codes-barres et QR (USB / Bluetooth HID)';
+
+  @override
+  String get hwScanBody =>
+      'Branchez n\'importe quel lecteur de codes-barres USB ou sans fil standard en mode d\'émulation clavier HID. Assurez-vous que le lecteur transmet une touche Entrée finale (retour chariot / saut de ligne) après chaque scan, pour identifier instantanément livres et membres sans utiliser la souris.';
+
+  @override
+  String get hwPrintTitle =>
+      '2. Configuration de l\'imprimante de reçus (58 mm / 80 mm / papier A6)';
+
+  @override
+  String get hwPrintBody =>
+      'Library Manager exporte des bordereaux PDF vectoriels pour tous les reçus d\'emprunt, bordereaux de retour, billets de retrait et cartes de membre. Pour imprimer directement sur une imprimante thermique (Epson POS ou rouleau générique 80 mm), réglez la taille de papier par défaut sur Roll Paper ou A6 dans Paramètres Windows > Imprimantes.';
+
+  @override
+  String get hwDpiTitle => '3. Mise à l\'échelle haute densité (100 % à 200 %)';
+
+  @override
+  String get hwDpiBody =>
+      'L\'interface s\'adapte dynamiquement à la mise à l\'échelle Windows (100 %, 125 %, 150 %, 200 %) et prend en charge le redimensionnement complet de la fenêtre, le glissement multi-écran et les thèmes sombre/clair sans déchirure visuelle.';
+
+  @override
+  String get appLogoTitle => 'Logo de l\'application';
+
+  @override
+  String get appLogoHint =>
+      'Facultatif. Affiché dans l\'en-tête de navigation. PNG ou JPG.';
+
+  @override
+  String get appLogoChoose => 'Choisir une image';
+
+  @override
+  String get appLogoClear => 'Retirer le logo';
+
+  @override
+  String get appLogoUpdated => 'Logo mis à jour';
+
+  @override
+  String get appLogoTooLarge =>
+      'Ce fichier image est trop volumineux (max 2 Mo).';
+
+  @override
+  String get appLogoFailed => 'Impossible de charger cette image.';
+
+  @override
+  String get loanPeriodTitle => 'Durée du prêt';
+
+  @override
+  String loanPeriodDays(int days) {
+    return 'Échéance dans $days jours';
+  }
+
+  @override
   String get errNetwork =>
       'Serveur injoignable. Vérifiez la connexion et réessayez.';
 

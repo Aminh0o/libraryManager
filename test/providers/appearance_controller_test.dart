@@ -76,4 +76,35 @@ void main() {
     expect(values.toSet().length, values.length);
     expect(values, contains(AppearanceController.defaultSeedValue));
   });
+
+  test('logo path defaults to null on first run', () async {
+    final a = await AppearanceController.load();
+    expect(a.logoPath, isNull);
+  });
+
+  test(
+    'setLogoPath notifies, persists across reload and clears back to null',
+    () async {
+      final a = await AppearanceController.load();
+      var notified = 0;
+      a.addListener(() => notified++);
+
+      await a.setLogoPath('/app/branding/logo.png');
+      expect(a.logoPath, '/app/branding/logo.png');
+      expect(notified, 1);
+
+      // Same value is a no-op (no spurious notify / write).
+      await a.setLogoPath('/app/branding/logo.png');
+      expect(notified, 1);
+
+      final reloaded = await AppearanceController.load();
+      expect(reloaded.logoPath, '/app/branding/logo.png');
+
+      // Blank / whitespace clears back to the built-in icon.
+      await a.setLogoPath('   ');
+      expect(a.logoPath, isNull);
+      final afterClear = await AppearanceController.load();
+      expect(afterClear.logoPath, isNull);
+    },
+  );
 }

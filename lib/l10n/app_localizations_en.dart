@@ -928,6 +928,136 @@ class AppLocalizationsEn extends AppLocalizations {
       'Library Manager is a professional desktop solution designed for Algerian libraries and documentation centers. It provides specialized tools for inventory management, LAN-based synchronization, and barcode tracking. The system supports full English, French, and Arabic categorization following national standards.';
 
   @override
+  String get tutorialMapTitle => 'Complete Operational Tutorial Map';
+
+  @override
+  String get tutorialMapSubtitle =>
+      'Sequential 9-step guide from initial setup to day-to-day desk operations';
+
+  @override
+  String get tstep1Title => 'System Initialization & Admin Setup';
+
+  @override
+  String get tstep1Body =>
+      'Complete first-run onboarding, establish a resilient administrator credential, and initialize the embedded SQLite engine.';
+
+  @override
+  String get tstep2Title => 'Catalog & Inventory Management';
+
+  @override
+  String get tstep2Body =>
+      'Add titles with ISBN-10/13 validation, generate unique barcodes, register individual copy condition notes, or bulk import via CSV.';
+
+  @override
+  String get tstep3Title => 'Member Registration & QR Cards';
+
+  @override
+  String get tstep3Body =>
+      'Register patrons, configure borrowing tiers and limits, and generate official membership cards with opaque QR codes.';
+
+  @override
+  String get tstep4Title => 'Circulation Desk (Checkout & Returns)';
+
+  @override
+  String get tstep4Body =>
+      'Rapidly scan book barcodes via USB keyboard-wedge scanners, process returns, calculate overdue fines, and print official circulation receipts.';
+
+  @override
+  String get tstep5Title => 'Reservation Queues & Hold Tickets';
+
+  @override
+  String get tstep5Body =>
+      'Queue member reservations with FIFO ordering, automatic promotion upon return, walk-up protection, and printable hold pickup tickets.';
+
+  @override
+  String get tstep6Title => 'Financial Auditing & Reporting';
+
+  @override
+  String get tstep6Body =>
+      'Audit circulation history, track collected fines, and export injection-sanitized (CWE-1236) CSV and PDF analytics.';
+
+  @override
+  String get tstep7Title => 'Multi-Station Private LAN Mode';
+
+  @override
+  String get tstep7Body =>
+      'Enable Windows Firewall rules to securely discover and sync workstations across the local subnet with Bearer authentication.';
+
+  @override
+  String get tstep8Title => 'Disaster Recovery & Snapshots';
+
+  @override
+  String get tstep8Body =>
+      'Create point-in-time database snapshots in WAL mode with pre-restore safety backups and zero data loss guarantees.';
+
+  @override
+  String get tstep9Title => 'In-App Verification & Updates';
+
+  @override
+  String get tstep9Body =>
+      'Check for official updates, stream downloads over HTTPS, and automatically verify SHA-256 integrity checksums.';
+
+  @override
+  String get hardwareGuideTitle => 'Hardware Peripherals & Desk Setup Guide';
+
+  @override
+  String get hardwareGuideSubtitle =>
+      'Configuring USB Barcode Scanners, Thermal Receipt Printers, and Windows scaling';
+
+  @override
+  String get hwScanTitle =>
+      '1. Barcode & QR Scanner Configuration (USB / Bluetooth HID)';
+
+  @override
+  String get hwScanBody =>
+      'Connect any standard USB or wireless handheld barcode scanner in HID Keyboard Wedge mode. Ensure the scanner transmits a trailing Enter key (carriage-return / line-feed) after every scan, enabling instant book and patron identification without touching the mouse.';
+
+  @override
+  String get hwPrintTitle =>
+      '2. Receipt Printer Setup (58mm / 80mm / A6 Office Paper)';
+
+  @override
+  String get hwPrintBody =>
+      'Library Manager exports vector PDF slips for all loan receipts, return slips, hold pickup tickets, and member cards. To print directly to a thermal receipt printer (such as Epson POS or generic 80mm roll), set your printer default paper size to Roll Paper or A6 in Windows Settings > Printers.';
+
+  @override
+  String get hwDpiTitle => '3. High-DPI Display Scaling (100% to 200%)';
+
+  @override
+  String get hwDpiBody =>
+      'The user interface dynamically adjusts to Windows display scaling (100%, 125%, 150%, 200%) and supports full window resizing, multi-monitor dragging, and Dark/Light themes without visual tearing.';
+
+  @override
+  String get appLogoTitle => 'App logo';
+
+  @override
+  String get appLogoHint =>
+      'Optional. Shown in the navigation header. PNG or JPG.';
+
+  @override
+  String get appLogoChoose => 'Select image';
+
+  @override
+  String get appLogoClear => 'Remove logo';
+
+  @override
+  String get appLogoUpdated => 'Logo updated';
+
+  @override
+  String get appLogoTooLarge => 'That image file is too large (max 2 MB).';
+
+  @override
+  String get appLogoFailed => 'Could not load that image.';
+
+  @override
+  String get loanPeriodTitle => 'Loan period';
+
+  @override
+  String loanPeriodDays(int days) {
+    return 'Due in $days days';
+  }
+
+  @override
   String get errNetwork =>
       'Cannot reach the server. Check the connection and try again.';
 

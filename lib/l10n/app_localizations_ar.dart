@@ -925,6 +925,136 @@ class AppLocalizationsAr extends AppLocalizations {
       'مدير المكتبة هو حل مكتبي احترافي مصمم للمكتبات ومراكز التوثيق الجزائرية. يوفر أدوات متخصصة لإدارة المخزون والمزامنة عبر الشبكة المحلية (LAN) وتتبع الباركود. يدعم النظام التصنيف الكامل باللغات الإنجليزية والفرنسية والعربية وفقاً للمعايير الوطنية.';
 
   @override
+  String get tutorialMapTitle => 'خطة الشرح التشغيلية الكاملة';
+
+  @override
+  String get tutorialMapSubtitle =>
+      'دليل متسلسل من 9 خطوات من الإعداد الأولي إلى عمليات المكتب اليومية';
+
+  @override
+  String get tstep1Title => 'تهيئة النظام وإعداد المدير';
+
+  @override
+  String get tstep1Body =>
+      'أكمل إعداد التشغيل الأول، وأنشئ كلمة مرور مدير قوية، وابدأ تشغيل محرك SQLite المدمج.';
+
+  @override
+  String get tstep2Title => 'الفهرسة وإدارة المقتنيات';
+
+  @override
+  String get tstep2Body =>
+      'أضف العناوين مع التحقق من ISBN-10/13، وأنشئ رموزًا شريطية فريدة، وسجّل حالة كل نسخة، أو استورد دفعة واحدة عبر CSV.';
+
+  @override
+  String get tstep3Title => 'تسجيل الأعضاء وبطاقات QR';
+
+  @override
+  String get tstep3Body =>
+      'سجّل القرّاء، واضبط مستويات وحدود الإعارة، وأنشئ بطاقات عضوية رسمية برموز QR مغلقة.';
+
+  @override
+  String get tstep4Title => 'مكتب التداول (الإعارة والإرجاع)';
+
+  @override
+  String get tstep4Body =>
+      'امسح رموز الكتب بسرعة عبر قارئات USB بنمط لوحة المفاتيح، وعالج الإرجاعات، واحسب غرامات التأخير، واطبع إيصالات التداول الرسمية.';
+
+  @override
+  String get tstep5Title => 'قوائم الحجز وتذاكر التخصيص';
+
+  @override
+  String get tstep5Body =>
+      'رتّب حجوزات الأعضاء بترتيب الأولوية (FIFO)، مع الترقية التلقائية عند الإرجاع، وحماية من التجاوز، وتذاكر استلام قابلة للطباعة.';
+
+  @override
+  String get tstep6Title => 'التدقيق المالي والتقارير';
+
+  @override
+  String get tstep6Body =>
+      'دقّق سجل التداول، وتتبع الغرامات المحصلة، وصدّر تحليلات CSV وPDF معقّمة ضد الحقن (CWE-1236).';
+
+  @override
+  String get tstep7Title => 'وضع الشبكة المحلية متعددة المحطات';
+
+  @override
+  String get tstep7Body =>
+      'فعّل قواعد جدار حماية Windows لاكتشاف محطات العمل ومزامنتها بأمان عبر الشبكة الفرعية المحلية مع مصادقة Bearer.';
+
+  @override
+  String get tstep8Title => 'الاسترداد من الكوارث واللقطات';
+
+  @override
+  String get tstep8Body =>
+      'أنشئ لقطات قاعدة بيانات عند لحظة زمنية في وضع WAL مع نسخ احتياطي للأمان قبل الاستعادة وضمان عدم فقدان البيانات.';
+
+  @override
+  String get tstep9Title => 'التحقق والتحديثات داخل التطبيق';
+
+  @override
+  String get tstep9Body =>
+      'تحقق من التحديثات الرسمية، وحمّل عبر HTTPS، وتحقق تلقائيًا من سلامة المجاميع الاختبارية SHA-256.';
+
+  @override
+  String get hardwareGuideTitle => 'دليل الملحقات المادية وإعداد المكتب';
+
+  @override
+  String get hardwareGuideSubtitle =>
+      'إعداد قارئات الرموز الشريطية USB والطابعات الحرارية وتغيير حجم Windows';
+
+  @override
+  String get hwScanTitle =>
+      '1. إعداد قارئ الرموز الشريطية وQR (USB / Bluetooth HID)';
+
+  @override
+  String get hwScanBody =>
+      'وصّل أي قارئ رموز شريطية USB أو لاسلكي قياسي بنمط محاكاة لوحة المفاتيح HID. تأكد من أن القارئ يرسل مفتاح Enter نهائي (إرجاع عربة / سطر جديد) بعد كل مسح، للتعرف الفوري على الكتب والأعضاء دون استخدام الفأرة.';
+
+  @override
+  String get hwPrintTitle =>
+      '2. إعداد طابعة الإيصالات (58 مم / 80 مم / ورق A6)';
+
+  @override
+  String get hwPrintBody =>
+      'يصدّر مدير المكتبة قسائم PDF متجهية لجميع إيصالات الإعارة وقسائم الإرجاع وتذاكر الاستلام وبطاقات الأعضاء. للطباعة مباشرة على طابعة حرارية (مثل Epson POS أو لفة 80 مم عامة)، اضبط حجم الورق الافتراضي على Roll Paper أو A6 في إعدادات Windows > الطابعات.';
+
+  @override
+  String get hwDpiTitle => '3. تغيير حجم الشاشات عالية الكثافة (100% إلى 200%)';
+
+  @override
+  String get hwDpiBody =>
+      'تتكيف الواجهة ديناميكيًا مع تغيير حجم Windows (100% و125% و150% و200%) وتدعم تغيير حجم النافذة بالكامل والسحب بين شاشات متعددة والموضوعات الداكنة والفاتحة دون تمزّق بصري.';
+
+  @override
+  String get appLogoTitle => 'شعار التطبيق';
+
+  @override
+  String get appLogoHint => 'اختياري. يظهر في رأس التنقل. PNG أو JPG.';
+
+  @override
+  String get appLogoChoose => 'اختيار صورة';
+
+  @override
+  String get appLogoClear => 'إزالة الشعار';
+
+  @override
+  String get appLogoUpdated => 'تم تحديث الشعار';
+
+  @override
+  String get appLogoTooLarge =>
+      'ملف الصورة كبير جدًا (الحد الأقصى 2 ميجابايت).';
+
+  @override
+  String get appLogoFailed => 'تعذّر تحميل هذه الصورة.';
+
+  @override
+  String get loanPeriodTitle => 'مدة الإعارة';
+
+  @override
+  String loanPeriodDays(int days) {
+    return 'الاستحقاق خلال $days يومًا';
+  }
+
+  @override
   String get errNetwork =>
       'لا يمكن الوصول إلى الخادم. تحقق من الاتصال وحاول مرة أخرى.';
 

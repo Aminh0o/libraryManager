@@ -22,13 +22,16 @@ class AppearanceController extends ChangeNotifier {
     required ThemeMode mode,
     required int seedValue,
     required String brandName,
+    String? logoPath,
   }) : _mode = mode,
        _seedValue = seedValue,
-       _brandName = brandName;
+       _brandName = brandName,
+       _logoPath = logoPath;
 
   static const String _kMode = 'appearance.themeMode';
   static const String _kSeed = 'appearance.seedValue';
   static const String _kBrand = 'appearance.brandName';
+  static const String _kLogo = 'appearance.logoPath';
 
   /// Defaults mirror the pre-Phase-14 app exactly (Material3, orange seed, the
   /// original window title) so introducing them changes nothing until an
@@ -39,11 +42,19 @@ class AppearanceController extends ChangeNotifier {
   ThemeMode _mode;
   int _seedValue;
   String _brandName;
+  String? _logoPath;
 
   ThemeMode get themeMode => _mode;
   int get seedValue => _seedValue;
   Color get seedColor => Color(_seedValue);
   String get brandName => _brandName;
+
+  /// Absolute path to an optional operator-supplied logo image, shown in the
+  /// navigation header in place of the default book glyph. `null` means "use
+  /// the built-in icon". The bytes live on disk (copied into the app documents
+  /// folder by the Settings UI); the controller only tracks the pointer so it
+  /// stays a pure SharedPreferences object with no file IO to unit-test.
+  String? get logoPath => _logoPath;
 
   /// Named seeds offered in the Settings appearance picker. A white-label
   /// operator picks one; the value is the ARGB int persisted in prefs.
@@ -65,12 +76,17 @@ class AppearanceController extends ChangeNotifier {
     ThemeMode mode = ThemeMode.system;
     int seed = defaultSeedValue;
     String brand = defaultBrandName;
+    String? logo;
     try {
       final prefs = await SharedPreferences.getInstance();
       mode = _decodeMode(prefs.getString(_kMode));
       seed = prefs.getInt(_kSeed) ?? defaultSeedValue;
       final stored = prefs.getString(_kBrand);
       if (stored != null && stored.trim().isNotEmpty) brand = stored.trim();
+      final storedLogo = prefs.getString(_kLogo);
+      if (storedLogo != null && storedLogo.trim().isNotEmpty) {
+        logo = storedLogo.trim();
+      }
     } catch (_) {
       // Best-effort: keep defaults.
     }
@@ -78,6 +94,7 @@ class AppearanceController extends ChangeNotifier {
       mode: mode,
       seedValue: seed,
       brandName: brand,
+      logoPath: logo,
     );
   }
 
@@ -112,12 +129,28 @@ class AppearanceController extends ChangeNotifier {
     return _persist();
   }
 
+  /// Point the header at an operator logo, or back to the built-in icon when
+  /// [path] is null/blank. Cosmetic-only, so no gate here (the Settings UI that
+  /// reaches this is administer-gated).
+  Future<void> setLogoPath(String? path) {
+    final next = (path == null || path.trim().isEmpty) ? null : path.trim();
+    if (_logoPath == next) return Future.value();
+    _logoPath = next;
+    notifyListeners();
+    return _persist();
+  }
+
   Future<void> _persist() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_kMode, _mode.name);
       await prefs.setInt(_kSeed, _seedValue);
       await prefs.setString(_kBrand, _brandName);
+      if (_logoPath == null) {
+        await prefs.remove(_kLogo);
+      } else {
+        await prefs.setString(_kLogo, _logoPath!);
+      }
     } catch (_) {
       // A failed persistence is cosmetic-only; the in-memory state is still
       // correct for this session.

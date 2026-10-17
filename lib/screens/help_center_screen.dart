@@ -161,64 +161,25 @@ class HelpCenterScreen extends StatelessWidget {
   }
 
   Widget _buildTutorialMap(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final scheme = Theme.of(context).colorScheme;
     final txt = Theme.of(context).textTheme;
 
+    // TUTORIAL-11n: the step text used to be hardcoded English, so French and
+    // Arabic operators opened the one screen meant to TEACH them the product and
+    // got a wall of a language they may not read. Every label now comes from the
+    // localized ARB (EN/FR/AR) so the tutorial actually tutorials, in the
+    // operator's own language and text direction.
     final steps = [
-      (
-        '1',
-        'System Initialization & Admin Setup',
-        'Complete first-run onboarding, establish a resilient administrator credential, and initialize the embedded SQLite engine.',
-        Icons.admin_panel_settings,
-      ),
-      (
-        '2',
-        'Catalog & Inventory Management',
-        'Add titles with ISBN-10/13 validation, generate unique barcodes, register individual copy condition notes, or bulk import via CSV.',
-        Icons.library_books,
-      ),
-      (
-        '3',
-        'Member Registration & QR Cards',
-        'Register patrons, configure borrowing tiers and limits, and generate official membership cards with opaque QR codes.',
-        Icons.badge,
-      ),
-      (
-        '4',
-        'Circulation Desk (Checkout & Returns)',
-        'Rapidly scan book barcodes via USB keyboard-wedge scanners, process returns, calculate overdue fines, and print official circulation receipts.',
-        Icons.swap_horiz,
-      ),
-      (
-        '5',
-        'Reservation Queues & Hold Tickets',
-        'Queue member reservations with FIFO ordering, automatic promotion upon return, walk-up protection, and printable hold pickup tickets.',
-        Icons.bookmark_added,
-      ),
-      (
-        '6',
-        'Financial Auditing & Reporting',
-        'Audit circulation history, track collected fines, and export injection-sanitized (CWE-1236) CSV and PDF analytics.',
-        Icons.assessment,
-      ),
-      (
-        '7',
-        'Multi-Station Private LAN Mode',
-        'Enable Windows Firewall rules to securely discover and sync workstations across the local subnet with Bearer authentication.',
-        Icons.lan,
-      ),
-      (
-        '8',
-        'Disaster Recovery & Snapshots',
-        'Create point-in-time database snapshots in WAL mode with pre-restore safety backups and zero data loss guarantees.',
-        Icons.backup,
-      ),
-      (
-        '9',
-        'In-App Verification & Updates',
-        'Check for official updates, stream downloads over HTTPS, and automatically verify SHA-256 integrity checksums.',
-        Icons.system_update,
-      ),
+      ('1', l10n.tstep1Title, l10n.tstep1Body, Icons.admin_panel_settings),
+      ('2', l10n.tstep2Title, l10n.tstep2Body, Icons.library_books),
+      ('3', l10n.tstep3Title, l10n.tstep3Body, Icons.badge),
+      ('4', l10n.tstep4Title, l10n.tstep4Body, Icons.swap_horiz),
+      ('5', l10n.tstep5Title, l10n.tstep5Body, Icons.bookmark_added),
+      ('6', l10n.tstep6Title, l10n.tstep6Body, Icons.assessment),
+      ('7', l10n.tstep7Title, l10n.tstep7Body, Icons.lan),
+      ('8', l10n.tstep8Title, l10n.tstep8Body, Icons.backup),
+      ('9', l10n.tstep9Title, l10n.tstep9Body, Icons.system_update),
     ];
 
     return Card(
@@ -233,12 +194,10 @@ class HelpCenterScreen extends StatelessWidget {
           ),
         ),
         title: Text(
-          'Complete Operational Tutorial Map',
+          l10n.tutorialMapTitle,
           style: txt.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
-        subtitle: const Text(
-          'Sequential 9-step guide from initial setup to day-to-day desk operations',
-        ),
+        subtitle: Text(l10n.tutorialMapSubtitle),
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(
@@ -297,6 +256,7 @@ class HelpCenterScreen extends StatelessWidget {
   }
 
   Widget _buildHardwareGuide(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final scheme = Theme.of(context).colorScheme;
     final txt = Theme.of(context).textTheme;
 
@@ -311,12 +271,10 @@ class HelpCenterScreen extends StatelessWidget {
           ),
         ),
         title: Text(
-          'Hardware Peripherals & Desk Setup Guide',
+          l10n.hardwareGuideTitle,
           style: txt.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
-        subtitle: const Text(
-          'Configuring USB Barcode Scanners, Thermal Receipt Printers, and Windows scaling',
-        ),
+        subtitle: Text(l10n.hardwareGuideSubtitle),
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(
@@ -327,12 +285,12 @@ class HelpCenterScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '1. Barcode & QR Scanner Configuration (USB / Bluetooth HID)',
+                  l10n.hwScanTitle,
                   style: txt.titleSmall?.copyWith(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Connect any standard USB or wireless handheld barcode scanner in HID Keyboard Wedge mode. Ensure the scanner is configured to transmit a trailing Enter key (\\r or \\n) suffix after every scan. This allows instant book and patron identification without touching the mouse.',
+                  l10n.hwScanBody,
                   style: txt.bodySmall?.copyWith(
                     color: scheme.onSurfaceVariant,
                     height: 1.4,
@@ -340,12 +298,12 @@ class HelpCenterScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: AppSpacing.md),
                 Text(
-                  '2. Receipt Printer Setup (58mm / 80mm / A6 Office Paper)',
+                  l10n.hwPrintTitle,
                   style: txt.titleSmall?.copyWith(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Library Manager exports vector PDF slips for all loan receipts, return slips, hold pickup tickets, and member cards. To print directly to a thermal receipt printer (such as Epson POS or generic 80mm roll), set your printer default paper size to Roll Paper or A6 in Windows Settings > Printers.',
+                  l10n.hwPrintBody,
                   style: txt.bodySmall?.copyWith(
                     color: scheme.onSurfaceVariant,
                     height: 1.4,
@@ -353,12 +311,12 @@ class HelpCenterScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: AppSpacing.md),
                 Text(
-                  '3. High-DPI Display Scaling (100% to 200%)',
+                  l10n.hwDpiTitle,
                   style: txt.titleSmall?.copyWith(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'The user interface dynamically adjusts to Windows display scaling (100%, 125%, 150%, 200%) and supports full window resizing, multi-monitor dragging, and Dark/Light themes without visual tearing.',
+                  l10n.hwDpiBody,
                   style: txt.bodySmall?.copyWith(
                     color: scheme.onSurfaceVariant,
                     height: 1.4,

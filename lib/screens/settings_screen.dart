@@ -13,6 +13,7 @@ import '../models/user_account.dart';
 import '../services/error_messages.dart';
 import '../ui/app_tokens.dart';
 import '../widgets/app_states.dart';
+import '../widgets/app_toast.dart';
 import 'users_roles_screen.dart' show roleLabel, roleDescription;
 import 'code_management_screen.dart';
 import 'attribute_management_screen.dart';
@@ -116,15 +117,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       await provider.updateSettings(_isHost, _ipController.text);
       if (!mounted) return;
-      messenger.showSnackBar(SnackBar(content: Text(l10n.savedSuccessfully)));
+      showAppToastOn(
+        messenger,
+        l10n.savedSuccessfully,
+        kind: ToastKind.success,
+      );
     } catch (e) {
       if (!mounted) return;
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(describeError(l10n, e)),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
+      showAppToastOn(messenger, describeError(l10n, e), kind: ToastKind.error);
     } finally {
       if (mounted) {
         setState(() => _savingSettings = false);
@@ -1629,6 +1629,54 @@ class _AppearanceSectionState extends State<_AppearanceSection> {
     super.dispose();
   }
 
+  /// Phase BRAND: pick a logo image, size-check it, copy it into the app's
+  /// private branding folder (so the header survives the user moving/deleting
+  /// the original) and point the AppearanceController at the copy.
+  Future<void> _pickLogo() async {
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    final appearance = context.read<AppearanceController>();
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['png', 'jpg', 'jpeg'],
+    );
+    final path = result?.files.single.path;
+    if (path == null || !mounted) return;
+    try {
+      final bytes = await File(path).readAsBytes();
+      if (bytes.length > 2 * 1024 * 1024) {
+        showAppToastOn(messenger, l10n.appLogoTooLarge, kind: ToastKind.error);
+        return;
+      }
+      final ext = p.extension(path).toLowerCase();
+      final docs = await getApplicationDocumentsDirectory();
+      final dir = Directory(p.join(docs.path, 'branding'));
+      if (!dir.existsSync()) await dir.create(recursive: true);
+      final dest = File(p.join(dir.path, 'logo$ext'));
+      await dest.writeAsBytes(bytes);
+      await appearance.setLogoPath(dest.path);
+      showAppToastOn(messenger, l10n.appLogoUpdated, kind: ToastKind.success);
+    } catch (_) {
+      showAppToastOn(messenger, l10n.appLogoFailed, kind: ToastKind.error);
+    }
+  }
+
+  Future<void> _clearLogo() async {
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    final appearance = context.read<AppearanceController>();
+    final old = appearance.logoPath;
+    await appearance.setLogoPath(null);
+    if (old != null) {
+      try {
+        await File(old).delete();
+      } catch (_) {
+        // Best-effort; the pointer is already cleared.
+      }
+    }
+    showAppToastOn(messenger, l10n.appLogoUpdated, kind: ToastKind.success);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -1708,6 +1756,63 @@ class _AppearanceSectionState extends State<_AppearanceSection> {
               labelText: l10n.brandName,
               helperText: l10n.brandNameHint,
             ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Text(l10n.appLogoTitle, style: txt.bodyMedium),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  color: scheme.surfaceContainerHighest,
+                  borderRadius: AppRadius.tile,
+                  border: Border.all(color: scheme.outlineVariant),
+                ),
+                child: appearance.logoPath == null
+                    ? Icon(Icons.image_outlined, color: scheme.onSurfaceVariant)
+                    : Image.file(
+                        File(appearance.logoPath!),
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) => Icon(
+                          Icons.broken_image_outlined,
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Text(
+                  l10n.appLogoHint,
+                  style: txt.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: [
+              OutlinedButton.icon(
+                key: const Key('chooseLogo'),
+                onPressed: _pickLogo,
+                icon: const Icon(Icons.image_outlined, size: AppIcon.md),
+                label: Text(l10n.appLogoChoose),
+              ),
+              if (appearance.logoPath != null)
+                TextButton.icon(
+                  key: const Key('clearLogo'),
+                  onPressed: _clearLogo,
+                  icon: const Icon(Icons.close, size: AppIcon.md),
+                  label: Text(l10n.appLogoClear),
+                ),
+            ],
           ),
         ],
       ],

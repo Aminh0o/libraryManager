@@ -11,6 +11,7 @@ import '../ui/app_tokens.dart';
 import '../widgets/app_states.dart';
 import '../widgets/app_status_chip.dart';
 import '../widgets/barcode_scanner_dialog.dart';
+import '../widgets/app_toast.dart';
 import '../l10n/app_localizations.dart';
 
 /// Phase H (frontend reconstruction): presentation-only rebuild. The orange
@@ -33,6 +34,11 @@ class _LoanScreenState extends State<LoanScreen>
   // Checkout State
   Member? _selectedMember;
   LibraryItem? _selectedItem;
+  // Phase LOAN-DURATION: the desk chooses how long the item stays out and the
+  // due date is derived from it at checkout (provider.checkOutItem ->
+  // LoanTransitions.checkOut). The default mirrors the historical hard-coded
+  // 15 days, so nothing changes until the operator picks another period.
+  int _loanDays = 15;
   final TextEditingController _memberSearchCtrl = TextEditingController();
   final TextEditingController _itemSearchCtrl = TextEditingController();
 
@@ -91,8 +97,10 @@ class _LoanScreenState extends State<LoanScreen>
           _itemSearchCtrl.text = item.designation;
         });
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.itemNotFound)),
+        showAppToast(
+          context,
+          AppLocalizations.of(context)!.itemNotFound,
+          kind: ToastKind.error,
         );
       }
     }
@@ -104,11 +112,13 @@ class _LoanScreenState extends State<LoanScreen>
     final provider = Provider.of<LibraryProvider>(context, listen: false);
     final l10n = AppLocalizations.of(context)!;
     try {
-      await provider.checkOutItem(_selectedItem!, _selectedMember!);
+      await provider.checkOutItem(
+        _selectedItem!,
+        _selectedMember!,
+        durationDays: _loanDays,
+      );
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l10n.loanSuccess)));
+        showAppToast(context, l10n.loanSuccess, kind: ToastKind.success);
         setState(() {
           _selectedItem = null;
           _itemSearchCtrl.clear();
@@ -117,9 +127,7 @@ class _LoanScreenState extends State<LoanScreen>
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(describeError(l10n, e))));
+        showAppToast(context, describeError(l10n, e), kind: ToastKind.error);
       }
     }
   }
@@ -135,16 +143,12 @@ class _LoanScreenState extends State<LoanScreen>
         code,
       ); // Logic needs to handle barcode lookup inside provider potentially
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l10n.returnSuccess)));
+        showAppToast(context, l10n.returnSuccess, kind: ToastKind.success);
         _checkinSearchCtrl.clear();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(describeError(l10n, e))));
+        showAppToast(context, describeError(l10n, e), kind: ToastKind.error);
       }
     }
   }
@@ -159,15 +163,11 @@ class _LoanScreenState extends State<LoanScreen>
     try {
       await provider.renewLoan(loan);
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l10n.renewSuccess)));
+        showAppToast(context, l10n.renewSuccess, kind: ToastKind.success);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(describeError(l10n, e))));
+        showAppToast(context, describeError(l10n, e), kind: ToastKind.error);
       }
     }
   }
@@ -385,6 +385,28 @@ class _LoanScreenState extends State<LoanScreen>
                         ),
                     ],
                   ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.md),
+                child: Row(
+                  children: [
+                    Text(l10n.loanPeriodTitle, style: txt.bodyMedium),
+                    const SizedBox(width: AppSpacing.md),
+                    DropdownButton<int>(
+                      key: const Key('loanPeriod'),
+                      isDense: true,
+                      value: _loanDays,
+                      items: [
+                        for (final d in const <int>[7, 15, 30])
+                          DropdownMenuItem(
+                            value: d,
+                            child: Text(l10n.loanPeriodDays(d)),
+                          ),
+                      ],
+                      onChanged: (v) => setState(() => _loanDays = v ?? 15),
+                    ),
+                  ],
                 ),
               ),
               const Spacer(),
