@@ -27,7 +27,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   FlutterWindow window(project);
   Win32Window::Point origin(10, 10);
   Win32Window::Size size(1280, 720);
-  if (!window.Create(L"library_manager", origin, size)) {
+  // The taskbar, Alt+Tab list and window title all show this string. It used to
+  // be the raw snake_case build target ("library_manager"), which a real-UI
+  // pass flagged as the single most visible unprofessional detail: a customer
+  // sees a build artefact, not a product. Must stay in step with the
+  // application name the installer creates shortcuts for.
+  if (!window.Create(L"Library Manager", origin, size)) {
     return EXIT_FAILURE;
   }
   window.SetQuitOnClose(true);

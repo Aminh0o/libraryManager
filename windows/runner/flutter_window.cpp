@@ -65,6 +65,17 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
     case WM_FONTCHANGE:
       flutter_controller_->engine()->ReloadSystemFonts();
       break;
+    case WM_GETMINMAXINFO: {
+      // A real-UI pass resized this window down to 247x205 and the app happily
+      // followed, clipping the status text mid-word and parking the action
+      // button over the list. Win32 is the only place a minimum track size can
+      // be enforced, so the Flutter layout never has to defend against a
+      // geometry no desktop user would choose.
+      MINMAXINFO* mmi = reinterpret_cast<MINMAXINFO*>(lparam);
+      mmi->ptMinTrackSize.x = kMinTrackedWidth;
+      mmi->ptMinTrackSize.y = kMinTrackedHeight;
+      return 0;
+    }
   }
 
   return Win32Window::MessageHandler(hwnd, message, wparam, lparam);

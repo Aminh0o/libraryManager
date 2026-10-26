@@ -23,6 +23,13 @@ class FlutterWindow : public Win32Window {
                          LPARAM const lparam) noexcept override;
 
  private:
+  // Smallest size the user may drag the window to, in physical pixels. Chosen
+  // just under the point where the shell still has room for its adaptive
+  // (icon-rail) layout, so narrowing is possible but the window can never
+  // reach a geometry where content is clipped.
+  static constexpr LONG kMinTrackedWidth = 640;
+  static constexpr LONG kMinTrackedHeight = 480;
+
   // The project to run.
   flutter::DartProject project_;
 
