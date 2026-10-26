@@ -180,7 +180,8 @@ void main() {
       final lines = csv.trimRight().split('\n');
       expect(
         lines.first,
-        'Code,Barre,Type,Designation,Quantite,Emplacement,Prix,Stock,Statut',
+        'Code,Barre,Type,Designation,Quantite,Emplacement,Prix,Stock,Statut,'
+        'Auteur,Categorie,Editeur,Annee,Langue,Description',
       );
       // Designation with a comma + embedded quotes is wrapped and doubled.
       expect(csv, contains('"Sold, 50% ""off"""'));
@@ -195,8 +196,30 @@ void main() {
 
     test('plain fields are left unquoted', () {
       final csv = provider.csvContent([_mk(1)]);
-      expect(csv, contains('0001,,LIV,Book 1,1,R1,10.0,S1,Disponible'));
+      // Legacy nine columns unchanged; the six v24 bibliographic columns are
+      // appended empty for a row that carries no enrichment.
+      expect(csv, contains('0001,,LIV,Book 1,1,R1,10.0,S1,Disponible,,,,,,'));
     });
+
+    test(
+      'exports the v24 bibliographic fields, quoted when needed (Phase 6)',
+      () {
+        final enriched = _mk(7).copyWith(
+          author: 'Frank Herbert',
+          category: 'Science, Fiction',
+          publisher: 'Ace',
+          year: 1965,
+          language: 'English',
+          description: 'Dune',
+        );
+        final csv = provider.csvContent([enriched]);
+        // Plain author/publisher/year/language land in their own columns.
+        expect(csv, contains(',Frank Herbert,'));
+        expect(csv, contains(',Ace,1965,English,Dune'));
+        // A category containing a comma is quoted so it cannot shift columns.
+        expect(csv, contains('"Science, Fiction"'));
+      },
+    );
 
     test('sanitizes formula injection prefixes in inventory fields', () {
       final malicious = LibraryItem(
@@ -234,6 +257,12 @@ void main() {
             '${item.taux}',
             item.emplacementStock,
             item.status,
+            item.author,
+            item.category,
+            item.publisher,
+            item.year == null ? '' : '${item.year}',
+            item.language,
+            item.description,
           ],
       ];
 
@@ -267,7 +296,8 @@ void main() {
         final lines = const LineSplitter().convert(csv);
         expect(
           lines.first,
-          'Code,Barre,Type,Designation,Quantite,Emplacement,Prix,Stock,Statut',
+          'Code,Barre,Type,Designation,Quantite,Emplacement,Prix,Stock,Statut,'
+          'Auteur,Categorie,Editeur,Annee,Langue,Description',
         );
         // One line per record plus the header (LineSplitter emits no trailing
         // empty line for the final writeln terminator).

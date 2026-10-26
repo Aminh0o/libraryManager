@@ -18,7 +18,7 @@ class AttributeManagementScreen extends StatefulWidget {
 class _AttributeManagementScreenState extends State<AttributeManagementScreen> {
   final _formKey = GlobalKey<FormState>();
   final _valueController = TextEditingController();
-  String _selectedType = 'LOCATION';
+  String _selectedType = 'CATEGORY';
 
   @override
   void dispose() {
@@ -89,19 +89,27 @@ class _AttributeManagementScreenState extends State<AttributeManagementScreen> {
                       ),
                       ToggleButtons(
                         isSelected: [
+                          _selectedType == 'CATEGORY',
                           _selectedType == 'LOCATION',
                           _selectedType == 'STATUS',
                           _selectedType == 'STOCK',
                         ],
                         onPressed: (index) {
                           setState(() {
-                            if (index == 0) _selectedType = 'LOCATION';
-                            if (index == 1) _selectedType = 'STATUS';
-                            if (index == 2) _selectedType = 'STOCK';
+                            if (index == 0) _selectedType = 'CATEGORY';
+                            if (index == 1) _selectedType = 'LOCATION';
+                            if (index == 2) _selectedType = 'STATUS';
+                            if (index == 3) _selectedType = 'STOCK';
                           });
                         },
                         borderRadius: AppRadius.button,
                         children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.md,
+                            ),
+                            child: Text(l10n.category),
+                          ),
                           Padding(
                             padding: const EdgeInsets.symmetric(
                               horizontal: AppSpacing.md,
@@ -140,11 +148,13 @@ class _AttributeManagementScreenState extends State<AttributeManagementScreen> {
                                 alpha: 0.12,
                               ),
                               child: Icon(
-                                _selectedType == 'LOCATION'
-                                    ? Icons.location_on_outlined
-                                    : (_selectedType == 'STATUS'
-                                          ? Icons.info_outline
-                                          : Icons.warehouse_outlined),
+                                _selectedType == 'CATEGORY'
+                                    ? Icons.category_outlined
+                                    : (_selectedType == 'LOCATION'
+                                          ? Icons.location_on_outlined
+                                          : (_selectedType == 'STATUS'
+                                                ? Icons.info_outline
+                                                : Icons.warehouse_outlined)),
                                 color: scheme.primary,
                                 size: AppIcon.md,
                               ),

@@ -49,7 +49,9 @@ void main() {
         code TEXT PRIMARY KEY, barcode TEXT, code_type TEXT,
         designation TEXT, quantite INTEGER, emplacement TEXT,
         taux REAL, emplacement_stock TEXT, status TEXT DEFAULT 'Disponible',
-        row_version INTEGER NOT NULL DEFAULT 0)
+        row_version INTEGER NOT NULL DEFAULT 0,
+        author TEXT, category TEXT, description TEXT, language TEXT,
+        publisher TEXT, year INTEGER, cover_path TEXT)
     ''');
     await db.execute('''
       CREATE TABLE loans(

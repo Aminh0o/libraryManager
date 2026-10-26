@@ -63,6 +63,12 @@ class _MemberDetailRepo implements LibraryRepository {
       memberId: 'M-001',
       registeredAt: DateTime(2024, 1, 15),
       phone: '0555123456',
+      // v24 enrichment (Phase 5): the profile must render these honestly.
+      memberType: 'Student',
+      status: 'Active',
+      expiryDate: DateTime(2027, 6, 1),
+      address: "12 Larbi Ben M'hidi, Tlemcen",
+      notes: 'Prefers Arabic titles',
     ),
   ];
 
@@ -204,6 +210,19 @@ Future<void> _pump(
 }
 
 void main() {
+  testWidgets('v24 profile renders type, status chip, expiry, address, notes', (
+    tester,
+  ) async {
+    await _pump(tester, loans: const []);
+    expect(find.text('Student'), findsOneWidget);
+    // 'Active' appears as the membership chip (and nowhere else in EN on
+    // this page: loans are empty, so findsWidgets is the safe form).
+    expect(find.text('Active'), findsWidgets);
+    expect(find.textContaining('Expiry Date: 2027-06-01'), findsOneWidget);
+    expect(find.textContaining("12 Larbi Ben M'hidi, Tlemcen"), findsOneWidget);
+    expect(find.textContaining('Prefers Arabic titles'), findsOneWidget);
+  });
+
   testWidgets('shows active loans for the member', (tester) async {
     final loans = [
       Loan(

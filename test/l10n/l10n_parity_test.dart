@@ -122,6 +122,139 @@ void main() {
     });
   });
 
+  group('Translation authenticity (a key existing is not being translated)', () {
+    // A real-UI pass caught `totalDocuments` shipping as the English literal
+    // "Total Documents" inside the FRENCH catalogue. Key-set parity is blind to
+    // that whole defect class: the key exists, the placeholder matches, the
+    // value is non-empty -- and the user still sees English. These checks
+    // compare VALUES, which is the only thing the UI can reveal.
+    //
+    // Allowlist: words that are legitimately identical in French (cognates the
+    // Académie française accepts as-is) and machine-format strings. Adding a key
+    // here must be a deliberate, reviewed choice -- each entry is an admission
+    // that a French reader is being shown the English text.
+    const frIdenticalOk = {
+      'code', // FR: code
+      'stock', // FR: stock
+      'typeLabel', // FR: type
+      'actions', // FR: actions
+      'clientMode', // FR: client
+      'memberIdCode', // FR: ID / Code
+      'email', // FR: Email (also accepted: e-mail)
+      'typeStandard', // FR: standard
+      'notes', // FR: notes
+      'photo', // FR: photo
+      'itemDescription', // FR: description
+      'flash', // FR: flash
+      'stepConfiguration', // FR: configuration
+      'fineDateLabel', // FR: date
+      'reportKindCirculation', // FR: circulation
+      'notifications', // FR: notifications
+      'chatInputHint', // FR: message
+    };
+
+    bool isMachineText(String v) =>
+        v.isEmpty ||
+        v.contains('http') ||
+        v.contains('@') ||
+        v.contains('{') || // placeholder-only
+        RegExp(r'^[^\p{L}]+$', unicode: true).hasMatch(v); // punctuation/digits
+
+    test('no French value is an untranslated English literal', () {
+      final offenders = <String>[];
+      for (final key in enKeys) {
+        if (frIdenticalOk.contains(key)) continue;
+        final enVal = enJson[key]?.toString() ?? '';
+        final frVal = frJson[key]?.toString() ?? '';
+        if (isMachineText(enVal)) continue;
+        if (enVal.trim().toLowerCase() == frVal.trim().toLowerCase()) {
+          offenders.add('$key: "$enVal"');
+        }
+      }
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'These French entries are still English text and will render as '
+            'English for a French reader:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('every Arabic value that carries words contains Arabic script', () {
+      final arabic = RegExp(r'[\u0600-\u06FF]');
+      final offenders = <String>[];
+      for (final key in enKeys) {
+        final enVal = enJson[key]?.toString() ?? '';
+        final arVal = arJson[key]?.toString() ?? '';
+        if (isMachineText(enVal)) continue;
+        if (!arabic.hasMatch(arVal)) {
+          offenders.add('$key: "$arVal"');
+        }
+      }
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'These Arabic entries contain no Arabic script and will render as '
+            'Latin text for an Arabic reader:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('a stated count in a tutorial string matches the shipped content', () {
+      // The help-center subtitle announces how many guided paths exist. The
+      // real count lives in HelpCenterScreen's group list, so the two drift: a
+      // copy said "Eighteen" while the screen rendered nineteen.
+      final subtitle = enJson['tutorialMapSubtitle']?.toString() ?? '';
+      final stated = RegExp(
+        r'\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|'
+        r'thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)\b',
+        caseSensitive: false,
+      ).firstMatch(subtitle);
+      expect(stated, isNotNull, reason: 'subtitle must state a path count');
+
+      final words = {
+        'one': 1,
+        'two': 2,
+        'three': 3,
+        'four': 4,
+        'five': 5,
+        'six': 6,
+        'seven': 7,
+        'eight': 8,
+        'nine': 9,
+        'ten': 10,
+        'eleven': 11,
+        'twelve': 12,
+        'thirteen': 13,
+        'fourteen': 14,
+        'fifteen': 15,
+        'sixteen': 16,
+        'seventeen': 17,
+        'eighteen': 18,
+        'nineteen': 19,
+        'twenty': 20,
+      };
+      final parsed = int.tryParse(stated!.group(1)!);
+      final count = parsed ?? words[stated.group(1)!.toLowerCase()];
+      expect(count, isNotNull);
+
+      // Count the tstepN pairs actually defined in the catalogue.
+      final steps = <String>{};
+      for (final key in enKeys) {
+        final m = RegExp(r'^tstep(\d+)Title$').firstMatch(key);
+        if (m != null) steps.add(m.group(1)!);
+      }
+      expect(
+        count,
+        equals(steps.length),
+        reason:
+            'tutorialMapSubtitle announces $count paths but the catalogue '
+            'defines ${steps.length} (tstepNTitle keys). Update the copy in '
+            'all three locales when the tutorial map changes.',
+      );
+    });
+  });
+
   group('Arabic RTL and localizations runtime verification', () {
     testWidgets('AppLocalizations loads Arabic with RTL text direction', (
       tester,

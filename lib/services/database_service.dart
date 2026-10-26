@@ -242,7 +242,7 @@ class DatabaseService implements LibraryRepository {
   }
 
   /// Current schema version. Bump together with a matching `_onUpgrade` step.
-  static const int _dbVersion = 23;
+  static const int _dbVersion = 25;
 
   /// The schema version this build opens databases at (exposed for migration
   /// integration tests, DB-08).
@@ -266,12 +266,47 @@ class DatabaseService implements LibraryRepository {
     onCreate: _onCreate,
     onUpgrade: _onUpgrade,
     onConfigure: _onConfigure,
+    onOpen: _onOpen,
   );
 
   /// Runs on every open. Enables foreign-key enforcement (DB-01). A no-op for
   /// the current schema (no FKs declared yet) and correct once they are.
   Future<void> _onConfigure(Database db) async {
     await db.execute('PRAGMA foreign_keys = ON');
+  }
+
+  Future<void> _onOpen(Database db) async {
+    try {
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_items_category ON library_items(category)',
+      );
+      if (await _tableExists(db, 'attribute_definitions')) {
+        final existing = await db.rawQuery(
+          "SELECT COUNT(*) AS c FROM attribute_definitions WHERE type = 'CATEGORY'",
+        );
+        final count = (existing.first['c'] as int?) ?? 0;
+        if (count == 0) {
+          final defaultCategories = [
+            'Fiction',
+            'Non-Fiction',
+            'Science',
+            'History',
+            'Technology',
+            'Literature',
+            'Philosophy',
+            'Arts',
+            'Children',
+            'Reference',
+          ];
+          for (final cat in defaultCategories) {
+            await db.insert('attribute_definitions', {
+              'type': 'CATEGORY',
+              'value': cat,
+            }, conflictAlgorithm: ConflictAlgorithm.ignore);
+          }
+        }
+      }
+    } catch (_) {}
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -645,6 +680,47 @@ class DatabaseService implements LibraryRepository {
         'ALTER TABLE reservations ADD COLUMN rank INTEGER',
       );
     }
+    if (oldVersion < 24) {
+      // Phase 5/6 (owner upgrade): richer member + book profiles. Members gain
+      // a photo, card type, membership status, expiry, address and free-form
+      // notes; titles gain author, category, description, language, publisher,
+      // year and a cover image. Every column is ADDITIVE and applied through
+      // _addColumnSafe, so a legacy/partial install can never abort onUpgrade
+      // (DB-08 boot-loop guard) and existing rows keep NULL (rendered as "not
+      // set") until an operator edits them. No back-fill, no data rewrite.
+      for (final (table, column) in const <(String, String)>[
+        ('members', 'photo_path'),
+        ('members', 'member_type'),
+        ('members', 'status'),
+        ('members', 'expiry_date'),
+        ('members', 'address'),
+        ('members', 'notes'),
+        ('library_items', 'author'),
+        ('library_items', 'category'),
+        ('library_items', 'description'),
+        ('library_items', 'language'),
+        ('library_items', 'publisher'),
+        ('library_items', 'year'),
+        ('library_items', 'cover_path'),
+      ]) {
+        final type = column == 'year' ? 'INTEGER' : 'TEXT';
+        await _addColumnSafe(
+          db,
+          table,
+          column,
+          'ALTER TABLE $table ADD COLUMN $column $type',
+        );
+      }
+    }
+    if (oldVersion < 25) {
+      // Member genre / gender support (male / female / other).
+      await _addColumnSafe(
+        db,
+        'members',
+        'gender',
+        'ALTER TABLE members ADD COLUMN gender TEXT',
+      );
+    }
   }
 
   /// True if a table exists in the current schema. Reads sqlite_master's `name`
@@ -970,7 +1046,14 @@ class DatabaseService implements LibraryRepository {
             taux REAL,
             emplacement_stock TEXT,
             status TEXT DEFAULT 'Disponible',
-            row_version INTEGER NOT NULL DEFAULT 0
+            row_version INTEGER NOT NULL DEFAULT 0,
+            author TEXT,
+            category TEXT,
+            description TEXT,
+            language TEXT,
+            publisher TEXT,
+            year INTEGER,
+            cover_path TEXT
           )
         ''');
 
@@ -1044,7 +1127,14 @@ class DatabaseService implements LibraryRepository {
         phone TEXT,
         member_id TEXT UNIQUE,
         registered_at TEXT,
-        row_version INTEGER NOT NULL DEFAULT 0
+        row_version INTEGER NOT NULL DEFAULT 0,
+        photo_path TEXT,
+        member_type TEXT,
+        status TEXT,
+        expiry_date TEXT,
+        address TEXT,
+        notes TEXT,
+        gender TEXT
       )
     ''');
 
@@ -1472,6 +1562,7 @@ class DatabaseService implements LibraryRepository {
     String? search,
     String? status,
     String? codeType,
+    String? category,
     String? sort,
     bool ascending = true,
   }) async {
@@ -1480,6 +1571,7 @@ class DatabaseService implements LibraryRepository {
       search: search,
       status: status,
       codeType: codeType,
+      category: category,
     );
     // Core Workflow Recovery: column sort is applied SERVER-side so a
     // paginated view stays correct across pages (a client-side sort would
@@ -1514,12 +1606,14 @@ class DatabaseService implements LibraryRepository {
     String? search,
     String? status,
     String? codeType,
+    String? category,
   }) async {
     final db = await database;
     final f = _itemFilterWhere(
       search: search,
       status: status,
       codeType: codeType,
+      category: category,
     );
     final rows = await db.rawQuery(
       'SELECT COUNT(*) AS c FROM library_items'
@@ -1537,6 +1631,7 @@ class DatabaseService implements LibraryRepository {
     String? search,
     String? status,
     String? codeType,
+    String? category,
   }) {
     final clauses = <String>[];
     final args = <Object?>[];
@@ -1548,6 +1643,10 @@ class DatabaseService implements LibraryRepository {
       clauses.add('code_type = ?');
       args.add(codeType);
     }
+    if (category != null && category.isNotEmpty) {
+      clauses.add('category = ?');
+      args.add(category);
+    }
     final term = search?.trim();
     if (term != null && term.isNotEmpty) {
       final escaped = term
@@ -1555,14 +1654,23 @@ class DatabaseService implements LibraryRepository {
           .replaceAll('%', '\\%')
           .replaceAll('_', '\\_');
       final like = '%$escaped%';
+      // v24 bibliographic fields join the free-text match so a title search
+      // finds an author/category/publisher as well as a designation. `language`
+      // is a controlled dropdown value and `year` is numeric -- neither belongs
+      // in a substring search. A NULL column simply fails its LIKE (never
+      // matches), so enrichment-absent legacy rows are unaffected.
       clauses.add(
         "(designation LIKE ? ESCAPE '\\' "
         "OR code LIKE ? ESCAPE '\\' "
         "OR barcode LIKE ? ESCAPE '\\' "
         "OR emplacement LIKE ? ESCAPE '\\' "
-        "OR (code_type || '-' || code) LIKE ? ESCAPE '\\')",
+        "OR (code_type || '-' || code) LIKE ? ESCAPE '\\' "
+        "OR author LIKE ? ESCAPE '\\' "
+        "OR category LIKE ? ESCAPE '\\' "
+        "OR publisher LIKE ? ESCAPE '\\' "
+        "OR description LIKE ? ESCAPE '\\')",
       );
-      for (var i = 0; i < 5; i++) {
+      for (var i = 0; i < 9; i++) {
         args.add(like);
       }
     }
@@ -2335,10 +2443,39 @@ class DatabaseService implements LibraryRepository {
       GROUP BY i.code_type
     ''');
 
+    // Phase 9 (dynamic analytics): rolling circulation health, computed on the
+    // host so a client sees the same numbers over the LAN as the operator does
+    // locally. Dates are stored as local ISO-8601 strings with no timezone
+    // suffix (Loan.toMap), so a lexicographic compare against a identically
+    // formatted cutoff is a correct chronological compare. 'overdue' is derived
+    // (active past due) and never stored -- this mirrors Loan.isOverdue.
+    final nowIso = DateTime.now().toIso8601String();
+    final weekAgoIso = DateTime.now()
+        .subtract(const Duration(days: 7))
+        .toIso8601String();
+    final overdueLoans = await db.rawQuery(
+      "SELECT COUNT(*) AS c FROM loans WHERE status = ? "
+      "AND due_date IS NOT NULL AND due_date < ?",
+      [LoanStatus.active.storage, nowIso],
+    );
+    final weekBorrows = await db.rawQuery(
+      'SELECT COUNT(*) AS c FROM loans '
+      'WHERE loan_date IS NOT NULL AND loan_date >= ?',
+      [weekAgoIso],
+    );
+    final weekReturns = await db.rawQuery(
+      'SELECT COUNT(*) AS c FROM loans '
+      'WHERE return_date IS NOT NULL AND status = ? AND return_date >= ?',
+      [LoanStatus.returned.storage, weekAgoIso],
+    );
+
     return {
       'totalQuantity': totalDocs.first['total'] ?? 0,
       'totalValue': (totalValue.first['total'] as num? ?? 0.0).toDouble(),
       'onLoan': onLoan.first['total'] ?? 0,
+      'overdueLoans': overdueLoans.first['c'] ?? 0,
+      'weekBorrows': weekBorrows.first['c'] ?? 0,
+      'weekReturns': weekReturns.first['c'] ?? 0,
       'typeDist': {
         for (var row in typeCounts)
           row['code_type'] as String: row['count'] ?? 0,

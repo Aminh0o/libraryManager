@@ -53,6 +53,15 @@ void main() {
         barcode TEXT, state TEXT NOT NULL DEFAULT 'Disponible',
         note TEXT, acquired_at TEXT)
     ''');
+    // Phase 9: getStats now also reads the loans table for the rolling
+    // circulation metrics, so this fixture carries it (empty => the new
+    // analytics read 0 and the copy-derivation assertions below are unaffected).
+    await db.execute('''
+      CREATE TABLE loans(
+        id INTEGER PRIMARY KEY AUTOINCREMENT, item_code TEXT, copy_id INTEGER,
+        member_id TEXT, member_name TEXT, item_title TEXT, loan_date TEXT,
+        due_date TEXT, return_date TEXT, status TEXT)
+    ''');
     await db.execute('CREATE TABLE metadata(key TEXT PRIMARY KEY, value TEXT)');
     DatabaseService.useDatabaseForTesting(db);
     svc = DatabaseService();

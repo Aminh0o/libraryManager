@@ -72,6 +72,32 @@ class _LoanScreenState extends State<LoanScreen>
     super.dispose();
   }
 
+  void _scanMemberForCheckout() async {
+    final code = await showBarcodeScanner(context);
+    if (code != null && mounted) {
+      final provider = Provider.of<LibraryProvider>(context, listen: false);
+      final l10n = AppLocalizations.of(context)!;
+      final raw = code.trim();
+      final memberId = parseScannedMemberId(raw);
+      final match = provider.members
+          .where(
+            (m) =>
+                m.memberId.toLowerCase() == memberId.toLowerCase() ||
+                m.memberId.toLowerCase() == raw.toLowerCase(),
+          )
+          .firstOrNull;
+      if (match != null) {
+        setState(() => _selectedMember = match);
+      } else {
+        showAppToast(
+          context,
+          l10n.noMembersMatchSearch,
+          kind: ToastKind.warning,
+        );
+      }
+    }
+  }
+
   void _scanItemForCheckout() async {
     final code = await showBarcodeScanner(context);
     if (code != null && mounted) {
@@ -292,41 +318,63 @@ class _LoanScreenState extends State<LoanScreen>
                           ),
                         )
                       else
-                        Autocomplete<Member>(
-                          displayStringForOption: (Member option) =>
-                              option.fullName,
-                          optionsBuilder: (TextEditingValue textEditingValue) {
-                            if (textEditingValue.text == '') {
-                              return const Iterable<Member>.empty();
-                            }
-                            return provider.members.where((Member option) {
-                              return option.fullName.toLowerCase().contains(
-                                    textEditingValue.text.toLowerCase(),
-                                  ) ||
-                                  option.memberId.contains(
-                                    textEditingValue.text,
-                                  );
-                            });
-                          },
-                          onSelected: (Member selection) {
-                            setState(() => _selectedMember = selection);
-                          },
-                          fieldViewBuilder:
-                              (
-                                context,
-                                fieldTextEditingController,
-                                focusNode,
-                                onFieldSubmitted,
-                              ) {
-                                return TextField(
-                                  controller: fieldTextEditingController,
-                                  focusNode: focusNode,
-                                  decoration: InputDecoration(
-                                    labelText: l10n.memberSearchHint,
-                                    prefixIcon: const Icon(Icons.search),
-                                  ),
-                                );
-                              },
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Autocomplete<Member>(
+                                displayStringForOption: (Member option) =>
+                                    option.fullName,
+                                optionsBuilder:
+                                    (TextEditingValue textEditingValue) {
+                                      if (textEditingValue.text == '') {
+                                        return const Iterable<Member>.empty();
+                                      }
+                                      return provider.members.where((
+                                        Member option,
+                                      ) {
+                                        return option.fullName
+                                                .toLowerCase()
+                                                .contains(
+                                                  textEditingValue.text
+                                                      .toLowerCase(),
+                                                ) ||
+                                            option.memberId.contains(
+                                              textEditingValue.text,
+                                            );
+                                      });
+                                    },
+                                onSelected: (Member selection) {
+                                  setState(() => _selectedMember = selection);
+                                },
+                                fieldViewBuilder:
+                                    (
+                                      context,
+                                      fieldTextEditingController,
+                                      focusNode,
+                                      onFieldSubmitted,
+                                    ) {
+                                      return TextField(
+                                        controller: fieldTextEditingController,
+                                        focusNode: focusNode,
+                                        decoration: InputDecoration(
+                                          labelText: l10n.memberSearchHint,
+                                          prefixIcon: const Icon(Icons.search),
+                                        ),
+                                      );
+                                    },
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            IconButton(
+                              tooltip: l10n.scanBarcode,
+                              icon: Icon(
+                                Icons.qr_code_scanner,
+                                size: AppIcon.xl,
+                                color: scheme.primary,
+                              ),
+                              onPressed: _scanMemberForCheckout,
+                            ),
+                          ],
                         ),
                     ],
                   ),
@@ -507,6 +555,12 @@ class _LoanScreenState extends State<LoanScreen>
     final scheme = Theme.of(context).colorScheme;
     final txt = Theme.of(context).textTheme;
     final loans = provider.activeLoans;
+    if (provider.isLoading && loans.isEmpty) {
+      // FE-05 parity: during the first fetch there are no loans yet, which is
+      // NOT the same as "no active loans" -- show a loading state so a cold
+      // desk never flashes a false empty.
+      return const AppLoadingState();
+    }
     if (loans.isEmpty) {
       // The pinned FE2-15 key marks the whole empty composition.
       return KeyedSubtree(

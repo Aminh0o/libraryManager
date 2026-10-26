@@ -115,4 +115,55 @@ void main() {
       expect(d('LIB_PAIR_RESP:7::8080:$future'), isNull, reason: 'empty ip');
     });
   });
+
+  group('encodePairingQr / decodePairingQr (DEF-03)', () {
+    test('round-trips ip + real bound port', () {
+      final wire = encodePairingQr(ip: '192.168.1.2', port: 45678);
+      expect(wire, 'LIB_SYNC:192.168.1.2:45678');
+      final qr = decodePairingQr(wire);
+      expect(qr, isNotNull);
+      expect(qr!.ip, '192.168.1.2');
+      expect(qr.port, 45678);
+    });
+
+    test('accepts any valid port (no longer pinned to the default)', () {
+      for (final port in [1, 8080, 9090, 65535]) {
+        final qr = decodePairingQr(encodePairingQr(ip: '10.0.0.5', port: port));
+        expect(qr?.port, port, reason: 'port $port must be honored');
+      }
+    });
+
+    test('legacy port-less form still decodes with null port', () {
+      final qr = decodePairingQr('LIB_SYNC:192.168.1.2');
+      expect(qr, isNotNull, reason: 'older host screens stay scannable');
+      expect(qr!.ip, '192.168.1.2');
+      expect(qr.port, isNull, reason: 'null = client falls back to default');
+    });
+
+    test('rejects wrong scheme / blank host / bad port / extra fields', () {
+      PairingQr? d(String s) => decodePairingQr(s);
+
+      expect(
+        d('LIB_PAIR_RESP:7:1.2.3.4:8080:$future'),
+        isNull,
+        reason: 'UDP response is not a QR payload',
+      );
+      expect(d('http://192.168.1.2:8080'), isNull, reason: 'wrong scheme');
+      expect(d('LIB_SYNC:'), isNull, reason: 'empty host');
+      expect(d('LIB_SYNC:   '), isNull, reason: 'whitespace host');
+      expect(d('LIB_SYNC:192.168.1.2:0'), isNull, reason: 'port 0');
+      expect(d('LIB_SYNC:192.168.1.2:70000'), isNull, reason: 'port > 65535');
+      expect(
+        d('LIB_SYNC:192.168.1.2:notaport'),
+        isNull,
+        reason: 'non-integer port',
+      );
+      expect(
+        d('LIB_SYNC:192.168.1.2:8080:extra'),
+        isNull,
+        reason: 'too many fields',
+      );
+      expect(d('LIB_SYNC:has space'), isNull, reason: 'whitespace in host');
+    });
+  });
 }

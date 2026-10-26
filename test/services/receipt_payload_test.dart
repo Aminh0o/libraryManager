@@ -106,4 +106,26 @@ void main() {
     expect(payload.contains(' '), isFalse);
     expect(payload.split('|').length, 3);
   });
+
+  group('parseScannedMemberId', () {
+    test('extracts ID from rich JSON payload', () {
+      final json =
+          '{"app":"LibraryManager","type":"MEMBER_CARD","id":"MEM-999","name":"Samira","gender":"female"}';
+      expect(parseScannedMemberId(json), 'MEM-999');
+    });
+
+    test('extracts memberId from alternate JSON field', () {
+      final json = '{"memberId":"STU-42","name":"Karim"}';
+      expect(parseScannedMemberId(json), 'STU-42');
+    });
+
+    test('extracts ID from legacy LM1|CARD|<id>', () {
+      expect(parseScannedMemberId('LM1|CARD|MEM-123'), 'MEM-123');
+    });
+
+    test('preserves raw string when neither JSON nor receipt format', () {
+      expect(parseScannedMemberId('MEMBER-55'), 'MEMBER-55');
+      expect(parseScannedMemberId('  987654  '), '987654');
+    });
+  });
 }

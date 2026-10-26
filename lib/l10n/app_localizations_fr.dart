@@ -269,7 +269,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get allStatuses => 'Tous les statuts';
 
   @override
+  String get allCategories => 'Toutes les catégories';
+
+  @override
   String get clearFilters => 'Vider les filtres';
+
+  @override
+  String get clearSearch => 'Effacer la recherche';
 
   @override
   String get priceDzd => 'Prix (DZD)';
@@ -284,13 +290,22 @@ class AppLocalizationsFr extends AppLocalizations {
   String get clientModeName => 'Mode Client';
 
   @override
-  String get totalDocuments => 'Total Documents';
+  String get totalDocuments => 'Total des documents';
 
   @override
   String get inventoryValue => 'Valeur Inventaire';
 
   @override
   String get onLoan => 'En Emprunt';
+
+  @override
+  String get statOverdue => 'En retard';
+
+  @override
+  String get statBorrowed7d => 'Empruntés (7 jours)';
+
+  @override
+  String get statReturned7d => 'Rendus (7 jours)';
 
   @override
   String get historyAction => 'Historique';
@@ -536,6 +551,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Connexion sans caméra : saisissez le code à 6 chiffres affiché sur l\'Hôte.';
 
   @override
+  String get pairingQrNotRecognized =>
+      'Ce code QR n\'est pas un code d\'appairage Library Manager. Ouvrez l\'écran d\'appairage sur l\'hôte et scannez le code qu\'il affiche.';
+
+  @override
   String get pairingSearching => 'Recherche de l\'hôte sur le réseau local...';
 
   @override
@@ -618,10 +637,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get returnSuccess => 'Retour enregistré avec succès';
 
   @override
-  String get addMember => 'Ajouter Membre';
+  String get addMember => 'Ajouter un membre';
 
   @override
-  String get editMember => 'Modifier Membre';
+  String get editMember => 'Modifier un membre';
 
   @override
   String get firstName => 'Prénom';
@@ -634,6 +653,87 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get email => 'Email';
+
+  @override
+  String get memberType => 'Type de membre';
+
+  @override
+  String get typeStudent => 'Étudiant';
+
+  @override
+  String get typeTeacher => 'Enseignant';
+
+  @override
+  String get typeStandard => 'Standard';
+
+  @override
+  String get memberStatus => 'Statut d\'adhésion';
+
+  @override
+  String get statusActive => 'Actif';
+
+  @override
+  String get statusExpired => 'Expiré';
+
+  @override
+  String get statusSuspended => 'Suspendu';
+
+  @override
+  String get expiryDate => 'Date d\'expiration';
+
+  @override
+  String get address => 'Adresse';
+
+  @override
+  String get notes => 'Notes';
+
+  @override
+  String get notSet => 'Non défini';
+
+  @override
+  String get photo => 'Photo';
+
+  @override
+  String get choosePhoto => 'Choisir une photo';
+
+  @override
+  String get removePhoto => 'Supprimer la photo';
+
+  @override
+  String get photoTooLarge => 'Image trop volumineuse (max 2 Mo)';
+
+  @override
+  String get photoFailed => 'Impossible d\'enregistrer l\'image';
+
+  @override
+  String get coverPhoto => 'Photo de couverture';
+
+  @override
+  String get chooseCover => 'Choisir une couverture';
+
+  @override
+  String get author => 'Auteur';
+
+  @override
+  String get category => 'Catégorie';
+
+  @override
+  String get itemDescription => 'Description';
+
+  @override
+  String get publisher => 'Éditeur';
+
+  @override
+  String get year => 'Année';
+
+  @override
+  String get langFrench => 'Français';
+
+  @override
+  String get langArabic => 'Arabe';
+
+  @override
+  String get langEnglish => 'Anglais';
 
   @override
   String get scanToReturn => 'Scanner l\'article pour le retourner';
@@ -941,71 +1041,158 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutorialMapSubtitle =>
-      'Guide séquentiel en 9 étapes, de l\'initialisation aux opérations quotidiennes du guichet';
+      'Dix-neuf parcours d\'apprentissage, de la première configuration aux opérations quotidiennes et au support';
 
   @override
-  String get tstep1Title =>
-      'Initialisation du système et configuration administrateur';
+  String get tgroupStart => 'Démarrage';
+
+  @override
+  String get tgroupCatalog => 'Catalogue et membres';
+
+  @override
+  String get tgroupCirc => 'Prêt et stock';
+
+  @override
+  String get tgroupData => 'Recherche et rapports';
+
+  @override
+  String get tgroupLan => 'Réseau et matériel';
+
+  @override
+  String get tgroupMaint => 'Maintenance et support';
+
+  @override
+  String get tstep1Title => 'Accueil et première configuration';
 
   @override
   String get tstep1Body =>
-      'Terminez l\'installation au premier lancement, définissez un identifiant administrateur robuste et initialisez le moteur SQLite embarqué.';
+      'Terminez l\'assistant de premier lancement, définissez un identifiant administrateur robuste et initialisez la base de données locale.';
 
   @override
-  String get tstep2Title => 'Catalogue et gestion des stocks';
+  String get tstep2Title => 'Tableau de bord et navigation';
 
   @override
   String get tstep2Body =>
-      'Ajoutez des titres avec validation ISBN-10/13, générez des codes-barres uniques, enregistrez l\'état de chaque exemplaire, ou importez en masse via CSV.';
+      'Comprenez le tableau de bord, le rail latéral et la palette de raccourcis clavier pour passer entre les sections.';
 
   @override
-  String get tstep3Title => 'Inscription des membres et cartes QR';
+  String get tstep3Title => 'Ajouter des titres et des exemplaires';
 
   @override
   String get tstep3Body =>
-      'Inscrivez les lecteurs, configurez les niveaux et limites d\'emprunt, et générez des cartes de membre officielles avec codes QR opaques.';
+      'Enregistrez un titre avec ses détails bibliographiques, puis ajoutez les exemplaires physiques prêtables.';
 
   @override
-  String get tstep4Title => 'Guichet de prêt (emprunts et retours)';
+  String get tstep4Title => 'Inscrire un membre et sa carte';
 
   @override
   String get tstep4Body =>
-      'Scannez rapidement les codes-barres via des lecteurs USB en mode clavier, traitez les retours, calculez les amendes de retard et imprimez les reçus officiels de circulation.';
+      'Créez un profil de membre avec photo et type, puis générez et imprimez une carte de membre avec code QR.';
 
   @override
-  String get tstep5Title => 'Files de réservation et billets de retrait';
+  String get tstep5Title => 'Scanner et trouver des notices';
 
   @override
   String get tstep5Body =>
-      'Mettez les réservations en file par ordre FIFO, promotion automatique au retour, protection contre le retrait direct, et billets de retrait imprimables.';
+      'Utilisez un scanner de codes-barres ou QR pour localiser instantanément un article ou un membre depuis le champ de scan.';
 
   @override
-  String get tstep6Title => 'Audit financier et rapports';
+  String get tstep6Title => 'Emprunt, reçu et retour';
 
   @override
   String get tstep6Body =>
-      'Auditez l\'historique de circulation, suivez les amendes perçues et exportez des analyses CSV et PDF assainies contre l\'injection (CWE-1236).';
+      'Empruntez un exemplaire à un membre, imprimez le reçu de prêt et traitez son retour au guichet.';
 
   @override
-  String get tstep7Title => 'Mode LAN privé multi-postes';
+  String get tstep7Title => 'Renouvellement, retard et amendes';
 
   @override
   String get tstep7Body =>
-      'Activez les règles du pare-feu Windows pour découvrir et synchroniser en toute sécurité les postes du sous-réseau local avec authentification Bearer.';
+      'Renouvelez un prêt, consultez les articles en retard et appliquez la politique d\'amendes.';
 
   @override
-  String get tstep8Title => 'Reprise après sinistre et instantanés';
+  String get tstep8Title => 'Gérer les réservations';
 
   @override
   String get tstep8Body =>
-      'Créez des instantanés de base de données à un moment donné en mode WAL, avec sauvegardes de sécurité avant restauration et garantie de zéro perte de données.';
+      'Placez et réordonnez la file de réservation et remettez une réservation prête à son membre.';
 
   @override
-  String get tstep9Title => 'Vérification et mises à jour intégrées';
+  String get tstep9Title => 'Inventaire et inventaire physique';
 
   @override
   String get tstep9Body =>
-      'Recherchez les mises à jour officielles, téléchargez via HTTPS et vérifiez automatiquement les sommes de contrôle d\'intégrité SHA-256.';
+      'Rapprochez le stock physique du catalogue et résolvez les écarts.';
+
+  @override
+  String get tstep10Title => 'Recherche, filtre et tri';
+
+  @override
+  String get tstep10Body =>
+      'Affinez le catalogue par requête, statut et type ; les résultats sont filtrés et paginés sur l\'hôte.';
+
+  @override
+  String get tstep11Title => 'Rapports et export';
+
+  @override
+  String get tstep11Body =>
+      'Générez et rapprochez des rapports, puis exportez CSV ou PDF avec un formatage sûr contre l\'injection.';
+
+  @override
+  String get tstep12Title => 'Appairer un client';
+
+  @override
+  String get tstep12Body =>
+      'Connectez un poste ou un téléphone sur le LAN avec le code QR d\'appariement ou une adresse manuelle.';
+
+  @override
+  String get tstep13Title => 'Dépannage de connexion';
+
+  @override
+  String get tstep13Body =>
+      'Diagnostiquez les problèmes de liaison, de pare-feu, d\'isolation et d\'accessibilité avec des messages clairs et actionnables.';
+
+  @override
+  String get tstep14Title => 'Imprimantes et scanner';
+
+  @override
+  String get tstep14Body =>
+      'Configurez les imprimantes thermiques et de bureau, la sortie PDF arabe et les scanner de codes-barres.';
+
+  @override
+  String get tstep15Title => 'Sauvegarde et restauration';
+
+  @override
+  String get tstep15Body =>
+      'Créez des instantanés de base de données à un moment donné et restaurez-les en toute sécurité.';
+
+  @override
+  String get tstep16Title => 'Rôles et permissions';
+
+  @override
+  String get tstep16Body =>
+      'Comprenez les droits administrateur, agent et lecteur ; l\'application des droits se fait sur l\'hôte.';
+
+  @override
+  String get tstep17Title => 'Paramètres, langue et politique';
+
+  @override
+  String get tstep17Body =>
+      'Configurez la langue, l\'apparence, l\'image de marque et la politique de la bibliothèque.';
+
+  @override
+  String get tstep18Title => 'Mises à jour et mise à niveau';
+
+  @override
+  String get tstep18Body =>
+      'Recherchez les mises à jour officielles, vérifiez l\'intégrité et mettez à niveau en toute sécurité.';
+
+  @override
+  String get tstep19Title => 'Diagnostics et support';
+
+  @override
+  String get tstep19Body =>
+      'Lancez les vérifications de santé du système et exportez un rapport de support assaini pour l\'escalade.';
 
   @override
   String get hardwareGuideTitle =>
@@ -1649,6 +1836,14 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String poweredByEvenlio(String brand) {
+    return 'Propulsé par $brand';
+  }
+
+  @override
+  String get website => 'Site web';
+
+  @override
   String get settingsCatGeneral => 'Général';
 
   @override
@@ -1677,6 +1872,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get memberNotFound => 'Membre introuvable';
+
+  @override
+  String memberIdCaption(String id) {
+    return 'N° : $id';
+  }
 
   @override
   String get registered => 'Inscrit le';
@@ -1751,6 +1951,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Aucun membre ne correspond à la recherche.';
 
   @override
+  String get noMembersYet =>
+      'Aucun membre pour le moment. Ajoutez le premier pour suivre les prêts.';
+
+  @override
   String paginationSummary(int from, int to, int total) {
     return 'Affichage $from–$to sur $total articles';
   }
@@ -1821,4 +2025,119 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get noNamedAccountsHint =>
       'Vous êtes connecté en tant qu\'administrateur intégré. Créez ci-dessous des comptes staff ou viewer pour accorder un accès limité à d\'autres utilisateurs.';
+
+  @override
+  String get testConnection => 'Tester la connexion';
+
+  @override
+  String testConnectionSuccess(int latency) {
+    return 'Hôte joint avec succès ($latency ms).';
+  }
+
+  @override
+  String get testConnectionNeedsAuth =>
+      'Hôte trouvé ! Jumelage ou connexion requis.';
+
+  @override
+  String get testConnectionFailed =>
+      'Impossible de joindre l\'hôte. Vérifiez l\'adresse, le Wi-Fi et le pare-feu.';
+
+  @override
+  String get aboutApp => 'À propos';
+
+  @override
+  String get poweredByBrand => 'Propulsé par Evenlio';
+
+  @override
+  String get launchWalkthrough => 'Lancer la visite guidée';
+
+  @override
+  String get walkthroughDescription =>
+      'Rejouez la visite guidée interactive à tout moment.';
+
+  @override
+  String get gender => 'Genre';
+
+  @override
+  String get genderMale => 'Homme';
+
+  @override
+  String get genderFemale => 'Femme';
+
+  @override
+  String get genderOther => 'Autre';
+
+  @override
+  String get advancedAnalytics => 'Analyses et statistiques';
+
+  @override
+  String get demographics => 'Démographie';
+
+  @override
+  String get circulationStats => 'Performance de circulation';
+
+  @override
+  String get topBorrowedBooks => 'Livres les plus empruntés';
+
+  @override
+  String get deadStockBooks => 'Livres sans circulation';
+
+  @override
+  String get financialOverview => 'Aperçu financier';
+
+  @override
+  String get finesCollected => 'Amendes perçues';
+
+  @override
+  String get finesOutstanding => 'Amendes impayées';
+
+  @override
+  String get averageLoanDuration => 'Durée moyenne de prêt';
+
+  @override
+  String get onTimeReturnRate => 'Taux de retour à temps';
+
+  @override
+  String get lookupIsbn => 'Rechercher ISBN';
+
+  @override
+  String get isbnNotFound => 'Aucun livre trouvé pour cet ISBN';
+
+  @override
+  String get isbnAutoFilled => 'Détails du livre remplis automatiquement';
+
+  @override
+  String get printBarcodeSheet => 'Imprimer planches de codes-barres (A4)';
+
+  @override
+  String get barcodeSheetGenerated => 'Planche d\'étiquettes générée';
+
+  @override
+  String get stocktaking => 'Inventaire et audit des rayons';
+
+  @override
+  String get startStocktake => 'Démarrer l\'inventaire';
+
+  @override
+  String get itemsScanned => 'Articles scannés';
+
+  @override
+  String get itemsMissing => 'Articles manquants';
+
+  @override
+  String get scanShelfPrompt =>
+      'Scannez le code-barres pour vérifier la présence…';
+
+  @override
+  String get selfCheckoutKiosk => 'Borne de prêt automatique';
+
+  @override
+  String get kioskWelcome =>
+      'Bienvenue ! Veuillez scanner votre carte de membre';
+
+  @override
+  String get kioskScanBook => 'Scannez les livres à emprunter ou retourner';
+
+  @override
+  String get exitKiosk => 'Quitter la borne';
 }

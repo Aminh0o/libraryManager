@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../services/desktop_shortcut_service.dart';
 import '../ui/app_theme.dart';
 
 /// Phase 14/17 (appearance + white-label): the single source of truth for the
@@ -126,6 +127,10 @@ class AppearanceController extends ChangeNotifier {
     if (_brandName == next) return Future.value();
     _brandName = next;
     notifyListeners();
+    DesktopShortcutService.syncShortcut(
+      appTitle: _brandName,
+      iconPath: _logoPath,
+    );
     return _persist();
   }
 
@@ -137,6 +142,10 @@ class AppearanceController extends ChangeNotifier {
     if (_logoPath == next) return Future.value();
     _logoPath = next;
     notifyListeners();
+    DesktopShortcutService.syncShortcut(
+      appTitle: _brandName,
+      iconPath: _logoPath,
+    );
     return _persist();
   }
 

@@ -2,6 +2,7 @@ import 'package:barcode/barcode.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
+import 'pdf_fonts.dart';
 import 'receipt_payload.dart';
 
 /// Commercial hardening §6.12: a coherent, permission-checked document service
@@ -21,10 +22,13 @@ import 'receipt_payload.dart';
 ///    ([ReceiptPayload]) — never a name, contact detail, balance, token or the
 ///    LAN pairing secret. Nothing here performs a mutation.
 ///
-/// Fonts: the built-in Helvetica face is used (as the existing report PDF does).
-/// It covers Latin-1 (English, French accents) but does **not** shape Arabic —
-/// print-side RTL/Arabic is therefore an explicitly disclosed limitation rather
-/// than a silent claim (§272: on-screen RTL ≠ print RTL).
+/// Fonts: DEF-04 (Arabic printing). Unless the caller supplies its own face,
+/// the document is built with the bundled IBMPlexSansArabic theme from
+/// [PdfPrintFonts] — one OFL family covering Latin-1 accents *and* Arabic,
+/// which `package:pdf` shapes correctly through its TTF renderer. The
+/// built-in Helvetica it used before has no Arabic glyphs and no shaping, so
+/// Arabic names/titles printed as garbage. If the face is somehow unreadable
+/// the document still prints in Helvetica — degraded, never blocked.
 
 /// The library's own identity block printed in the receipt header/footer
 /// (§255). All fields are caller-supplied and optional; nothing is invented.
@@ -110,6 +114,28 @@ class CirculationDocuments {
   /// thermal-strip or A4 format via [page] where a real printer is configured.
   static const PdfPageFormat defaultPageFormat = PdfPageFormat.a6;
 
+  static bool _isArabicText(String text) {
+    return RegExp(
+      r'[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]',
+    ).hasMatch(text);
+  }
+
+  static bool _isRtl(CirculationSlip slip, LibraryIdentity? library) {
+    if (_isArabicText(slip.title)) return true;
+    if (slip.profileName != null && _isArabicText(slip.profileName!)) {
+      return true;
+    }
+    if (slip.status != null && _isArabicText(slip.status!)) return true;
+    for (final l in slip.lines) {
+      if (_isArabicText(l.label) || _isArabicText(l.value)) return true;
+    }
+    for (final it in slip.items) {
+      if (_isArabicText(it)) return true;
+    }
+    if (library != null && _isArabicText(library.name)) return true;
+    return false;
+  }
+
   /// Renders [slip] to PDF bytes. Pure: performs no file or printer IO and never
   /// mutates any record, so it is safe to call for a preview, a save, or a
   /// reprint of an already-committed transaction.
@@ -120,13 +146,23 @@ class CirculationDocuments {
     pw.Font? font,
     pw.Font? fontBold,
   }) async {
+    // DEF-04: caller-supplied face wins; otherwise the bundled Arabic-capable
+    // print theme (root isolate — this builder is never spawned off-thread).
+    final pw.ThemeData? theme = font != null
+        ? pw.ThemeData.withFont(base: font, bold: fontBold)
+        : await PdfPrintFonts.theme();
+
+    final isRtl = _isRtl(slip, library);
+    final memberLabel = isRtl ? 'المستعير' : 'Member';
+    final refLabel = isRtl ? 'المرجع' : 'Reference';
+    final statusLabel = isRtl ? 'الحالة' : 'Status';
+    final itemHeader = isRtl ? 'العنوان / المادة' : 'Item';
+
     final doc = pw.Document(
       title: slip.title,
       author: library?.name ?? 'Library Manager',
       creator: 'Library Manager',
-      theme: font != null
-          ? pw.ThemeData.withFont(base: font, bold: fontBold)
-          : null,
+      theme: theme,
     );
 
     doc.addPage(
@@ -134,30 +170,37 @@ class CirculationDocuments {
         pageTheme: pw.PageTheme(
           pageFormat: page,
           margin: const pw.EdgeInsets.all(18),
-          theme: font != null
-              ? pw.ThemeData.withFont(base: font, bold: fontBold)
-              : null,
+          theme: theme,
+          textDirection: isRtl ? pw.TextDirection.rtl : pw.TextDirection.ltr,
         ),
         build: (context) => pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          crossAxisAlignment: isRtl
+              ? pw.CrossAxisAlignment.end
+              : pw.CrossAxisAlignment.start,
           children: <pw.Widget>[
-            _header(slip, library),
+            _header(slip, library, isRtl: isRtl),
             pw.SizedBox(height: 8),
             if (slip.profileName != null && slip.profileName!.isNotEmpty)
-              _kv('Member', slip.profileName!),
+              _kv(memberLabel, slip.profileName!, isRtl: isRtl),
             if (slip.reference != null && slip.reference!.isNotEmpty)
-              _kv('Reference', slip.reference!),
+              _kv(refLabel, slip.reference!, isRtl: isRtl),
             if (slip.status != null && slip.status!.isNotEmpty)
-              _kv('Status', slip.status!),
-            for (final l in slip.lines) _kv(l.label, l.value),
+              _kv(statusLabel, slip.status!, isRtl: isRtl),
+            for (final l in slip.lines) _kv(l.label, l.value, isRtl: isRtl),
             if (slip.items.isNotEmpty) ...[
               pw.SizedBox(height: 6),
-              _itemsTable(slip.items),
+              _itemsTable(slip.items, headerTitle: itemHeader, isRtl: isRtl),
             ],
             if (slip.notes.isNotEmpty) ...[
               pw.SizedBox(height: 8),
               for (final n in slip.notes)
-                pw.Text('- $n', style: const pw.TextStyle(fontSize: 8)),
+                pw.Text(
+                  isRtl ? '$n •' : '• $n',
+                  style: const pw.TextStyle(fontSize: 8),
+                  textDirection: isRtl
+                      ? pw.TextDirection.rtl
+                      : pw.TextDirection.ltr,
+                ),
             ],
             pw.Spacer(),
             pw.SizedBox(height: 8),
@@ -166,6 +209,9 @@ class CirculationDocuments {
             pw.Text(
               slip.generatedAt,
               style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey700),
+              textDirection: isRtl
+                  ? pw.TextDirection.rtl
+                  : pw.TextDirection.ltr,
             ),
             if (library?.footer != null && library!.footer!.isNotEmpty)
               pw.Text(
@@ -174,6 +220,9 @@ class CirculationDocuments {
                   fontSize: 7,
                   color: PdfColors.grey700,
                 ),
+                textDirection: isRtl
+                    ? pw.TextDirection.rtl
+                    : pw.TextDirection.ltr,
               ),
           ],
         ),
@@ -183,18 +232,27 @@ class CirculationDocuments {
     return doc.save();
   }
 
-  static pw.Widget _header(CirculationSlip slip, LibraryIdentity? library) {
-    return pw.Row(
+  static pw.Widget _header(
+    CirculationSlip slip,
+    LibraryIdentity? library, {
+    bool isRtl = false,
+  }) {
+    final row = pw.Row(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
       children: [
         pw.Expanded(
           child: pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            crossAxisAlignment: isRtl
+                ? pw.CrossAxisAlignment.end
+                : pw.CrossAxisAlignment.start,
             children: [
               if (library != null)
                 pw.Text(
                   library.name,
+                  textDirection: isRtl
+                      ? pw.TextDirection.rtl
+                      : pw.TextDirection.ltr,
                   style: pw.TextStyle(
                     fontSize: 12,
                     fontWeight: pw.FontWeight.bold,
@@ -202,10 +260,19 @@ class CirculationDocuments {
                 ),
               if (library != null)
                 for (final c in library.contact)
-                  pw.Text(c, style: const pw.TextStyle(fontSize: 7)),
+                  pw.Text(
+                    c,
+                    textDirection: isRtl
+                        ? pw.TextDirection.rtl
+                        : pw.TextDirection.ltr,
+                    style: const pw.TextStyle(fontSize: 7),
+                  ),
               pw.SizedBox(height: 4),
               pw.Text(
                 slip.title,
+                textDirection: isRtl
+                    ? pw.TextDirection.rtl
+                    : pw.TextDirection.ltr,
                 style: pw.TextStyle(
                   fontSize: 14,
                   fontWeight: pw.FontWeight.bold,
@@ -222,7 +289,10 @@ class CirculationDocuments {
               borderRadius: pw.BorderRadius.circular(3),
             ),
             child: pw.Text(
-              slip.reprintLabel ?? 'REPRINT',
+              slip.reprintLabel ?? (isRtl ? 'نسخة مكررة' : 'REPRINT'),
+              textDirection: isRtl
+                  ? pw.TextDirection.rtl
+                  : pw.TextDirection.ltr,
               style: pw.TextStyle(
                 fontSize: 8,
                 color: PdfColors.red,
@@ -232,30 +302,48 @@ class CirculationDocuments {
           ),
       ],
     );
+    return pw.Directionality(
+      textDirection: isRtl ? pw.TextDirection.rtl : pw.TextDirection.ltr,
+      child: row,
+    );
   }
 
-  static pw.Widget _kv(String label, String value) {
+  static pw.Widget _kv(String label, String value, {bool isRtl = false}) {
     return pw.Padding(
       padding: const pw.EdgeInsets.only(bottom: 2),
-      child: pw.RichText(
-        text: pw.TextSpan(
-          children: [
-            pw.TextSpan(
-              text: '$label: ',
-              style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
-            ),
-            pw.TextSpan(text: value, style: const pw.TextStyle(fontSize: 9)),
-          ],
+      child: pw.Directionality(
+        textDirection: isRtl ? pw.TextDirection.rtl : pw.TextDirection.ltr,
+        child: pw.RichText(
+          text: pw.TextSpan(
+            children: [
+              pw.TextSpan(
+                text: '$label: ',
+                style: pw.TextStyle(
+                  fontSize: 9,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+              pw.TextSpan(text: value, style: const pw.TextStyle(fontSize: 9)),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  static pw.Widget _itemsTable(List<String> items) {
+  static pw.Widget _itemsTable(
+    List<String> items, {
+    String headerTitle = 'Item',
+    bool isRtl = false,
+  }) {
     return pw.TableHelper.fromTextArray(
       headerStyle: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
       cellStyle: const pw.TextStyle(fontSize: 8),
-      headers: const <String>['Item'],
+      cellAlignment: isRtl ? pw.Alignment.centerRight : pw.Alignment.centerLeft,
+      headerAlignment: isRtl
+          ? pw.Alignment.centerRight
+          : pw.Alignment.centerLeft,
+      headers: <String>[headerTitle],
       data: <List<String>>[
         for (final i in items) <String>[i],
       ],

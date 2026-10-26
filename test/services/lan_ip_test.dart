@@ -144,4 +144,66 @@ void main() {
       expect(isPrivateIpv4('8.8.8.8'), isFalse);
     });
   });
+
+  group('matchPeerSubnet (DEF-02: answer on the subnet the REQ arrived on)', () {
+    // The DEF-02 field shape: host on Wi-Fi 192.168.1.x AND a second LAN
+    // (Ethernet / hotspot / host-only) 192.168.43.x; selectLanIp always
+    // advertises Wi-Fi, so a client from the second subnet dialled an address
+    // it could not route to.
+    const host = [
+      LanInterface(name: 'Wi-Fi', address: '192.168.1.2'),
+      LanInterface(name: 'Ethernet', address: '192.168.43.10'),
+    ];
+
+    test('a peer on the secondary subnet gets the secondary host address', () {
+      expect(matchPeerSubnet(host, '192.168.43.77'), '192.168.43.10');
+      expect(matchPeerSubnet(host, '192.168.1.200'), '192.168.1.2');
+    });
+
+    test('no interface on the peer subnet -> null (caller falls back)', () {
+      expect(matchPeerSubnet(host, '10.5.5.5'), isNull);
+      expect(matchPeerSubnet(const [], '192.168.1.5'), isNull);
+    });
+
+    test('non-private or malformed peers never match', () {
+      expect(matchPeerSubnet(host, '8.8.8.8'), isNull);
+      expect(matchPeerSubnet(host, '127.0.0.1'), isNull);
+      expect(matchPeerSubnet(host, 'not-an-ip'), isNull);
+      expect(matchPeerSubnet(host, '192.168.1'), isNull);
+    });
+
+    test('loopback/APIPA host addresses are never advertised back', () {
+      const weird = [
+        LanInterface(name: 'Loop', address: '127.0.0.1'),
+        LanInterface(name: 'APIPA', address: '169.254.9.9'),
+      ];
+      expect(matchPeerSubnet(weird, '127.0.0.5'), isNull);
+      expect(matchPeerSubnet(weird, '169.254.9.1'), isNull);
+    });
+
+    test('a virtual adapter IS selectable when the peer truly lives there', () {
+      // Subnet reachability beats the virtual-name demotion: a client on the
+      // VirtualBox host-only net can ONLY be reached back via that adapter.
+      const cands = [
+        LanInterface(name: 'Wi-Fi', address: '192.168.1.2'),
+        LanInterface(
+          name: 'VirtualBox Host-Only Ethernet Adapter',
+          address: '192.168.56.1',
+        ),
+      ];
+      expect(matchPeerSubnet(cands, '192.168.56.40'), '192.168.56.1');
+    });
+
+    test('two host addresses on the peer /24 break ties deterministically', () {
+      const cands = [
+        LanInterface(name: 'Wi-Fi', address: '192.168.43.10'),
+        LanInterface(name: 'Hotspot 2', address: '192.168.43.4'),
+      ];
+      expect(matchPeerSubnet(cands, '192.168.43.99'), '192.168.43.4');
+      expect(
+        matchPeerSubnet(cands.reversed.toList(), '192.168.43.99'),
+        '192.168.43.4',
+      );
+    });
+  });
 }

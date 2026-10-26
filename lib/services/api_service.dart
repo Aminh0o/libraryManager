@@ -203,6 +203,8 @@ class ApiService implements LibraryRepository {
     _client.close();
   }
 
+  void dispose() => close();
+
   /// Exchanges credentials for a bearer token (`POST /auth/login`). Used by
   /// manual-IP client connections that do not go through the pairing code, and
   /// by the per-user client login (Phase 10.1). Returns the token PLUS the
@@ -231,6 +233,39 @@ class ApiService implements LibraryRepository {
       }
     } catch (e) {
       appLog.warn('net', 'Auth login failed', e);
+    }
+    return null;
+  }
+
+  /// Exchanges a 6-digit pairing code for a bearer token (`POST /auth/pair`).
+  /// Used by client-mode pairing to bypass UDP broadcast drops on Wi-Fi/hotspot.
+  Future<LoginSession?> pairWithHost(String code) async {
+    try {
+      final response = await _client
+          .post(
+            Uri.parse('$_baseUrl/auth/pair'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'code': code.trim()}),
+          )
+          .timeout(_timeout);
+      if (response.statusCode == 200) {
+        final session = LoginSession.fromJson(
+          jsonDecode(response.body) as Map<String, dynamic>,
+        );
+        if (session.isValid) {
+          authToken = session.token;
+          sessionRole = session.role;
+          sessionUsername = session.username;
+          return session;
+        }
+      } else {
+        appLog.warn(
+          'net',
+          'Pairing rejected with status ${response.statusCode}: ${response.body}',
+        );
+      }
+    } catch (e) {
+      appLog.warn('net', 'Pairing with host failed', e);
     }
     return null;
   }
@@ -440,6 +475,7 @@ class ApiService implements LibraryRepository {
     String? search,
     String? status,
     String? codeType,
+    String? category,
     String? sort,
     bool ascending = true,
   }) async {
@@ -452,6 +488,7 @@ class ApiService implements LibraryRepository {
           search: search,
           status: status,
           codeType: codeType,
+          category: category,
           sort: sort,
           ascending: ascending,
         ),
@@ -470,6 +507,7 @@ class ApiService implements LibraryRepository {
     String? search,
     String? status,
     String? codeType,
+    String? category,
   }) async {
     return _retry(() async {
       final response = await _get(
@@ -478,6 +516,7 @@ class ApiService implements LibraryRepository {
           search: search,
           status: status,
           codeType: codeType,
+          category: category,
         ),
       );
       if (response.statusCode == 200) {
@@ -496,6 +535,7 @@ class ApiService implements LibraryRepository {
     String? search,
     String? status,
     String? codeType,
+    String? category,
     String? sort,
     bool? ascending,
   }) {
@@ -505,6 +545,7 @@ class ApiService implements LibraryRepository {
       if (search != null && search.trim().isNotEmpty) 'search': search,
       if (status != null && status.isNotEmpty) 'status': status,
       if (codeType != null && codeType.isNotEmpty) 'codeType': codeType,
+      if (category != null && category.isNotEmpty) 'category': category,
       if (sort != null && sort.isNotEmpty) 'sort': sort,
       if (sort != null && sort.isNotEmpty)
         'order': (ascending ?? true) ? 'asc' : 'desc',

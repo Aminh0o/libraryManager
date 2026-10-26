@@ -1,13 +1,19 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:printing/printing.dart';
 import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
 import '../models/library_item.dart';
 import '../models/item_copy.dart';
 import '../providers/library_provider.dart';
+import '../services/barcode_sheet_service.dart';
 import '../services/error_messages.dart';
 import '../ui/app_tokens.dart';
 import '../widgets/app_states.dart';
 import '../widgets/app_status_chip.dart';
+import '../widgets/barcode_vector_widget.dart';
 import '../widgets/item_status_cell.dart';
 import '../widgets/member_select_dialog.dart';
 import '../widgets/record_history_section.dart';
@@ -15,6 +21,33 @@ import 'item_form_screen.dart';
 
 /// Phase 13: non-condition actions available on a copy's overflow menu.
 enum _CopyOp { barcode, remove }
+
+/// The stored language is a canonical English constant (the form localizes
+/// labels only); an unknown value displays verbatim, never guessed.
+String _localizeLanguage(AppLocalizations l10n, String lang) {
+  return switch (lang) {
+    'French' => '${l10n.langFrench} (Français)',
+    'Arabic' => '${l10n.langArabic} (العربية)',
+    'English' => '${l10n.langEnglish} (English)',
+    'Spanish' => 'Español (Spanish)',
+    'German' => 'Deutsch (German)',
+    'Italian' => 'Italiano (Italian)',
+    'Portuguese' => 'Português (Portuguese)',
+    'Russian' => 'Русский (Russian)',
+    'Turkish' => 'Türkçe (Turkish)',
+    'Chinese' => '中文 (Chinese)',
+    'Japanese' => '日本語 (Japanese)',
+    'Korean' => '한국어 (Korean)',
+    'Hindi' => 'हिन्दी (Hindi)',
+    'Dutch' => 'Nederlands (Dutch)',
+    'Swedish' => 'Svenska (Swedish)',
+    'Polish' => 'Polski (Polish)',
+    'Urdu' => 'اردو (Urdu)',
+    'Persian' => 'فارسی (Persian)',
+    'Latin' => 'Latina (Latin)',
+    _ => lang,
+  };
+}
 
 /// Phase F (frontend reconstruction): presentation-only rebuild. The record
 /// resolution stays exactly as FE2-14 required (a vanished record renders the
@@ -70,6 +103,27 @@ class ItemDetailsScreen extends StatelessWidget {
         title: Text(l10n.itemProfile),
         elevation: 0,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.print_outlined),
+            tooltip: l10n.printBarcodeSheet,
+            onPressed: () async {
+              final labels = [
+                for (
+                  var i = 0;
+                  i < (item.quantite > 0 ? item.quantite : 1);
+                  i++
+                )
+                  BarcodeLabelData.fromItem(item),
+              ];
+              final pdfBytes = await BarcodeSheetService.generateSheet(labels);
+              if (context.mounted) {
+                await Printing.layoutPdf(
+                  onLayout: (format) async => pdfBytes,
+                  name: 'barcode_sheet_${item.code}.pdf',
+                );
+              }
+            },
+          ),
           if (provider.isHost)
             IconButton(
               icon: const Icon(Icons.edit),
@@ -99,6 +153,41 @@ class ItemDetailsScreen extends StatelessWidget {
                 children: [
                   _HeroHeader(item: item, l10n: l10n),
                   const SizedBox(height: AppSpacing.xxl),
+                  // v24 bibliographic profile: rendered ONLY when at least
+                  // one enrichment field is set, so a legacy title looks
+                  // exactly as before instead of a wall of "not set".
+                  if (item.author != null ||
+                      item.category != null ||
+                      item.language != null ||
+                      item.publisher != null ||
+                      item.year != null ||
+                      (item.description != null &&
+                          item.description!.isNotEmpty)) ...[
+                    _InfoCard(
+                      title: l10n.itemDescription,
+                      icon: Icons.menu_book_outlined,
+                      children: [
+                        if (item.author != null && item.author!.isNotEmpty)
+                          _DetailRow(l10n.author, item.author!),
+                        if (item.category != null && item.category!.isNotEmpty)
+                          _DetailRow(l10n.category, item.category!),
+                        if (item.language != null && item.language!.isNotEmpty)
+                          _DetailRow(
+                            l10n.language,
+                            _localizeLanguage(l10n, item.language!),
+                          ),
+                        if (item.publisher != null &&
+                            item.publisher!.isNotEmpty)
+                          _DetailRow(l10n.publisher, item.publisher!),
+                        if (item.year != null)
+                          _DetailRow(l10n.year, item.year.toString()),
+                        if (item.description != null &&
+                            item.description!.isNotEmpty)
+                          _DetailRow(l10n.itemDescription, item.description!),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                  ],
                   // Core Workflow Recovery: the profile is where a librarian
                   // decides what to do with a title. Placing checkout /
                   // reserve right under the hero collapses a 3-screen detour
@@ -106,9 +195,87 @@ class ItemDetailsScreen extends StatelessWidget {
                   // while keeping every permission gate on the provider side.
                   if (provider.canWrite) _ItemActionsBar(item: item),
                   if (provider.canWrite) const SizedBox(height: AppSpacing.xxl),
+                  // Dedicated Barcode Vector Card
+                  Card(
+                    child: Padding(
+                      padding: AppSpacing.allXxl,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.qr_code_2,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                  ),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  Text(
+                                    l10n.barcode,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(fontWeight: FontWeight.w600),
+                                  ),
+                                ],
+                              ),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.copy_outlined,
+                                  size: AppIcon.md,
+                                ),
+                                tooltip: l10n.barcode,
+                                onPressed: () {
+                                  final code =
+                                      (item.barcode != null &&
+                                          item.barcode!.isNotEmpty)
+                                      ? item.barcode!
+                                      : item.code;
+                                  Clipboard.setData(ClipboardData(text: code));
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('${l10n.barcode}: $code'),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: AppSpacing.lg),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.xl,
+                              vertical: AppSpacing.lg,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: AppRadius.card,
+                              border: Border.all(color: Colors.grey.shade300),
+                            ),
+                            child: BarcodeVectorWidget(
+                              data:
+                                  (item.barcode != null &&
+                                      item.barcode!.isNotEmpty)
+                                  ? item.barcode!
+                                  : item.code,
+                              width: 280,
+                              height: 80,
+                              color: Colors.black,
+                              drawText: true,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
                   _InfoCard(
                     title: l10n.technicalInfo,
-                    icon: Icons.qr_code_2,
+                    icon: Icons.info_outline,
                     children: [
                       _DetailRow(l10n.code, item.fullCode),
                       _DetailRow(l10n.barcode, item.barcode ?? '---'),
@@ -349,17 +516,63 @@ class _HeroHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final txt = Theme.of(context).textTheme;
+    final cover = item.coverPath;
+    final hasCover = cover != null && cover.isNotEmpty;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xxxl),
         child: Column(
           children: [
-            CircleAvatar(
-              radius: 32,
-              backgroundColor: scheme.primaryContainer,
-              foregroundColor: scheme.onPrimaryContainer,
-              child: const Icon(Icons.auto_stories_outlined, size: AppIcon.xl),
-            ),
+            // v24: the managed cover as a real book plate; the token icon
+            // avatar remains for titles without a cover (nothing invented).
+            // A vanished managed file degrades to the icon honestly via
+            // errorBuilder rather than a red exception screen.
+            if (hasCover)
+              ClipRRect(
+                borderRadius: AppRadius.card,
+                child:
+                    cover.startsWith('http://') || cover.startsWith('https://')
+                    ? Image.network(
+                        cover,
+                        width: 130,
+                        height: 180,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stack) => CircleAvatar(
+                          radius: 36,
+                          backgroundColor: scheme.primaryContainer,
+                          foregroundColor: scheme.onPrimaryContainer,
+                          child: const Icon(
+                            Icons.auto_stories_outlined,
+                            size: AppIcon.xl,
+                          ),
+                        ),
+                      )
+                    : Image.file(
+                        File(cover),
+                        width: 130,
+                        height: 180,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stack) => CircleAvatar(
+                          radius: 36,
+                          backgroundColor: scheme.primaryContainer,
+                          foregroundColor: scheme.onPrimaryContainer,
+                          child: const Icon(
+                            Icons.auto_stories_outlined,
+                            size: AppIcon.xl,
+                          ),
+                        ),
+                      ),
+              )
+            else
+              CircleAvatar(
+                radius: 32,
+                backgroundColor: scheme.primaryContainer,
+                foregroundColor: scheme.onPrimaryContainer,
+                child: const Icon(
+                  Icons.auto_stories_outlined,
+                  size: AppIcon.xl,
+                ),
+              ),
             const SizedBox(height: AppSpacing.lg),
             Text(
               item.designation,
@@ -587,6 +800,8 @@ class _CopiesCardState extends State<_CopiesCard> {
         content: TextField(
           controller: controller,
           autofocus: true,
+          // DEF-05: barcodes are machine-format ASCII; pin LTR for the RTL UI.
+          textDirection: TextDirection.ltr,
           decoration: InputDecoration(labelText: l10n.barcode),
         ),
         actions: [

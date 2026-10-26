@@ -23,7 +23,13 @@ import 'api_contract.dart';
 import 'rate_limit.dart';
 import 'app_logger.dart';
 
+/// Callback invoked on `POST /auth/pair` to validate a 6-digit pairing code.
+/// Returns a map containing status, token, role, and username, or null/error.
+typedef HttpPairingHandler =
+    Future<Map<String, dynamic>?> Function(String code, String clientIp);
+
 class HttpServerService {
+  HttpPairingHandler? pairingHandler;
   late Handler _handler;
   final LibraryRepository _db;
   final AuthService? _auth;
@@ -79,6 +85,7 @@ class HttpServerService {
     RateLimiter? rateLimiter,
     this.maxRequestBodyBytes = 5 * 1024 * 1024,
     this.requestTimeout = const Duration(seconds: 30),
+    this.pairingHandler,
   }) : _db = repository ?? DatabaseService(),
        _auth = auth,
        _rateLimit = rateLimiter ?? RateLimiter(),
@@ -442,6 +449,61 @@ class HttpServerService {
         }
       });
 
+      // Direct HTTP pairing: exchanges a 6-digit pairing code for a bearer token.
+      // Always available (never itself guarded); enables pairing over TCP port 8080
+      // across Wi-Fi hotspots, AP isolation, and routers that drop UDP broadcasts.
+      router.post('/auth/pair', (Request request) async {
+        final body = await request.readAsString();
+        Map<String, dynamic> map;
+        try {
+          map = jsonDecode(body) as Map<String, dynamic>;
+        } catch (_) {
+          return _json(400, {
+            'error': 'bad_request',
+            'message': 'Invalid JSON body',
+          });
+        }
+        final code = (map['code'] ?? '').toString().trim();
+        if (code.isEmpty) {
+          return _json(400, {
+            'error': 'bad_request',
+            'message': 'Missing pairing code',
+          });
+        }
+        final handler = pairingHandler;
+        if (handler == null) {
+          return _json(400, {
+            'error': 'pairing_disabled',
+            'message': 'Pairing is not currently active on the host',
+          });
+        }
+        final res = await handler(code, _clientIp(request));
+        if (res == null) {
+          return _json(401, {
+            'error': 'invalid_code',
+            'message': 'Invalid or expired pairing code',
+          });
+        }
+        final status = res['status'] as int? ?? 200;
+        if (status == 429) {
+          return _json(429, {
+            'error': 'too_many_attempts',
+            'retry_after_seconds': res['retry_after_seconds'] ?? 60,
+          });
+        }
+        if (status != 200) {
+          return _json(status, {
+            'error': res['error'] ?? 'invalid_code',
+            'message': res['message'] ?? 'Pairing failed',
+          });
+        }
+        return _json(200, {
+          'token': res['token'] ?? '',
+          'role': res['role'] ?? UserRole.staff.storage,
+          'username': res['username'] ?? 'device-$code',
+        });
+      });
+
       // The client's own identity, re-derivable from a bearer token alone.
       // Lets a restarting client recover the role it previously logged in with
       // (the persisted token grants those rights anyway -- this only tells the
@@ -569,15 +631,34 @@ class HttpServerService {
 
       // Search / filter / pagination happen in the database, not over a cached
       // page (FE-05 / FE2-05 / Phase 7).
-      final items = await _db.getItems(
-        limit: limit,
-        offset: offset,
-        search: q['search'],
-        status: q['status'],
-        codeType: q['codeType'],
-        sort: q['sort'],
-        ascending: (q['order'] ?? 'asc').toLowerCase() != 'desc',
-      );
+      final db = _db;
+      final category = q['category'];
+      final List<LibraryItem> items;
+      if (db is DatabaseService) {
+        items = await db.getItems(
+          limit: limit,
+          offset: offset,
+          search: q['search'],
+          status: q['status'],
+          codeType: q['codeType'],
+          category: category,
+          sort: q['sort'],
+          ascending: (q['order'] ?? 'asc').toLowerCase() != 'desc',
+        );
+      } else {
+        final raw = await db.getItems(
+          limit: limit,
+          offset: offset,
+          search: q['search'],
+          status: q['status'],
+          codeType: q['codeType'],
+          sort: q['sort'],
+          ascending: (q['order'] ?? 'asc').toLowerCase() != 'desc',
+        );
+        items = (category != null && category.isNotEmpty)
+            ? raw.where((i) => i.category == category).toList()
+            : raw;
+      }
       final jsonList = items.map((item) => item.toMap()).toList();
       return Response.ok(
         jsonEncode(jsonList),
@@ -589,11 +670,32 @@ class HttpServerService {
     // paginate correctly against the whole catalogue.
     router.get('/items/count', (Request request) async {
       final q = request.url.queryParameters;
-      final count = await _db.countItems(
-        search: q['search'],
-        status: q['status'],
-        codeType: q['codeType'],
-      );
+      final db = _db;
+      final category = q['category'];
+      final int count;
+      if (db is DatabaseService) {
+        count = await db.countItems(
+          search: q['search'],
+          status: q['status'],
+          codeType: q['codeType'],
+          category: category,
+        );
+      } else {
+        if (category != null && category.isNotEmpty) {
+          final all = await db.getItems(
+            search: q['search'],
+            status: q['status'],
+            codeType: q['codeType'],
+          );
+          count = all.where((i) => i.category == category).length;
+        } else {
+          count = await db.countItems(
+            search: q['search'],
+            status: q['status'],
+            codeType: q['codeType'],
+          );
+        }
+      }
       return _json(200, {'count': count});
     });
 
@@ -901,15 +1003,10 @@ class HttpServerService {
       final memberId = member.memberId.trim();
       if (memberId.isEmpty || memberId == 'AUTO') {
         final generated = await _db.generateMemberID();
-        finalMember = Member(
-          id: member.id,
-          firstName: member.firstName,
-          lastName: member.lastName,
-          email: member.email,
-          phone: member.phone,
-          memberId: generated,
-          registeredAt: member.registeredAt,
-        );
+        // copyWith, NOT a hand-written constructor: v24 added enrichment
+        // fields (photo/type/status/expiry/address/notes) and rebuilding the
+        // row field-by-field silently drops whatever the list does not name.
+        finalMember = member.copyWith(memberId: generated);
       }
       await _db.addMember(
         finalMember,
@@ -1391,7 +1488,10 @@ class HttpServerService {
     // route stays reachable.
     if (_auth != null) {
       pipeline = pipeline.addMiddleware(
-        requireAuthIfConfigured(_auth, openPaths: {'/auth/login'}),
+        requireAuthIfConfigured(
+          _auth,
+          openPaths: {'/auth/login', '/auth/pair'},
+        ),
       );
     }
 

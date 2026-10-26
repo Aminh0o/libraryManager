@@ -17,6 +17,7 @@ class StatCard extends StatelessWidget {
     required this.value,
     required this.icon,
     required this.color,
+    this.iconTextDirection,
   });
 
   final String title;
@@ -26,6 +27,14 @@ class StatCard extends StatelessWidget {
   /// Semantic hue for the icon chip only (from [AppStatus]); the text always
   /// uses theme colors so the tile stays legible in dark mode.
   final Color color;
+
+  /// Forces the glyph's layout direction, defeating Material's automatic
+  /// right-to-left mirroring. Needed for icons that encode DATA direction
+  /// rather than reading direction: a real-UI pass caught the Arabic dashboard
+  /// rendering "Borrowed (7 days)" with a down-and-left arrow while the
+  /// English build showed up-and-right -- same card, same value, opposite
+  /// meaning. Leave null for ordinary decorative icons.
+  final TextDirection? iconTextDirection;
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +51,12 @@ class StatCard extends StatelessWidget {
                 color: color.withValues(alpha: 0.14),
                 borderRadius: AppRadius.tile,
               ),
-              child: Icon(icon, color: color, size: AppIcon.xl),
+              child: Icon(
+                icon,
+                color: color,
+                size: AppIcon.xl,
+                textDirection: iconTextDirection,
+              ),
             ),
             const SizedBox(width: AppSpacing.lg),
             Expanded(

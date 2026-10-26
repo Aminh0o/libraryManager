@@ -23,10 +23,14 @@ import 'help_center_screen.dart';
 import 'system_health_screen.dart';
 import '../widgets/barcode_scanner_dialog.dart';
 import '../widgets/restore_confirm_dialog.dart';
+import '../services/pairing_protocol.dart';
+import '../services/api_service.dart' show ConnectStatus;
 import '../services/update_service.dart';
 import '../services/onboarding_service.dart';
 import '../services/windows_firewall_service.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../config/app_info.dart';
 
 /// Phase J (frontend reconstruction): the settings center redesigned per the
 /// brief's §48 -- categories instead of one giant page, a search field that
@@ -76,6 +80,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late bool _isHost;
   bool _canEditSettings = false;
   bool _savingSettings = false;
+  bool _testingConnection = false;
 
   // §48: category selection + cross-category search.
   final TextEditingController _searchCtrl = TextEditingController();
@@ -314,6 +319,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               keywords: [l10n.exportDiagnostics],
               builder: (_) => _diagnosticsCard(l10n, provider),
             ),
+          _SettingEntry(
+            keywords: [l10n.aboutApp, 'Evenlio', 'Version'],
+            builder: (_) => _aboutCard(l10n),
+          ),
         ],
       ),
     ];
@@ -481,6 +490,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Future<void> _runConnectionTest(
+    AppLocalizations l10n,
+    LibraryProvider provider,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _testingConnection = true);
+    try {
+      final res = await provider.testHostConnection(_ipController.text);
+      if (!mounted) return;
+      if (res.status == ConnectStatus.online) {
+        showAppToastOn(
+          messenger,
+          l10n.testConnectionSuccess(res.latencyMs ?? 0),
+          kind: ToastKind.success,
+        );
+      } else if (res.status == ConnectStatus.needsAuth) {
+        showAppToastOn(
+          messenger,
+          l10n.testConnectionNeedsAuth,
+          kind: ToastKind.warning,
+        );
+      } else {
+        showAppToastOn(
+          messenger,
+          l10n.testConnectionFailed,
+          kind: ToastKind.error,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _testingConnection = false);
+      }
+    }
+  }
+
   Widget _connectionBlock(AppLocalizations l10n, LibraryProvider provider) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -535,9 +579,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         TextField(
           controller: _ipController,
+          // DEF-05: an IP is machine-format text — in the Arabic (RTL) UI the
+          // bidi algorithm would reorder its leading run, so pin LTR.
+          textDirection: TextDirection.ltr,
           decoration: InputDecoration(
             labelText: l10n.hostIpLabel,
             helperText: l10n.hostIpHelper,
+            suffixIcon: (!_isHost && _ipController.text.trim().isNotEmpty)
+                ? IconButton(
+                    icon: _testingConnection
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.network_check),
+                    tooltip: l10n.testConnection,
+                    onPressed: _testingConnection
+                        ? null
+                        : () => _runConnectionTest(l10n, provider),
+                  )
+                : null,
           ),
           enabled: _canEditSettings && !_isHost, // Only needed for client
         ),
@@ -606,15 +668,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
           final p = Provider.of<LibraryProvider>(context, listen: false);
           final code = await showBarcodeScanner(context);
           if (!mounted) return;
-          if (code != null && code.startsWith('LIB_SYNC:')) {
-            final ip = code.split(':').last;
-            setState(() {
-              _ipController.text = ip;
-            });
-            await p.updateSettings(false, ip);
-            if (!mounted) return;
-            messenger.showSnackBar(SnackBar(content: Text(savedText)));
+          if (code == null) return; // scanner closed — nothing was scanned
+          // DEF-03: strict parse via the shared codec (ip + optional real
+          // port). Anything else gets an actionable, localized message — a
+          // scan that silently did nothing was indistinguishable from a
+          // broken app.
+          final qr = decodePairingQr(code.trim());
+          if (qr == null) {
+            showAppToastOn(
+              messenger,
+              l10n.pairingQrNotRecognized,
+              kind: ToastKind.error,
+            );
+            return;
           }
+          setState(() {
+            _ipController.text = qr.ip;
+          });
+          await p.updateSettings(false, qr.ip, port: qr.port);
+          if (!mounted) return;
+          showAppToastOn(messenger, savedText, kind: ToastKind.success);
         },
       ),
     );
@@ -630,19 +703,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
           final p = Provider.of<LibraryProvider>(context, listen: false);
           final messenger = ScaffoldMessenger.of(context);
 
-          final entered = await showDialog<String>(
+          final pairData = await showDialog<({String code, String? ip})>(
             context: context,
             builder: (dialogContext) {
-              final controller = TextEditingController();
+              final codeCtrl = TextEditingController();
+              final hostCtrl = TextEditingController(text: provider.hostIp);
               return AlertDialog(
                 title: Text(l10n.enterPairingCode),
-                content: TextField(
-                  controller: controller,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: l10n.pairingCode,
-                    hintText: '123456',
-                  ),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: codeCtrl,
+                      keyboardType: TextInputType.number,
+                      // DEF-05: digits keep their order under RTL too.
+                      textDirection: TextDirection.ltr,
+                      decoration: InputDecoration(
+                        labelText: l10n.pairingCode,
+                        hintText: '123456',
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    TextField(
+                      controller: hostCtrl,
+                      textDirection: TextDirection.ltr,
+                      decoration: InputDecoration(
+                        labelText: l10n.hostIpLabel,
+                        hintText: '192.168.1.5',
+                        helperText: l10n.hostIpHelper,
+                      ),
+                    ),
+                  ],
                 ),
                 actions: [
                   TextButton(
@@ -650,8 +741,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: Text(l10n.cancel),
                   ),
                   TextButton(
-                    onPressed: () =>
-                        Navigator.pop(dialogContext, controller.text),
+                    onPressed: () => Navigator.pop(dialogContext, (
+                      code: codeCtrl.text,
+                      ip: hostCtrl.text.trim(),
+                    )),
                     child: Text(l10n.validate),
                   ),
                 ],
@@ -660,14 +753,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
           );
 
           if (!context.mounted) return;
-          final pairingCode = (entered ?? '').trim();
+          final pairingCode = (pairData?.code ?? '').trim();
           if (pairingCode.isEmpty) return;
+          final explicitIp = pairData?.ip?.trim();
 
           messenger.showSnackBar(
             SnackBar(content: Text(l10n.pairingSearching)),
           );
 
-          final ip = await p.discoverHostIpByPairingCode(pairingCode);
+          final ip = await p.discoverHostIpByPairingCode(
+            pairingCode,
+            explicitHostIp: (explicitIp != null && explicitIp.isNotEmpty)
+                ? explicitIp
+                : null,
+          );
           if (!context.mounted) return;
           if (ip != null) {
             setState(() {
@@ -775,7 +874,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     width: 200,
                     height: 200,
                     child: QrImageView(
-                      data: 'LIB_SYNC:$ip',
+                      // DEF-03: embed the port the server ACTUALLY bound
+                      // (same NET-01 rule as the UDP pairing response), so a
+                      // client scanning this never dials a stale default.
+                      data: encodePairingQr(ip: ip, port: p.hostServerPort),
                       version: QrVersions.auto,
                       size: 200.0,
                     ),
@@ -788,7 +890,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
-                    'IP: $ip',
+                    'IP: $ip:${p.hostServerPort}',
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   if (minutesLeft != null) ...[
@@ -944,6 +1046,114 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _aboutCard(AppLocalizations l10n) {
+    final scheme = Theme.of(context).colorScheme;
+    final txt = Theme.of(context).textTheme;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.local_library_outlined,
+                  size: AppIcon.lg,
+                  color: scheme.primary,
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Library Manager',
+                        style: txt.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        'Version $kAppVersion',
+                        style: txt.bodySmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: AppSpacing.xl),
+            Row(
+              children: [
+                Icon(
+                  Icons.verified_outlined,
+                  size: AppIcon.md,
+                  color: scheme.primary,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Text(
+                  l10n.poweredByBrand,
+                  style: txt.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Wrap(
+              spacing: AppSpacing.lg,
+              runSpacing: AppSpacing.sm,
+              children: [
+                InkWell(
+                  onTap: () => launchUrl(Uri.parse(kBrandUrl)),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.language,
+                        size: AppIcon.sm,
+                        color: scheme.primary,
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      Text(
+                        'www.evenlio.com',
+                        style: txt.bodySmall?.copyWith(
+                          color: scheme.primary,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                InkWell(
+                  onTap: () => launchUrl(Uri.parse('mailto:$kBrandEmail')),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.email_outlined,
+                        size: AppIcon.sm,
+                        color: scheme.primary,
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      Text(
+                        kBrandEmail,
+                        style: txt.bodySmall?.copyWith(
+                          color: scheme.primary,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _dataProtectionBlock(AppLocalizations l10n, LibraryProvider provider) {
     final scheme = Theme.of(context).colorScheme;
     return Column(
@@ -1045,8 +1255,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   SnackBar(content: Text(l10n.backupSuccess)),
                 );
               } catch (e) {
+                // FE2-12: never leak the raw exception to the operator. The
+                // localized label names the operation; describeError logs the
+                // cause internally.
                 scaffold.showSnackBar(
-                  SnackBar(content: Text('${l10n.backupFailed} $e')),
+                  SnackBar(content: Text(l10n.backupFailed)),
                 );
               }
             },
@@ -1095,7 +1308,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 }
               } catch (e) {
                 scaffold.showSnackBar(
-                  SnackBar(content: Text('${l10n.restoreFailed} $e')),
+                  SnackBar(content: Text(l10n.restoreFailed)),
                 );
               }
             },
@@ -1122,8 +1335,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   );
                 }
               } catch (e) {
+                // importError is a "failed: " prefix meant to be followed by a
+                // cause, so FE2-12 is satisfied by the categorized localized
+                // describeError rather than the raw object.
                 scaffold.showSnackBar(
-                  SnackBar(content: Text('${l10n.importError}$e')),
+                  SnackBar(content: Text(describeError(l10n, e))),
                 );
               }
             },
@@ -1150,7 +1366,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   );
                 }
               } catch (e) {
-                scaffold.showSnackBar(SnackBar(content: Text('$e')));
+                scaffold.showSnackBar(
+                  SnackBar(content: Text(l10n.exportError)),
+                );
               }
             },
           ),
@@ -1356,6 +1574,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         content: TextField(
           controller: controller,
           obscureText: true,
+          // DEF-05: credentials are ASCII tokens; RTL display would shuffle them.
+          textDirection: TextDirection.ltr,
           decoration: InputDecoration(labelText: l10n.adminPassword),
         ),
         actions: [

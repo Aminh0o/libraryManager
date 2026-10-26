@@ -4,7 +4,7 @@
 /// *record identifier*, NOT an action trigger and NOT the LAN-pairing code.
 /// This module keeps those three concerns strictly separate:
 ///
-///  * The LAN pairing QR (`LIB_SYNC:<ip>`, built in `settings_screen.dart`) is a
+///  * The LAN pairing QR (`LIB_SYNC:<ip>[:<port>]`, built in `settings_screen.dart`) is a
 ///    different subsystem; [isPairingPayload] recognises it so a receipt scanner
 ///    never mistakes a pairing code for a record and vice-versa (§282).
 ///  * A printed payload carries ONLY a version tag, a document type and an
@@ -20,6 +20,8 @@
 /// This file is deliberately framework-free (no Flutter / DB / socket imports)
 /// so host, client and pure unit tests share one definition.
 library;
+
+import 'dart:convert';
 
 /// Document kinds a printed code may identify. Codes on the wire use the
 /// [ReceiptDocType.code] short form, never the Dart name, so the enum can be
@@ -154,4 +156,33 @@ ReceiptPayload? decodeReceiptPayload(String raw) {
   if (!_refPattern.hasMatch(ref)) return null;
 
   return ReceiptPayload(version: kReceiptPayloadVersion, type: type, ref: ref);
+}
+
+/// Robust scanner resolution: extracts a member identifier from a scanned
+/// QR code or barcode string.
+///
+/// Handles:
+///  1. Rich JSON member payloads (`{"id":"MEM-1", ...}`)
+///  2. Canonical receipt slip formats (`LM1|CARD|MEM-1`)
+///  3. Raw member card identifiers (`MEM-1`)
+String parseScannedMemberId(String raw) {
+  final trimmed = raw.trim();
+  if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+    try {
+      final decoded = jsonDecode(trimmed);
+      if (decoded is Map) {
+        final id = decoded['id'] ?? decoded['memberId'];
+        if (id != null && id.toString().trim().isNotEmpty) {
+          return id.toString().trim();
+        }
+      }
+    } catch (_) {}
+  }
+  if (trimmed.startsWith('LM1|CARD|')) {
+    final parts = trimmed.split('|');
+    if (parts.length >= 3 && parts[2].trim().isNotEmpty) {
+      return parts[2].trim();
+    }
+  }
+  return trimmed;
 }

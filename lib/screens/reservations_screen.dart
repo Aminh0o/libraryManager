@@ -527,6 +527,27 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
   /// their arrows visible but disabled so the affordance stays discoverable
   /// (an operator who wonders "why can't I move this one up?" sees an
   /// obvious greyed-out arrow instead of a mysterious missing button).
+  Future<void> _fulfillCheckout(Reservation hold) async {
+    final provider = Provider.of<LibraryProvider>(context, listen: false);
+    final l10n = AppLocalizations.of(context)!;
+    final item = provider.items
+        .where((i) => i.code == hold.itemCode)
+        .firstOrNull;
+    final member = provider.members
+        .where((m) => m.memberId == hold.memberId)
+        .firstOrNull;
+
+    if (item == null || member == null) {
+      _showSnack(l10n.itemNotFound);
+      return;
+    }
+
+    await _mutate(() async {
+      await provider.checkOutItem(item, member);
+      if (mounted) _showSnack('${l10n.loanSuccess}: ${member.fullName}');
+    });
+  }
+
   Widget _tileTrailing(
     AppLocalizations l10n,
     ColorScheme scheme,
@@ -554,18 +575,30 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
         : null;
     // §6.12 print hold ticket — available on every row (a terminal hold can
     // still be re-printed for the patron record); it never mutates.
+    final checkoutBtn = hold.status == ReservationStatus.available
+        ? IconButton(
+            key: Key('hold-checkout-${hold.id}'),
+            tooltip: 'Fulfill & Check Out',
+            icon: const Icon(Icons.shopping_bag_outlined, color: Colors.green),
+            onPressed: _busy ? null : () => _fulfillCheckout(hold),
+          )
+        : null;
     final printBtn = IconButton(
       key: Key('hold-print-${hold.id}'),
       tooltip: l10n.printHoldTicket,
       icon: const Icon(Icons.receipt_long_outlined),
       onPressed: _busy ? null : () => _printHoldTicket(hold),
     );
-    // Terminal rows show [chip · print]; live rows show [chip · cancel · print].
+    // Terminal rows show [chip · print]; live rows show [chip · checkout · cancel · print].
     final base = cancel == null
         ? Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               chip,
+              if (checkoutBtn != null) ...[
+                const SizedBox(width: AppSpacing.xs),
+                checkoutBtn,
+              ],
               const SizedBox(width: AppSpacing.xs),
               printBtn,
             ],
@@ -574,6 +607,10 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               chip,
+              if (checkoutBtn != null) ...[
+                const SizedBox(width: AppSpacing.xs),
+                checkoutBtn,
+              ],
               const SizedBox(width: AppSpacing.xs),
               cancel,
               const SizedBox(width: AppSpacing.xs),

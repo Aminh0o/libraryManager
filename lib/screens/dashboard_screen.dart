@@ -12,6 +12,11 @@ import '../widgets/password_dialog.dart';
 import '../widgets/barcode_scanner_dialog.dart';
 import 'item_form_screen.dart';
 import 'history_screen.dart';
+import 'analytics_screen.dart';
+import 'stocktake_screen.dart';
+import 'kiosk_screen.dart';
+import 'help_center_screen.dart';
+import '../widgets/spotlight_tour.dart';
 
 /// Phase D (frontend reconstruction): the dashboard was re-layered, not
 /// re-featured. Every action below is the SAME provider call the old screen
@@ -22,7 +27,7 @@ import 'history_screen.dart';
 /// centralized tokens, reads correctly in dark mode and RTL, and groups its
 /// content into titled [AppSection]s so hierarchy comes from structure, not
 /// from shouting colors (§5-8/§28/§40/§43/§55/§59).
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({
     super.key,
     this.onOpenInventory,
@@ -31,18 +36,45 @@ class DashboardScreen extends StatelessWidget {
     this.onOpenFines,
   });
 
-  /// FE2-10: the Quick Scan used to call `provider.search(code)` and then do
-  /// nothing -- the operator stayed on the dashboard and never saw the result
-  /// (a no-op). The dashboard is a tab inside `HomeScreen`, so it cannot change
-  /// the selected tab itself; the parent injects this callback to switch to the
-  /// inventory view where the search the scan just applied is actually visible.
   final VoidCallback? onOpenInventory;
-
-  /// Core Workflow Recovery: navigation callbacks for the "Needs Attention"
-  /// operational section. Each jumps to the corresponding rail tab.
   final VoidCallback? onOpenLoans;
   final VoidCallback? onOpenReservations;
   final VoidCallback? onOpenFines;
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  final GlobalKey _headerKey = GlobalKey();
+  final GlobalKey _metricsKey = GlobalKey();
+  final GlobalKey _quickActionsKey = GlobalKey();
+
+  void _startSpotlightTour() {
+    SpotlightTourOverlay.show(
+      context,
+      steps: [
+        SpotlightStep(
+          targetKey: _headerKey,
+          title: 'Command Center & Support',
+          description:
+              'This is your library dashboard. Access system mode status, instant Guided Tours, and the comprehensive Help Center.',
+        ),
+        SpotlightStep(
+          targetKey: _metricsKey,
+          title: 'Live Catalog & Circulation Statistics',
+          description:
+              'Monitor real-time document counts, asset valuation in DZD, active loans, and overdue counts.',
+        ),
+        SpotlightStep(
+          targetKey: _quickActionsKey,
+          title: 'High-End Desk Operations',
+          description:
+              'Quickly scan barcodes, catalog new books, run analytics, audit physical shelves, or launch the self-checkout kiosk.',
+        ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,55 +95,92 @@ class DashboardScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _HeaderRow(provider: provider, l10n: l10n),
+          KeyedSubtree(
+            key: _headerKey,
+            child: _HeaderRow(
+              provider: provider,
+              l10n: l10n,
+              onStartTour: _startSpotlightTour,
+            ),
+          ),
           sectionGap,
 
           // Core Workflow Recovery: "What needs attention?" — live operational
           // alerts the librarian sees immediately on open.
           if (provider.canWrite)
             _NeedsAttention(
-              onOpenLoans: onOpenLoans,
-              onOpenReservations: onOpenReservations,
-              onOpenFines: onOpenFines,
+              onOpenLoans: widget.onOpenLoans,
+              onOpenReservations: widget.onOpenReservations,
+              onOpenFines: widget.onOpenFines,
             ),
           sectionGap,
 
           // At-a-glance operational metrics.
-          LayoutBuilder(
-            builder: (context, constraints) {
-              return GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: constraints.maxWidth > 800
-                    ? (provider.isHost ? 3 : 2)
-                    : 1,
-                crossAxisSpacing: AppSpacing.lg,
-                mainAxisSpacing: AppSpacing.lg,
-                childAspectRatio: constraints.maxWidth > 800 ? 2.2 : 3.0,
-                children: [
-                  StatCard(
-                    title: l10n.totalDocuments,
-                    value: provider.totalQuantity.toString(),
-                    icon: Icons.auto_stories_outlined,
-                    color: AppStatus.info,
-                  ),
-                  if (provider.isHost)
+          KeyedSubtree(
+            key: _metricsKey,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: constraints.maxWidth > 800
+                      ? (provider.isHost ? 3 : 2)
+                      : 1,
+                  crossAxisSpacing: AppSpacing.lg,
+                  mainAxisSpacing: AppSpacing.lg,
+                  childAspectRatio: constraints.maxWidth > 800 ? 2.2 : 3.0,
+                  children: [
                     StatCard(
-                      title: l10n.inventoryValue,
-                      value:
-                          '${provider.totalValue.toStringAsFixed(0)} ${l10n.priceDzd.split('(').last.replaceAll(')', '')}',
-                      icon: Icons.account_balance_wallet_outlined,
-                      color: AppStatus.success,
+                      title: l10n.totalDocuments,
+                      value: provider.totalQuantity.toString(),
+                      icon: Icons.auto_stories_outlined,
+                      color: AppStatus.info,
                     ),
-                  StatCard(
-                    title: l10n.onLoan,
-                    value: provider.onLoanCount.toString(),
-                    icon: Icons.assignment_return_outlined,
-                    color: AppStatus.borrowed,
-                  ),
-                ],
-              );
-            },
+                    if (provider.isHost)
+                      StatCard(
+                        title: l10n.inventoryValue,
+                        value:
+                            '${provider.totalValue.toStringAsFixed(0)} ${l10n.priceDzd.split('(').last.replaceAll(')', '')}',
+                        icon: Icons.account_balance_wallet_outlined,
+                        color: AppStatus.success,
+                      ),
+                    StatCard(
+                      title: l10n.onLoan,
+                      value: provider.onLoanCount.toString(),
+                      icon: Icons.assignment_return_outlined,
+                      color: AppStatus.borrowed,
+                    ),
+                    // Phase 9 (dynamic analytics): rolling circulation health,
+                    // computed on the host so a LAN client reads the same
+                    // figures. These extend the at-a-glance row from a static
+                    // snapshot to a week-long trend plus an overdue headline.
+                    StatCard(
+                      title: l10n.statOverdue,
+                      value: provider.overdueLoanCount.toString(),
+                      icon: Icons.event_busy_outlined,
+                      color: AppStatus.danger,
+                    ),
+                    StatCard(
+                      title: l10n.statBorrowed7d,
+                      value: provider.weekBorrowCount.toString(),
+                      icon: Icons.trending_up,
+                      color: AppStatus.info,
+                      // A trend arrow encodes data direction, not reading
+                      // direction: pin it LTR so Arabic users are not shown the
+                      // opposite trend (see StatCard.iconTextDirection).
+                      iconTextDirection: TextDirection.ltr,
+                    ),
+                    StatCard(
+                      title: l10n.statReturned7d,
+                      value: provider.weekReturnCount.toString(),
+                      icon: Icons.trending_down,
+                      color: AppStatus.success,
+                      iconTextDirection: TextDirection.ltr,
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
           sectionGap,
 
@@ -144,88 +213,148 @@ class DashboardScreen extends StatelessWidget {
           // behaviour; only the chrome changed (theme buttons, no per-widget
           // backgroundColor lottery).
           if (provider.isHost) ...[
-            AppSection(
-              title: l10n.quickActions,
-              padding: EdgeInsets.zero,
-              child: Wrap(
-                spacing: AppSpacing.lg,
-                runSpacing: AppSpacing.md,
-                children: [
-                  FilledButton.icon(
-                    onPressed: () async {
-                      final code = await showBarcodeScanner(context);
-                      if (code != null && context.mounted) {
-                        // FE2-10: apply the scan as a search AND move to the
-                        // inventory view, so the operator lands on the match
-                        // instead of staring at an unchanged dashboard.
-                        Provider.of<LibraryProvider>(
-                          context,
-                          listen: false,
-                        ).search(code);
-                        onOpenInventory?.call();
-                      }
-                    },
-                    icon: const Icon(Icons.qr_code_scanner, size: AppIcon.md),
-                    label: Text(l10n.quickScan),
-                  ),
-                  FilledButton.tonalIcon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const ItemFormScreen(),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.add, size: AppIcon.md),
-                    label: Text(l10n.addNewBook),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: () => provider.reload(),
-                    icon: const Icon(Icons.refresh, size: AppIcon.md),
-                    label: Text(l10n.refreshData),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: () async {
-                      try {
-                        final path = await provider.exportToCsv();
-                        // null => the user cancelled the save dialog; report no
-                        // success (BL-09 / 11b).
-                        if (path != null && context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(l10n.exportSuccess)),
-                          );
+            KeyedSubtree(
+              key: _quickActionsKey,
+              child: AppSection(
+                title: l10n.quickActions,
+                padding: EdgeInsets.zero,
+                child: Wrap(
+                  spacing: AppSpacing.lg,
+                  runSpacing: AppSpacing.md,
+                  children: [
+                    FilledButton.icon(
+                      onPressed: () async {
+                        final code = await showBarcodeScanner(context);
+                        if (code != null && context.mounted) {
+                          // FE2-10: apply the scan as a search AND move to the
+                          // inventory view, so the operator lands on the match
+                          // instead of staring at an unchanged dashboard.
+                          Provider.of<LibraryProvider>(
+                            context,
+                            listen: false,
+                          ).search(code);
+                          widget.onOpenInventory?.call();
                         }
-                      } catch (e) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(describeError(l10n, e))),
-                          );
-                        }
-                      }
-                    },
-                    icon: const Icon(Icons.download, size: AppIcon.md),
-                    label: Text(l10n.exportCsv),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: () async {
-                      final passed = await showPasswordPrompt(
-                        context,
-                        title: l10n.enterPassword,
-                      );
-                      if (passed && context.mounted) {
+                      },
+                      icon: const Icon(Icons.qr_code_scanner, size: AppIcon.md),
+                      label: Text(l10n.quickScan),
+                    ),
+                    FilledButton.tonalIcon(
+                      onPressed: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const HistoryScreen(),
+                            builder: (context) => const ItemFormScreen(),
                           ),
                         );
-                      }
-                    },
-                    icon: const Icon(Icons.history, size: AppIcon.md),
-                    label: Text(l10n.historyAction),
-                  ),
-                ],
+                      },
+                      icon: const Icon(Icons.add, size: AppIcon.md),
+                      label: Text(l10n.addNewBook),
+                    ),
+                    FilledButton.tonalIcon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AnalyticsScreen(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.insights, size: AppIcon.md),
+                      label: Text(l10n.advancedAnalytics),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const StocktakeScreen(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(
+                        Icons.inventory_outlined,
+                        size: AppIcon.md,
+                      ),
+                      label: Text(l10n.stocktaking),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const KioskScreen(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(
+                        Icons.touch_app_outlined,
+                        size: AppIcon.md,
+                      ),
+                      label: Text(l10n.selfCheckoutKiosk),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const HelpCenterScreen(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(
+                        Icons.help_center_outlined,
+                        size: AppIcon.md,
+                      ),
+                      label: Text(l10n.helpCenter),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () => provider.reload(),
+                      icon: const Icon(Icons.refresh, size: AppIcon.md),
+                      label: Text(l10n.refreshData),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        try {
+                          final path = await provider.exportToCsv();
+                          // null => the user cancelled the save dialog; report no
+                          // success (BL-09 / 11b).
+                          if (path != null && context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(l10n.exportSuccess)),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(describeError(l10n, e))),
+                            );
+                          }
+                        }
+                      },
+                      icon: const Icon(Icons.download, size: AppIcon.md),
+                      label: Text(l10n.exportCsv),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        final passed = await showPasswordPrompt(
+                          context,
+                          title: l10n.enterPassword,
+                        );
+                        if (passed && context.mounted) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const HistoryScreen(),
+                            ),
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.history, size: AppIcon.md),
+                      label: Text(l10n.historyAction),
+                    ),
+                  ],
+                ),
               ),
             ),
             sectionGap,
@@ -321,10 +450,15 @@ class DashboardScreen extends StatelessWidget {
 /// Page identity + the session's operating mode. The mode chip is informational
 /// (host/client), tinted with the semantic palette and always text-first.
 class _HeaderRow extends StatelessWidget {
-  const _HeaderRow({required this.provider, required this.l10n});
+  const _HeaderRow({
+    required this.provider,
+    required this.l10n,
+    this.onStartTour,
+  });
 
   final LibraryProvider provider;
   final AppLocalizations l10n;
+  final VoidCallback? onStartTour;
 
   @override
   Widget build(BuildContext context) {
@@ -334,22 +468,53 @@ class _HeaderRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.nationalLibrary,
+                style: txt.headlineSmall?.copyWith(color: scheme.onSurface),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              Text(
+                l10n.algerianSystem,
+                style: txt.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: AppSpacing.md),
+        Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              l10n.nationalLibrary,
-              style: txt.headlineSmall?.copyWith(color: scheme.onSurface),
+            if (onStartTour != null) ...[
+              IconButton.filledTonal(
+                tooltip: l10n.launchWalkthrough,
+                onPressed: onStartTour,
+                icon: const Icon(Icons.tour_outlined, size: AppIcon.md),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+            ],
+            IconButton.filledTonal(
+              tooltip: l10n.helpCenter,
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const HelpCenterScreen()),
+                );
+              },
+              icon: const Icon(Icons.help_center_outlined, size: AppIcon.md),
             ),
-            Text(
-              l10n.algerianSystem,
-              style: txt.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+            const SizedBox(width: AppSpacing.sm),
+            AppStatusChip(
+              label: provider.isHost ? l10n.hostMode : l10n.clientMode,
+              color: hostColor,
             ),
           ],
-        ),
-        AppStatusChip(
-          label: provider.isHost ? l10n.hostMode : l10n.clientMode,
-          color: hostColor,
         ),
       ],
     );

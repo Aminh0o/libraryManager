@@ -198,3 +198,37 @@ class _Scored {
   final int rank;
   final int bonus;
 }
+
+/// Picks the host interface address that lives on the SAME /24 as [peerIp] —
+/// the address a pairing REQ came in on. Returns `null` when no candidate
+/// shares the peer's subnet, so the caller falls back to the globally-ranked
+/// [selectLanIp] advertisement (the pre-DEF-02 behavior).
+///
+/// Why this exists (DEF-02, the owner-reported "pairing fails across PCs /
+/// Wi-Fi / Ethernet / phone hotspot"): a host joined to several subnets at
+/// once answers every pairing REQ with ONE globally-ranked address, whatever
+/// interface the request arrived on. A client on the *second* subnet then
+/// dials an address it cannot route to — sockets up, code right, connection
+/// still dead. The REQ itself proves which of the host's subnets the client
+/// can reach (it delivered a packet there), so answering on that subnet is
+/// always the reachable choice. Virtual adapters are NOT demoted here: a
+/// peer that really lives on a host-only/virtual subnet can only be reached
+/// back through that same interface, so the subnet match outranks every
+/// other heuristic.
+String? matchPeerSubnet(List<LanInterface> interfaces, String peerIp) {
+  final p = peerIp.split('.');
+  if (p.length != 4) return null;
+  if (p.any((o) => int.tryParse(o) == null)) return null;
+  if (!isPrivateIpv4(peerIp)) return null;
+  final prefix = '${p[0]}.${p[1]}.${p[2]}';
+  final matches = <String>[];
+  for (final i in interfaces) {
+    if (!_isUsableIpv4(i.address)) continue;
+    final o = i.address.split('.');
+    if (o.length != 4) continue;
+    if ('${o[0]}.${o[1]}.${o[2]}' == prefix) matches.add(i.address);
+  }
+  if (matches.isEmpty) return null;
+  matches.sort(_compareOctets);
+  return matches.first;
+}

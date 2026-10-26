@@ -65,3 +65,50 @@ PairingResponse? decodePairingResponse(
   }
   return PairingResponse(ip: ip, port: port, token: token);
 }
+
+// ---------------------------------------------------------------------------
+// Host-screen pairing QR (DEF-03)
+//
+// * QR payload (host screen -> client camera): `LIB_SYNC:<ip>[:<port>]`
+//
+// The UDP pairing response learned to carry the host's REAL bound port
+// (NET-01) but the QR beside it still advertised only the IP, so a client on
+// a machine where 8080 was taken dialed the default and failed with no
+// obvious cause. The port is now embedded; the 1-field legacy form stays
+// decodable so phones that scanned an older screen keep working (the client
+// then falls back to the default port, exactly the old behavior).
+// ---------------------------------------------------------------------------
+
+const String pairingQrPrefix = 'LIB_SYNC:';
+
+/// A decoded host pairing QR: the address to dial and, when the payload
+/// carried one, the host's actual bound port (null = use the default).
+class PairingQr {
+  const PairingQr({required this.ip, this.port});
+  final String ip;
+  final int? port;
+}
+
+/// Builds the QR payload for the host screen (DEF-03: always carries the
+/// port the server actually bound).
+String encodePairingQr({required String ip, required int port}) =>
+    '$pairingQrPrefix$ip:$port';
+
+/// Parses a scanned pairing QR. Returns `null` for anything that is not a
+/// well-formed `LIB_SYNC:` payload — wrong scheme, blank/whitespace host, an
+/// out-of-range or non-numeric port, or extra fields — so the caller can
+/// show an actionable message instead of swallowing the scan.
+PairingQr? decodePairingQr(String payload) {
+  if (!payload.startsWith(pairingQrPrefix)) return null;
+  final rest = payload.substring(pairingQrPrefix.length);
+  final parts = rest.split(':');
+  if (parts.length > 2) return null;
+  final ip = parts[0].trim();
+  if (ip.isEmpty || ip.contains(RegExp(r'\s')) || ip.length > 253) return null;
+  int? port;
+  if (parts.length == 2) {
+    port = int.tryParse(parts[1].trim());
+    if (port == null || port <= 0 || port > 65535) return null;
+  }
+  return PairingQr(ip: ip, port: port);
+}

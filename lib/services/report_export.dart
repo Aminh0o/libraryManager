@@ -1,28 +1,42 @@
 import 'dart:isolate';
 
 import 'package:csv/csv.dart';
+import 'package:flutter/services.dart' show ByteData;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../models/report.dart';
 import '../utils/display_safety.dart';
+import 'pdf_fonts.dart';
 
 /// NET-11 (P20): compose the report PDF OFF the UI isolate. For a large result
-/// set, `package:pdf`'s table layout + byte encoding is pure, synchronous CPU
-/// with no `BuildContext` and no asset-font loading (the built-in Helvetica face
-/// is used), so it is safe to move off-thread exactly as the Excel import decode
+/// set, `package:pdf`'s table layout + byte encoding is pure, synchronous CPU,
+/// so it is safe to move off-thread exactly as the Excel import decode
 /// was (Phase 11a). A custom object is not guaranteed transferable across an
 /// isolate boundary, so the [Report] crosses as its plain [Map] form and is
 /// rebuilt inside the worker -- `Report.fromMap`/`toMap` is lossless for the all-
 /// string cell data a server-authored report carries, so the isolate renders the
 /// identical report and the on-screen table and exported file still cannot
-/// disagree. Falls back to nothing here: the caller awaits the byte list.
+/// disagree. DEF-04 adds one constraint: a spawned isolate cannot read
+/// `rootBundle`, so the print-font bytes (plain `ByteData`, transferable)
+/// are loaded HERE on the caller's isolate and passed into the worker —
+/// the same faces the synchronous [ReportExport.toPdfBytes] gets from its
+/// `fonts` argument, keeping both paths byte-identical. Falls back to nothing
+/// here: the caller awaits the byte list.
 Future<List<int>> buildReportPdfOffIsolate(
   Map<String, dynamic> reportMap, {
   Map<String, String>? labels,
-}) => Isolate.run(
-  () => ReportExport.toPdfBytes(Report.fromMap(reportMap), labels: labels),
-);
+  ({ByteData regular, ByteData bold})? fonts,
+}) async {
+  final faceData = fonts ?? await PdfPrintFonts.bytes();
+  return Isolate.run(
+    () => ReportExport.toPdfBytes(
+      Report.fromMap(reportMap),
+      labels: labels,
+      fonts: faceData,
+    ),
+  );
+}
 
 /// Pure, side-effect-free rendering of a computed [Report] to an exportable
 /// document (Phase 10.4b). These are deliberately free of file/IO and of
@@ -93,9 +107,19 @@ class ReportExport {
   static Future<List<int>> toPdfBytes(
     Report r, {
     Map<String, String>? labels,
+    ({ByteData regular, ByteData bold})? fonts,
   }) async {
     final L = _labels(labels);
-    final doc = pw.Document(title: r.title, creator: 'Library Manager');
+    // DEF-04: render with the bundled Arabic-capable face when the caller
+    // (or the isolate wrapper) supplies its bytes; Helvetica only as the
+    // explicit degrade path.
+    final doc = pw.Document(
+      title: r.title,
+      creator: 'Library Manager',
+      theme: fonts != null
+          ? PdfPrintFonts.themeFromBytes(fonts.regular, fonts.bold)
+          : null,
+    );
     final window = r.from == null && r.to == null
         ? null
         : '${r.from ?? '-'}  to  ${r.to ?? '-'}';

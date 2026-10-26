@@ -81,6 +81,82 @@ void main() {
     ),
   );
 
+  test('v9 -> v24 upgrade adds the member + book enrichment columns, leaves '
+      'existing rows NULL, and reopening is idempotent', () async {
+    final old = await createV9();
+    await old.insert('library_items', {
+      'code': '0500',
+      'code_type': 'LIV',
+      'designation': 'Old Book',
+      'quantite': 3,
+      'emplacement': 'A',
+      'taux': 12.5,
+      'emplacement_stock': 'S',
+      'status': 'Emprunté',
+      'barcode': 'ISBN-0500',
+    });
+    await old.insert('members', {
+      'first_name': 'Amira',
+      'last_name': 'B',
+      'member_id': '250001',
+      'registered_at': '2025-01-01T00:00:00.000',
+    });
+    await old.close();
+
+    // Reopen through the production path: runs onUpgrade 9 -> 24.
+    final db = await svc.openDatabaseAt(path);
+    expect(await db.getVersion(), DatabaseService.currentSchemaVersion);
+
+    final itemCols = (await db.rawQuery(
+      'PRAGMA table_info(library_items)',
+    )).map((c) => c['name'] as String).toSet();
+    final memberCols = (await db.rawQuery(
+      'PRAGMA table_info(members)',
+    )).map((c) => c['name'] as String).toSet();
+    expect(
+      itemCols,
+      containsAll([
+        'author',
+        'category',
+        'description',
+        'language',
+        'publisher',
+        'year',
+        'cover_path',
+      ]),
+    );
+    expect(
+      memberCols,
+      containsAll([
+        'photo_path',
+        'member_type',
+        'status',
+        'expiry_date',
+        'address',
+        'notes',
+        'gender',
+      ]),
+    );
+
+    // Pre-existing rows survive untouched; new columns are NULL ("not set").
+    final item = (await db.query(
+      'library_items',
+      where: "code = '0500'",
+    )).single;
+    expect(item['designation'], 'Old Book');
+    expect(item['author'], isNull);
+    expect(item['cover_path'], isNull);
+    final member = (await db.query('members')).single;
+    expect(member['member_id'], '250001');
+    expect(member['photo_path'], isNull);
+    await db.close();
+
+    // Idempotent: reopening the migrated DB must not throw on guarded ALTERs.
+    final again = await svc.openDatabaseAt(path);
+    expect(await again.getVersion(), DatabaseService.currentSchemaVersion);
+    await again.close();
+  });
+
   test(
     'v9 database upgrades to the current schema with data preserved',
     () async {

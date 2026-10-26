@@ -1,6 +1,6 @@
 class AttributeDefinition {
   final int? id;
-  final String type; // 'LOCATION', 'STATUS', 'STOCK'
+  final String type; // 'LOCATION', 'STATUS', 'STOCK', 'CATEGORY'
   final String value;
 
   AttributeDefinition({this.id, required this.type, required this.value});

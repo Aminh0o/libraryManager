@@ -1,20 +1,21 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../l10n/app_localizations.dart';
+import '../services/receipt_payload.dart';
 import '../ui/app_tokens.dart';
 import '../widgets/app_states.dart';
 
-/// Barcode scanner dialog (Phase L: tokenized).
-///
-/// The camera overlay chrome deliberately stays white-on-scrim: it renders ON
-/// TOP of the live video feed, where theme surfaces do not apply. Everything
-/// that sits on the app's own surfaces (the desktop keyboard-pane card, the
-/// error/permission states, fields, buttons) consumes the design system.
+enum ScannerMode { book, memberQr }
+
+/// Barcode & QR code scanner dialog with desktop hardware wedge and clipboard support.
 class BarcodeScannerDialog extends StatefulWidget {
-  const BarcodeScannerDialog({super.key});
+  final ScannerMode mode;
+
+  const BarcodeScannerDialog({super.key, this.mode = ScannerMode.book});
 
   @override
   State<BarcodeScannerDialog> createState() => _BarcodeScannerDialogState();
@@ -169,7 +170,21 @@ class _BarcodeScannerDialogState extends State<BarcodeScannerDialog> {
   void _onDesktopSubmit(String value) {
     final cleaned = value.trim();
     if (cleaned.isNotEmpty && mounted) {
-      Navigator.pop(context, cleaned);
+      if (widget.mode == ScannerMode.memberQr) {
+        final parsed = parseScannedMemberId(cleaned);
+        Navigator.pop(context, parsed);
+      } else {
+        Navigator.pop(context, cleaned);
+      }
+    }
+  }
+
+  Future<void> _pasteFromClipboard() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final text = data?.text?.trim();
+    if (text != null && text.isNotEmpty) {
+      _desktopController.text = text;
+      _onDesktopSubmit(text);
     }
   }
 
@@ -371,32 +386,49 @@ class _BarcodeScannerDialogState extends State<BarcodeScannerDialog> {
         );
       }
 
+      final isQr = widget.mode == ScannerMode.memberQr;
+      final dialogTitle = isQr
+          ? 'QR Code Scanner (Member Card)'
+          : l10n.scanBarcode;
+      final inputLabel = isQr ? 'Member ID / QR Code' : l10n.barcode;
+
       return AlertDialog(
-        title: Text(l10n.scanBarcode),
+        title: Row(
+          children: [
+            Icon(
+              isQr ? Icons.qr_code_2 : Icons.barcode_reader,
+              color: scheme.primary,
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Text(dialogTitle),
+          ],
+        ),
         content: SizedBox(
-          width: 400,
+          width: 440,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
                 padding: AppSpacing.allLg,
                 decoration: BoxDecoration(
-                  color: scheme.primary.withValues(alpha: 0.1),
+                  color: scheme.primary.withValues(alpha: 0.08),
                   borderRadius: AppRadius.card,
                   border: Border.all(
-                    color: scheme.primary.withValues(alpha: 0.3),
+                    color: scheme.primary.withValues(alpha: 0.25),
                   ),
                 ),
                 child: Column(
                   children: [
                     Icon(
-                      Icons.usb_outlined,
+                      isQr ? Icons.qr_code_scanner : Icons.usb_outlined,
                       size: AppIcon.empty,
                       color: scheme.primary,
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     Text(
-                      l10n.scanWithUsbOrType,
+                      isQr
+                          ? 'Scan Member QR Card with 2D Scanner'
+                          : l10n.scanWithUsbOrType,
                       textAlign: TextAlign.center,
                       style: txt.titleSmall?.copyWith(
                         fontWeight: FontWeight.w600,
@@ -404,7 +436,9 @@ class _BarcodeScannerDialogState extends State<BarcodeScannerDialog> {
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
-                      l10n.usbScannerNote,
+                      isQr
+                          ? 'Point your handheld 2D / QR scanner at the patron card, paste from clipboard, or type the Member ID directly.'
+                          : l10n.usbScannerNote,
                       textAlign: TextAlign.center,
                       style: txt.bodySmall?.copyWith(
                         color: scheme.onSurfaceVariant,
@@ -413,15 +447,19 @@ class _BarcodeScannerDialogState extends State<BarcodeScannerDialog> {
                   ],
                 ),
               ),
-              const SizedBox(height: AppSpacing.xxl),
+              const SizedBox(height: AppSpacing.xl),
               TextField(
                 controller: _desktopController,
                 focusNode: _desktopFocus,
                 autofocus: true,
                 decoration: InputDecoration(
-                  labelText: l10n.barcode,
-                  hintText: l10n.scanOrTypeHint,
-                  prefixIcon: const Icon(Icons.qr_code_2),
+                  labelText: inputLabel,
+                  hintText: isQr
+                      ? 'Scan QR or enter Member ID'
+                      : l10n.scanOrTypeHint,
+                  prefixIcon: Icon(
+                    isQr ? Icons.badge_outlined : Icons.qr_code_2,
+                  ),
                   suffixIcon: IconButton(
                     icon: const Icon(Icons.send),
                     onPressed: () => _onDesktopSubmit(_desktopController.text),
@@ -430,19 +468,29 @@ class _BarcodeScannerDialogState extends State<BarcodeScannerDialog> {
                 onChanged: _onDesktopChanged,
                 onSubmitted: _onDesktopSubmit,
               ),
+              const SizedBox(height: AppSpacing.sm),
+              Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: TextButton.icon(
+                  onPressed: _pasteFromClipboard,
+                  icon: const Icon(Icons.paste_outlined, size: AppIcon.sm),
+                  label: const Text('Paste from Clipboard'),
+                ),
+              ),
             ],
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () {
-              setState(() {
-                _useDesktopCamera = true;
-                _zoomFactor = 0.0;
-              });
-            },
-            child: Text(l10n.switchCamera),
-          ),
+          if (!Platform.isWindows)
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _useDesktopCamera = true;
+                  _zoomFactor = 0.0;
+                });
+              },
+              child: Text(l10n.switchCamera),
+            ),
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(l10n.cancel),
@@ -694,9 +742,12 @@ class _ControlButton extends StatelessWidget {
   }
 }
 
-Future<String?> showBarcodeScanner(BuildContext context) {
+Future<String?> showBarcodeScanner(
+  BuildContext context, {
+  ScannerMode mode = ScannerMode.book,
+}) {
   return showDialog<String>(
     context: context,
-    builder: (context) => const BarcodeScannerDialog(),
+    builder: (context) => BarcodeScannerDialog(mode: mode),
   );
 }

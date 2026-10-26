@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show SocketException;
 
@@ -175,6 +176,14 @@ void main() {
       // already answered: the client is told "failed" about work that really
       // committed -- precisely the audit's phantom-record hazard.
       repo.loanPreWriteDelay = const Duration(milliseconds: 250);
+      // The oracle signals the instant the timed-out write claims the copy
+      // (synchronously, before its slow commit), which is the moment the
+      // server-side invariant starts refusing the retry.
+      final claimed = Completer<void>();
+      repo.onLoanClaimed = (code) {
+        if (code == 'SLOW0001' && !claimed.isCompleted) claimed.complete();
+      };
+      addTearDown(() => repo.onLoanClaimed = null);
       final slow = HttpServerService(
         repository: repo,
         auth: auth,
@@ -202,6 +211,20 @@ void main() {
       // DELIBERATELY does not cover a 5xx, so this retry really does re-execute.
       // What protects the ledger is the server-side invariant, not the replay
       // cache -- and the client (ApiService) will in fact retry here.
+      // Deterministic ordering (baseline flake, DEF-01): the refusal only
+      // exists once the timed-out write has actually CLAIMED the copy. Under
+      // full-suite load the first request's handler can start after its own
+      // 150 ms timeout, so a retry sent blind may legitimately win the claim
+      // and answer 200 -- a different interleaving, not a double loan, but it
+      // made the 409 assertion depend on wall-clock luck. Wait for the claim
+      // before retrying; the invariant under test is unchanged.
+      await claimed.future.timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => throw StateError(
+          'the timed-out write never reached the copy claim within 10s -- '
+          'the handler pipeline stalled beyond any real production timeout',
+        ),
+      );
       final retry = await send();
       expect(
         retry.statusCode,
@@ -716,6 +739,11 @@ class _ScaleRepo implements LibraryRepository {
   Duration updatePreWriteDelay = Duration.zero;
   int addLoanExecutions = 0;
 
+  /// Fired synchronously, before the slow commit, once a loan claim is held
+  /// for [code] -- tests use it to observe that the timed-out write really
+  /// reached the invariant instead of guessing on wall-clock delays.
+  void Function(String code)? onLoanClaimed;
+
   /// Titles whose single lent-out copy has already been claimed. Written and
   /// read SYNCHRONOUSLY (no await in between), because that is exactly how a
   /// SQLite UNIQUE index / a compare-and-swap behaves: the reservation is
@@ -847,6 +875,7 @@ class _ScaleRepo implements LibraryRepository {
         'A single available copy cannot back two loans.',
       );
     }
+    onLoanClaimed?.call(loan.itemCode);
     await Future<void>.delayed(
       loanPreWriteDelay,
     ); // slow commit, like a real txn

@@ -267,6 +267,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
       key: Key(key),
       controller: controller,
       enabled: !_busy,
+      // DEF-05: ISO dates are machine-format; keep them LTR in the RTL UI.
+      textDirection: TextDirection.ltr,
       decoration: InputDecoration(
         labelText: label,
         hintText: l10n.reportDateHint,

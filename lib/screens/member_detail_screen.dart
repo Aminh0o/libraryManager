@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
@@ -13,6 +15,7 @@ import '../ui/app_tokens.dart';
 import '../widgets/app_states.dart';
 import '../widgets/app_status_chip.dart';
 import '../widgets/record_history_section.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 /// Core Workflow Recovery: member detail page.
 /// A pushed route opened by tapping a member card in the list. Shows the
@@ -23,6 +26,45 @@ class MemberDetailScreen extends StatefulWidget {
   const MemberDetailScreen({super.key, required this.memberId});
 
   final String memberId;
+
+  // §6.12 member-card print. Side-effect-free (no mutation, staff-gated like
+  // every slip) so re-printing a card never alters the member record (§274).
+  static Future<void> printMemberCard(
+    BuildContext context,
+    Member member,
+  ) async {
+    final provider = context.read<LibraryProvider>();
+    final l10n = AppLocalizations.of(context)!;
+    final scaffold = ScaffoldMessenger.of(context);
+    String? qr;
+    try {
+      qr = encodeReceiptPayload(
+        type: ReceiptDocType.card,
+        ref: member.memberId,
+      );
+    } catch (_) {
+      qr = null; // id not eligible for a machine code; card still prints
+    }
+    final slip = CirculationSlip(
+      docType: ReceiptDocType.card,
+      title: l10n.printMemberCard,
+      generatedAt: DateTime.now().toLocal().toString().split('.').first,
+      reference: member.memberId,
+      profileName: member.fullName,
+      status: l10n.memberDetail,
+      lines: <SlipLine>[(label: l10n.colMember, value: member.memberId)],
+      codePayload: qr,
+      barcodeValue: member.memberId,
+    );
+    try {
+      final path = await provider.printCirculationSlip(slip);
+      if (path != null) {
+        scaffold.showSnackBar(SnackBar(content: Text(l10n.reportSaved(path))));
+      }
+    } catch (e) {
+      scaffold.showSnackBar(SnackBar(content: Text(describeError(l10n, e))));
+    }
+  }
 
   @override
   State<MemberDetailScreen> createState() => _MemberDetailScreenState();
@@ -98,51 +140,8 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
     }
   }
 
-  // §6.12 member-card print. Side-effect-free (no mutation, staff-gated like
-  // every slip) so re-printing a card never alters the member record (§274).
-  // The printed machine code carries ONLY the member's own library-card id —
-  // the same number already printed in plain text on the card and the value
-  // the desk scans at a terminal. Honesty note (adversarial review P2): that
-  // id is a conventional SEQUENTIAL card number, so it is NOT secret and NOT
-  // unguessable; it is nonetheless NOT PII (no name/contact/balance) and no
-  // in-app scanner acts on a decoded receipt code, so enumeration of the id
-  // grants nothing the physical card does not already show. The strict receipt
-  // codec is used to (a) keep PII out of the code and (b) keep receipt codes
-  // distinct from LAN-pairing codes (§282/§284) — NOT to make the id opaque. A
-  // non-conforming id simply prints without a QR rather than smuggling text.
-  Future<void> _printMemberCard(Member member) async {
-    final provider = context.read<LibraryProvider>();
-    final l10n = AppLocalizations.of(context)!;
-    final scaffold = ScaffoldMessenger.of(context);
-    String? qr;
-    try {
-      qr = encodeReceiptPayload(
-        type: ReceiptDocType.card,
-        ref: member.memberId,
-      );
-    } catch (_) {
-      qr = null; // id not eligible for a machine code; card still prints
-    }
-    final slip = CirculationSlip(
-      docType: ReceiptDocType.card,
-      title: l10n.printMemberCard,
-      generatedAt: DateTime.now().toLocal().toString().split('.').first,
-      reference: member.memberId,
-      profileName: member.fullName,
-      status: l10n.memberDetail,
-      lines: <SlipLine>[(label: l10n.colMember, value: member.memberId)],
-      codePayload: qr,
-      barcodeValue: member.memberId,
-    );
-    try {
-      final path = await provider.printCirculationSlip(slip);
-      if (path != null) {
-        scaffold.showSnackBar(SnackBar(content: Text(l10n.reportSaved(path))));
-      }
-    } catch (e) {
-      scaffold.showSnackBar(SnackBar(content: Text(describeError(l10n, e))));
-    }
-  }
+  Future<void> _printMemberCard(Member member) =>
+      MemberDetailScreen.printMemberCard(context, member);
 
   @override
   Widget build(BuildContext context) {
@@ -253,20 +252,47 @@ class _IdentityCard extends StatelessWidget {
   final Member member;
   final AppLocalizations l10n;
 
+  /// v24 membership status -> design token. The stored value is the canonical
+  /// English constant (the form localizes labels only); an UNSET status is
+  /// honestly absent here rather than silently rendered "Active" — pre-v24
+  /// rows simply keep showing registration info like before.
+  static Color? _statusColor(String? status) => switch (status) {
+    'Active' => AppStatus.success,
+    'Expired' => AppStatus.danger,
+    'Suspended' => AppStatus.warning,
+    _ => null,
+  };
+
+  static String? _statusLabel(AppLocalizations l10n, String status) {
+    return switch (status) {
+      'Active' => l10n.statusActive,
+      'Expired' => l10n.statusExpired,
+      'Suspended' => l10n.statusSuspended,
+      _ => status, // unknown stored value: show it verbatim, never guess
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final txt = Theme.of(context).textTheme;
+    final photo = member.photoPath;
+    final hasPhoto = photo != null && photo.isNotEmpty;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xxl),
         child: Row(
           children: [
+            // v24: the managed photo when present, the defensive initial
+            // avatar otherwise (FE2-07 semantics unchanged).
             CircleAvatar(
               radius: 32,
               backgroundColor: scheme.primaryContainer,
               foregroundColor: scheme.onPrimaryContainer,
-              child: member.avatarInitial.isEmpty
+              backgroundImage: hasPhoto ? FileImage(File(photo)) : null,
+              child: hasPhoto
+                  ? null
+                  : member.avatarInitial.isEmpty
                   ? const Icon(Icons.person, size: AppIcon.xl)
                   : Text(member.avatarInitial, style: txt.headlineSmall),
             ),
@@ -282,7 +308,10 @@ class _IdentityCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xs),
-                  Text('ID: ${member.memberId}', style: txt.bodyMedium),
+                  Text(
+                    l10n.memberIdCaption(member.memberId),
+                    style: txt.bodyMedium,
+                  ),
                   const SizedBox(height: AppSpacing.xs),
                   Wrap(
                     spacing: AppSpacing.lg,
@@ -303,9 +332,142 @@ class _IdentityCard extends StatelessWidget {
                         label:
                             '${l10n.registered}: ${_fmtDate(member.registeredAt)}',
                       ),
+                      if (member.memberType != null &&
+                          member.memberType!.isNotEmpty)
+                        _MetaChip(
+                          icon: Icons.badge_outlined,
+                          label: member.memberType!,
+                        ),
+                      if (member.expiryDate != null)
+                        _MetaChip(
+                          icon: Icons.event_busy_outlined,
+                          label:
+                              '${l10n.expiryDate}: ${_fmtDate(member.expiryDate!)}',
+                        ),
+                      if (member.gender != null && member.gender!.isNotEmpty)
+                        AppStatusChip(
+                          label:
+                              _genderLabel(l10n, member.gender!) ??
+                              member.gender!,
+                          color: member.gender!.toLowerCase() == 'female'
+                              ? AppStatus.borrowed
+                              : AppStatus.info,
+                        ),
+                      if (member.status != null && member.status!.isNotEmpty)
+                        AppStatusChip(
+                          label: _statusLabel(l10n, member.status!)!,
+                          color: _statusColor(member.status) ?? AppStatus.info,
+                        ),
                     ],
                   ),
+                  if ((member.address != null && member.address!.isNotEmpty) ||
+                      (member.notes != null && member.notes!.isNotEmpty)) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    if (member.address != null && member.address!.isNotEmpty)
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.location_on_outlined,
+                            size: AppIcon.sm,
+                            color: scheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: AppSpacing.xs),
+                          Expanded(
+                            child: Text(
+                              '${l10n.address}: ${member.address}',
+                              style: txt.bodySmall?.copyWith(
+                                color: scheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    if (member.notes != null && member.notes!.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: AppSpacing.xs),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.sticky_note_2_outlined,
+                              size: AppIcon.sm,
+                              color: scheme.onSurfaceVariant,
+                            ),
+                            const SizedBox(width: AppSpacing.xs),
+                            Expanded(
+                              child: Text(
+                                '${l10n.notes}: ${member.notes}',
+                                style: txt.bodySmall?.copyWith(
+                                  color: scheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
                 ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: () {
+                showDialog(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: Text(l10n.printMemberCard),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: 200,
+                          height: 200,
+                          child: QrImageView(
+                            data: member.toQrPayload(),
+                            version: QrVersions.auto,
+                            size: 200,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        Text(
+                          member.fullName,
+                          style: txt.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          member.memberId,
+                          style: txt.bodyMedium?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: Text(l10n.cancel),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              child: Tooltip(
+                message: l10n.scanBarcode,
+                child: Container(
+                  padding: const EdgeInsets.all(AppSpacing.xs),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: scheme.outlineVariant),
+                  ),
+                  child: QrImageView(
+                    data: member.toQrPayload(),
+                    version: QrVersions.auto,
+                    size: 72,
+                  ),
+                ),
               ),
             ),
           ],
@@ -313,6 +475,13 @@ class _IdentityCard extends StatelessWidget {
       ),
     );
   }
+
+  static String? _genderLabel(AppLocalizations l10n, String v) =>
+      switch (v.toLowerCase()) {
+        'male' => l10n.genderMale,
+        'female' => l10n.genderFemale,
+        _ => l10n.genderOther,
+      };
 
   static String _fmtDate(DateTime d) {
     final local = d.toLocal();

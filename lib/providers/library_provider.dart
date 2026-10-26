@@ -65,6 +65,7 @@ class LibraryProvider with ChangeNotifier {
   String _searchQuery = '';
   String? _statusFilter;
   String? _codeTypeFilter;
+  String? _categoryFilter;
   bool _isLoading = false;
   String? _errorMessage;
   // FE2-12: the raw error OBJECT from a failed load, so the UI can render a
@@ -105,6 +106,10 @@ class LibraryProvider with ChangeNotifier {
   /// default, so pairing can no longer be a silent route to full control.
   UserRole _pairingRole = UserRole.staff;
   String? _pairingAdvertisedIp;
+  // Every usable interface captured when the code was minted, so a response
+  // can advertise the address on the subnet the REQ actually arrived on
+  // (DEF-02) instead of always the globally-ranked one.
+  List<LanInterface> _pairingInterfaces = const [];
   // Caps wrong pairing attempts per source IP so the 6-digit code space can't
   // be brute-forced for a code's lifetime (NET-02).
   final PairingGuard _pairingGuard = PairingGuard();
@@ -123,7 +128,11 @@ class LibraryProvider with ChangeNotifier {
   // Pagination State
   int _inventoryPage = 0;
   final int _pageSize = 20;
-  bool _hasMoreInventory = true;
+  // FE-05: both flags start FALSE and are only ever raised by a *successful*
+  // load that proves another page exists. An optimistic default rendered a
+  // "Load More" affordance (and fired scroll-loads) over an empty list when
+  // the fetch failed -- e.g. a client whose host is unreachable.
+  bool _hasMoreInventory = false;
   // Core Workflow Recovery: server-side sort + total row count so the
   // inventory table can display an honest "Showing X-Y of Z" line and keep
   // the sort stable across pages.
@@ -138,7 +147,7 @@ class LibraryProvider with ChangeNotifier {
 
   List<Map<String, dynamic>> _history = [];
   int _historyPage = 0;
-  bool _hasMoreHistory = true;
+  bool _hasMoreHistory = false;
   // Pass 5: the active subject filter for the global history screen. Kept on
   // the provider so scroll-to-load-more pages 2..N stay scoped to the same
   // record the operator filtered on.
@@ -171,11 +180,21 @@ class LibraryProvider with ChangeNotifier {
   bool get isHost => _isHost;
   String get hostIp => _hostIp;
   int get hostPort => _hostPort;
+
+  /// Port the host's LAN server is ACTUALLY listening on (DEF-03: embedded in
+  /// the pairing QR next to the IP). Falls back to the default while no
+  /// server is bound, mirroring the pairing responder's NET-01 behavior.
+  int get hostServerPort {
+    final bound = _server?.port ?? 0;
+    return bound > 0 ? bound : NetworkConfig.defaultHttpPort;
+  }
+
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   Object? get loadError => _loadError;
   String? get statusFilter => _statusFilter;
   String? get codeTypeFilter => _codeTypeFilter;
+  String? get categoryFilter => _categoryFilter;
   bool get isConnected => _isConnected;
 
   /// Whether the embedded LAN server socket is actually listening (BE-01).
@@ -278,8 +297,14 @@ class LibraryProvider with ChangeNotifier {
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     _isHost = prefs.getBool('isHost') ?? true;
-    _hostIp = prefs.getString('hostIp') ?? '';
-    _hostPort = prefs.getInt('hostPort') ?? NetworkConfig.defaultHttpPort;
+    final rawHostIp = prefs.getString('hostIp') ?? '';
+    final normalized = normalizeHostInput(rawHostIp);
+    _hostIp = normalized.ip;
+    if (normalized.port != null && !prefs.containsKey('hostPort')) {
+      _hostPort = normalized.port!;
+    } else {
+      _hostPort = prefs.getInt('hostPort') ?? NetworkConfig.defaultHttpPort;
+    }
 
     // Load saved locale
     final savedLocale = prefs.getString('locale') ?? 'fr';
@@ -298,6 +323,11 @@ class LibraryProvider with ChangeNotifier {
   }
 
   Future<String?> getLocalIp() async {
+    return selectLanIp(await _collectLanInterfaces());
+  }
+
+  /// Snapshot of this machine's IPv4 interfaces as ranking candidates.
+  Future<List<LanInterface>> _collectLanInterfaces() async {
     try {
       final interfaces = await NetworkInterface.list(
         includeLoopback: false,
@@ -318,11 +348,11 @@ class LibraryProvider with ChangeNotifier {
           );
         }
       }
-      return selectLanIp(candidates);
+      return candidates;
     } catch (e) {
       appLog.warn('net', 'Error getting local IP', e);
     }
-    return null;
+    return const [];
   }
 
   bool _isPrivateIpv4(String ip) {
@@ -367,7 +397,12 @@ class LibraryProvider with ChangeNotifier {
         _auth ??= AuthService(
           store: SqfliteAuthStore(() => DatabaseService().database),
         );
-        _server = HttpServerService(auth: _auth);
+        _server = HttpServerService(
+          auth: _auth,
+          pairingHandler: handleHttpPairing,
+        );
+      } else {
+        _server!.pairingHandler = handleHttpPairing;
       }
 
       await _ensurePairingSocket();
@@ -539,7 +574,21 @@ class LibraryProvider with ChangeNotifier {
           _pairingGuard.recordFailure(sourceIp);
           return;
         }
-        if (advertisedIp == null || advertisedIp.isEmpty) return;
+        // DEF-02: advertise the host address on the subnet the REQ arrived
+        // from (the requester can provably reach it), falling back to the
+        // globally-ranked address when none of our interfaces matches.
+        // The mint-time snapshot can already be stale — the owner's symptom
+        // family explicitly includes hosts switching Wi-Fi ↔ Ethernet ↔
+        // hotspot while a pairing dialog is open — so match against the
+        // LIVE interfaces first (one cheap OS call per REQ, and REQs are
+        // already bounded by the per-source PairingGuard throttle), then
+        // the snapshot, then the global pick.
+        final live = await _collectLanInterfaces();
+        final advertised =
+            matchPeerSubnet(live, sourceIp) ??
+            matchPeerSubnet(_pairingInterfaces, sourceIp) ??
+            advertisedIp;
+        if (advertised == null || advertised.isEmpty) return;
 
         final expiresEpochMs = expiresAt.millisecondsSinceEpoch;
         // Issue a bearer token bound to this trusted exchange. The pairing code
@@ -560,7 +609,7 @@ class LibraryProvider with ChangeNotifier {
         // so a client reaches it even when 8080 is taken/changed (NET-01).
         final resp = encodePairingResponse(
           code: currentCode,
-          ip: advertisedIp,
+          ip: advertised,
           port: _server?.port ?? NetworkConfig.defaultHttpPort,
           expiresEpochMs: expiresEpochMs,
           token: token,
@@ -578,7 +627,8 @@ class LibraryProvider with ChangeNotifier {
 
         assert(() {
           debugPrint(
-            'Pairing: sent resp to ${dg.address.address}:${dg.port} ip=$advertisedIp',
+            'Pairing: sent resp to ${dg.address.address}:${dg.port} '
+            'ip=$advertised (global=${advertisedIp ?? '-'})',
           );
           return true;
         }());
@@ -594,6 +644,7 @@ class LibraryProvider with ChangeNotifier {
     _pairingCode = null;
     _pairingCodeExpiresAt = null;
     _pairingAdvertisedIp = null;
+    _pairingInterfaces = const [];
     _pairingGuard.clear();
 
     try {
@@ -631,6 +682,64 @@ class LibraryProvider with ChangeNotifier {
     return auth.issueTokenFor(TokenPrincipal(username: username, role: role));
   }
 
+  /// Validates a pairing code received over direct HTTP (`POST /auth/pair`),
+  /// creates a dedicated least-privilege token, and consumes the code.
+  Future<Map<String, dynamic>?> handleHttpPairing(
+    String code,
+    String clientIp,
+  ) async {
+    final cleaned = code.trim().replaceAll(RegExp(r'\D'), '');
+    final reqCode = cleaned.isEmpty
+        ? code.trim()
+        : (cleaned.length <= 6 ? cleaned.padLeft(6, '0') : cleaned);
+
+    if (!_pairingGuard.allowAttempt(clientIp)) {
+      return {
+        'status': 429,
+        'error': 'too_many_attempts',
+        'retry_after_seconds': 60,
+      };
+    }
+
+    final currentCode = _pairingCode;
+    final expiresAt = _pairingCodeExpiresAt;
+
+    if (currentCode == null ||
+        expiresAt == null ||
+        DateTime.now().isAfter(expiresAt)) {
+      return {
+        'status': 401,
+        'error': 'invalid_code',
+        'message': 'Pairing code expired or not active',
+      };
+    }
+
+    if (reqCode != currentCode) {
+      _pairingGuard.recordFailure(clientIp);
+      return {
+        'status': 401,
+        'error': 'invalid_code',
+        'message': 'Invalid pairing code',
+      };
+    }
+
+    // Success: clear failures and consume single-use code
+    _pairingGuard.recordSuccess(clientIp);
+    final token = _auth != null
+        ? await _issuePairingToken(currentCode, _pairingRole)
+        : '';
+    final role = _pairingRole.storage;
+    final username = 'device-$currentCode';
+
+    _pairingExpiryTimer?.cancel();
+    _pairingCode = null;
+    _pairingCodeExpiresAt = null;
+    _pairingAdvertisedIp = null;
+    notifyListeners();
+
+    return {'status': 200, 'token': token, 'role': role, 'username': username};
+  }
+
   String _generatePairingCode() {
     final rnd = Random.secure();
     return rnd.nextInt(1000000).toString().padLeft(6, '0');
@@ -652,7 +761,11 @@ class LibraryProvider with ChangeNotifier {
     }
     _pairingExpiryTimer?.cancel();
 
-    final ip = await getLocalIp();
+    // Snapshot the interfaces while minting the code: the responder answers a
+    // REQ with the address sharing the REQUESTER's subnet (DEF-02), and only
+    // falls back to this global pick when no interface matches.
+    final candidates = await _collectLanInterfaces();
+    final ip = selectLanIp(candidates);
     if (ip == null || ip.isEmpty) {
       throw StateError('No LAN IPv4 address found for pairing');
     }
@@ -663,6 +776,7 @@ class LibraryProvider with ChangeNotifier {
     _pairingCode = code;
     _pairingCodeExpiresAt = expiresAt;
     _pairingAdvertisedIp = ip;
+    _pairingInterfaces = candidates;
     _pairingRole = role;
 
     _pairingExpiryTimer = Timer(validFor, () {
@@ -703,6 +817,8 @@ class LibraryProvider with ChangeNotifier {
 
   Future<String?> discoverHostIpByPairingCode(
     String code, {
+    String? explicitHostIp,
+    int? explicitHostPort,
     Duration timeout = const Duration(seconds: 4),
   }) async {
     if (_isHost) return null;
@@ -715,6 +831,19 @@ class LibraryProvider with ChangeNotifier {
               ? cleanedDigits.padLeft(6, '0')
               : cleanedDigits);
     if (cleaned.isEmpty) return null;
+
+    // 1. Direct HTTP pairing first if host IP is supplied or already configured
+    final candidateHost = (explicitHostIp ?? _hostIp).trim();
+    if (candidateHost.isNotEmpty) {
+      final ok = await pairWithHostDirect(
+        cleaned,
+        hostIp: candidateHost,
+        port: explicitHostPort,
+      );
+      if (ok) {
+        return normalizeHostInput(candidateHost).ip;
+      }
+    }
 
     RawDatagramSocket? socket;
     try {
@@ -1462,14 +1591,106 @@ class LibraryProvider with ChangeNotifier {
     return filePath;
   }
 
+  /// Normalizes host address input by stripping schemes (http://, https://),
+  /// trailing paths, and extracting embedded port numbers.
+  static ({String ip, int? port}) normalizeHostInput(String raw) {
+    var cleaned = raw.trim();
+    if (cleaned.startsWith('http://')) {
+      cleaned = cleaned.substring(7);
+    } else if (cleaned.startsWith('https://')) {
+      cleaned = cleaned.substring(8);
+    }
+    final slashIdx = cleaned.indexOf('/');
+    if (slashIdx != -1) {
+      cleaned = cleaned.substring(0, slashIdx);
+    }
+    int? parsedPort;
+    final colonIdx = cleaned.lastIndexOf(':');
+    if (colonIdx != -1) {
+      final portStr = cleaned.substring(colonIdx + 1).trim();
+      final p = int.tryParse(portStr);
+      if (p != null && p > 0 && p <= 65535) {
+        parsedPort = p;
+        cleaned = cleaned.substring(0, colonIdx).trim();
+      }
+    }
+    return (ip: cleaned, port: parsedPort);
+  }
+
+  /// Direct HTTP pairing with host over TCP, bypassing UDP broadcast drops.
+  Future<bool> pairWithHostDirect(
+    String code, {
+    String? hostIp,
+    int? port,
+  }) async {
+    final target = (hostIp ?? _hostIp).trim();
+    if (target.isEmpty) return false;
+    final normalized = normalizeHostInput(target);
+    final effectiveIp = normalized.ip;
+    final effectivePort = normalized.port ?? port ?? _hostPort;
+
+    final tempApi = ApiService(
+      hostIp: effectiveIp,
+      port: effectivePort,
+      timeout: const Duration(seconds: 4),
+    );
+
+    try {
+      final session = await tempApi.pairWithHost(code);
+      if (session != null && session.isValid) {
+        _clientToken = session.token;
+        _hostPort = effectivePort;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('clientToken', session.token);
+        await prefs.setInt('hostPort', effectivePort);
+        await updateSettings(false, effectiveIp, port: effectivePort);
+        return true;
+      }
+    } finally {
+      tempApi.close();
+    }
+    return false;
+  }
+
+  /// Pre-flight connection test without mutating current settings.
+  Future<ConnectivityResult> testHostConnection(
+    String rawIp, {
+    int? port,
+  }) async {
+    final normalized = normalizeHostInput(rawIp);
+    if (normalized.ip.isEmpty) {
+      return const ConnectivityResult(
+        ConnectStatus.unreachable,
+        message: 'Empty address',
+      );
+    }
+    final effectivePort = normalized.port ?? port ?? _hostPort;
+    final tempApi = ApiService(
+      hostIp: normalized.ip,
+      port: effectivePort,
+      authToken: _clientToken,
+      timeout: const Duration(seconds: 4),
+    );
+    try {
+      return await tempApi.checkConnectivity();
+    } finally {
+      tempApi.close();
+    }
+  }
+
   Future<void> updateSettings(bool isHost, String hostIp, {int? port}) async {
     _isHost = isHost;
-    _hostIp = hostIp;
-    if (port != null) _hostPort = port;
+    final normalized = normalizeHostInput(hostIp);
+    _hostIp = normalized.ip;
+    if (normalized.port != null) {
+      _hostPort = normalized.port!;
+    } else if (port != null) {
+      _hostPort = port;
+    }
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isHost', isHost);
-    await prefs.setString('hostIp', hostIp);
+    await prefs.setString('hostIp', _hostIp);
     await prefs.setInt('hostPort', _hostPort);
 
     await _initRepository();
@@ -1712,6 +1933,90 @@ class LibraryProvider with ChangeNotifier {
     await _loadLoans();
   }
 
+  Future<List<LibraryItem>> _getItemsFiltered({
+    required LibraryRepository repo,
+    int limit = 1000,
+    int offset = 0,
+    String? search,
+    String? status,
+    String? codeType,
+    String? category,
+    String? sort,
+    bool ascending = true,
+  }) async {
+    if (repo is DatabaseService) {
+      return repo.getItems(
+        limit: limit,
+        offset: offset,
+        search: search,
+        status: status,
+        codeType: codeType,
+        category: category,
+        sort: sort,
+        ascending: ascending,
+      );
+    }
+    if (repo is ApiService) {
+      return repo.getItems(
+        limit: limit,
+        offset: offset,
+        search: search,
+        status: status,
+        codeType: codeType,
+        category: category,
+        sort: sort,
+        ascending: ascending,
+      );
+    }
+    final raw = await repo.getItems(
+      limit: limit,
+      offset: offset,
+      search: search,
+      status: status,
+      codeType: codeType,
+      sort: sort,
+      ascending: ascending,
+    );
+    if (category != null && category.isNotEmpty) {
+      return raw.where((i) => i.category == category).toList();
+    }
+    return raw;
+  }
+
+  Future<int> _countItemsFiltered({
+    required LibraryRepository repo,
+    String? search,
+    String? status,
+    String? codeType,
+    String? category,
+  }) async {
+    if (repo is DatabaseService) {
+      return repo.countItems(
+        search: search,
+        status: status,
+        codeType: codeType,
+        category: category,
+      );
+    }
+    if (repo is ApiService) {
+      return repo.countItems(
+        search: search,
+        status: status,
+        codeType: codeType,
+        category: category,
+      );
+    }
+    if (category != null && category.isNotEmpty) {
+      final all = await repo.getItems(
+        search: search,
+        status: status,
+        codeType: codeType,
+      );
+      return all.where((i) => i.category == category).length;
+    }
+    return repo.countItems(search: search, status: status, codeType: codeType);
+  }
+
   Future<void> _loadItems({bool more = false, bool keepWindow = false}) async {
     if (_repository == null) return;
     if (more && !_hasMoreInventory) return;
@@ -1742,19 +2047,23 @@ class LibraryProvider with ChangeNotifier {
     // (FE-05 / FE2-05).
     final search = _searchQuery.trim().isEmpty ? null : _searchQuery;
     try {
-      final newItems = await _repository!.getItems(
+      final newItems = await _getItemsFiltered(
+        repo: _repository!,
         limit: limit,
         offset: _inventoryPage * _pageSize,
         search: search,
         status: _statusFilter,
         codeType: _codeTypeFilter,
+        category: _categoryFilter,
         sort: _sortColumn,
         ascending: _sortAscending,
       );
-      final total = await _repository!.countItems(
+      final total = await _countItemsFiltered(
+        repo: _repository!,
         search: search,
         status: _statusFilter,
         codeType: _codeTypeFilter,
+        category: _categoryFilter,
       );
       _inventoryTotal = total;
 
@@ -2027,9 +2336,15 @@ class LibraryProvider with ChangeNotifier {
     _loadItems();
   }
 
+  void filterByCategory(String? category) {
+    _categoryFilter = category;
+    _loadItems();
+  }
+
   void clearFilters() {
     _statusFilter = null;
     _codeTypeFilter = null;
+    _categoryFilter = null;
     _searchQuery = '';
     _searchDebounce?.cancel();
     _loadItems();
@@ -2206,6 +2521,14 @@ class LibraryProvider with ChangeNotifier {
   double get totalValue => (_stats['totalValue'] ?? 0.0).toDouble();
   int get onLoanCount => _stats['onLoan'] ?? 0;
 
+  // Phase 9 (dynamic analytics): rolling circulation health computed on the
+  // host (see DatabaseService.getStats) and shipped whole to clients over
+  // /stats, so both sides read identical numbers. Absent keys (a pre-upgrade
+  // peer) read as 0 rather than fabricating activity.
+  int get overdueLoanCount => _stats['overdueLoans'] ?? 0;
+  int get weekBorrowCount => _stats['weekBorrows'] ?? 0;
+  int get weekReturnCount => _stats['weekReturns'] ?? 0;
+
   int getCountByStatus(String status) =>
       _items.where((i) => i.status == status).length;
   int getCountByCodeType(String codeType) {
@@ -2330,6 +2653,12 @@ class LibraryProvider with ChangeNotifier {
           '${item.taux}',
           item.emplacementStock,
           item.status,
+          item.author,
+          item.category,
+          item.publisher,
+          item.year == null ? '' : '${item.year}',
+          item.language,
+          item.description,
         ],
     ]);
     final timestamp = DateTime.now()
@@ -2355,17 +2684,21 @@ class LibraryProvider with ChangeNotifier {
     final repo = _repository;
     if (repo == null) return List<LibraryItem>.of(_items);
     final search = _searchQuery.trim().isEmpty ? null : _searchQuery;
-    final total = await repo.countItems(
+    final total = await _countItemsFiltered(
+      repo: repo,
       search: search,
       status: _statusFilter,
       codeType: _codeTypeFilter,
+      category: _categoryFilter,
     );
-    return await repo.getItems(
+    return await _getItemsFiltered(
+      repo: repo,
       limit: total,
       offset: 0,
       search: search,
       status: _statusFilter,
       codeType: _codeTypeFilter,
+      category: _categoryFilter,
     );
   }
 
@@ -2375,9 +2708,12 @@ class LibraryProvider with ChangeNotifier {
   @visibleForTesting
   String csvContent(List<LibraryItem> items) {
     final buffer = StringBuffer();
-    // CSV Header with French labels
+    // CSV Header with French labels. The six v24 bibliographic columns are
+    // appended AFTER the legacy nine so an import (which reads indices 0-8) and
+    // any saved spreadsheet keep working unchanged (Phase 6 export follow-up).
     buffer.writeln(
-      'Code,Barre,Type,Designation,Quantite,Emplacement,Prix,Stock,Statut',
+      'Code,Barre,Type,Designation,Quantite,Emplacement,Prix,Stock,Statut,'
+      'Auteur,Categorie,Editeur,Annee,Langue,Description',
     );
     for (final item in items) {
       buffer.writeln(
@@ -2391,6 +2727,12 @@ class LibraryProvider with ChangeNotifier {
           '${item.taux}',
           item.emplacementStock,
           item.status,
+          item.author ?? '',
+          item.category ?? '',
+          item.publisher ?? '',
+          item.year == null ? '' : '${item.year}',
+          item.language ?? '',
+          item.description ?? '',
         ].map(_csvField).join(','),
       );
     }
@@ -2436,15 +2778,9 @@ class LibraryProvider with ChangeNotifier {
       finalMemberId = await (_repository as DatabaseService).generateMemberID();
     }
 
-    final memberWithId = Member(
-      id: member.id,
-      firstName: member.firstName,
-      lastName: member.lastName,
-      email: member.email,
-      phone: member.phone,
-      memberId: finalMemberId,
-      registeredAt: member.registeredAt,
-    );
+    // Whole-row copy, never a hand-written rebuild: v24 enrichment fields
+    // (photo/type/status/expiry/address/notes) must survive the id swap.
+    final memberWithId = member.copyWith(memberId: finalMemberId);
 
     await _repository!.addMember(
       memberWithId,
@@ -2514,13 +2850,28 @@ class LibraryProvider with ChangeNotifier {
       durationDays: durationDays,
     );
 
-    await _repository!.addLoan(
-      loan,
-      audit: _hostAudit(
-        'CHECKOUT',
-        'Emprunt: ${item.code} par ${member.fullName}',
-      ),
-    );
+    try {
+      await _repository!.addLoan(
+        loan,
+        audit: _hostAudit(
+          'CHECKOUT',
+          'Emprunt: ${item.code} par ${member.fullName}',
+        ),
+      );
+    } catch (_) {
+      // DEF-01 observation, closed client-side: the server's 504 guard answers
+      // WITHOUT cancelling the handler, and the client's own request budget
+      // can expire before any definitive answer — under either kind of
+      // unknown-outcome failure the write may still have committed on the
+      // host. Re-sync the two lists this failure can affect BEFORE rethrowing,
+      // so the operator is shown the true ledger (a phantom commit appears as
+      // an active loan, a refused one stays clean) instead of a stale
+      // 'Disponible'. The idempotency key + active-copy claim protect the
+      // data; this protects the view.
+      await _loadLoans();
+      await _loadItems();
+      rethrow;
+    }
     await _loadLoans();
     await _loadItems(); // Refresh item status
     _triggerImmediateBackup();
@@ -2603,7 +2954,8 @@ Future<String> buildInventoryCsvOffIsolate(List<List<String?>> rows) =>
     Isolate.run(() {
       final buffer = StringBuffer();
       buffer.writeln(
-        'Code,Barre,Type,Designation,Quantite,Emplacement,Prix,Stock,Statut',
+        'Code,Barre,Type,Designation,Quantite,Emplacement,Prix,Stock,Statut,'
+        'Auteur,Categorie,Editeur,Annee,Langue,Description',
       );
       for (final cells in rows) {
         buffer.writeln(

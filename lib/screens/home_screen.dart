@@ -12,6 +12,8 @@ import '../providers/appearance_controller.dart';
 import '../services/feature_flags.dart';
 import '../services/error_messages.dart';
 import '../services/windows_firewall_service.dart';
+import '../services/update_notifier.dart';
+import '../widgets/app_toast.dart';
 import '../widgets/barcode_scanner_dialog.dart';
 import '../widgets/app_states.dart';
 import '../widgets/item_status_cell.dart';
@@ -79,6 +81,30 @@ class _HomeScreenState extends State<HomeScreen> {
     // One-time firewall prompt for first-time host-mode users on Windows.
     // Deferred to a post-frame callback so the dialog has a valid context.
     WidgetsBinding.instance.addPostFrameCallback((_) => _maybePromptFirewall());
+    // Phase 13: the app now notices an update on its own. A throttled, honest,
+    // admin-only startup check that only ever announces a real release (see
+    // UpdateNotifier). Also deferred so the announcement has a live context.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeNotifyUpdate());
+  }
+
+  /// Phase 13: run the throttled startup update check and, only when it finds a
+  /// genuinely new release, show an informational toast. Silent for
+  /// up-to-date / not-configured / unreachable-feed (no internet is never
+  /// announced), and only for a session that can act on it (admin).
+  Future<void> _maybeNotifyUpdate() async {
+    if (!mounted) return;
+    final provider = Provider.of<LibraryProvider>(context, listen: false);
+    if (!provider.canAdminister) return;
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) return;
+    final version = await UpdateNotifier.runStartupCheck();
+    if (!mounted || version == null) return;
+    final messenger = ScaffoldMessenger.of(context);
+    showAppToastOn(
+      messenger,
+      l10n.updateFoundVersion(version),
+      kind: ToastKind.info,
+    );
   }
 
   Future<void> _maybePromptFirewall() async {
@@ -667,6 +693,14 @@ class _HomeScreenState extends State<HomeScreen> {
       };
 
   static String getLocalizedStatus(String status, AppLocalizations l10n) {
+    // A real-UI pass caught the status FILTER dropdown showing raw French
+    // literals ('En Réparation', 'Perdu', 'Archivé') inside the English and
+    // Arabic builds, while the status CHIP on the same screen was fully
+    // localized. The two had drifted: the chip's switch grew with the
+    // copy-derived vocabulary, this one did not. Any status not listed here
+    // falls through to the stored French text, so the map must stay in step
+    // with ItemStatusCell._labelFor -- see the parity test in
+    // test/screens/home_status_filter_localization_test.dart.
     switch (status) {
       case ItemStatus.disponible:
         return l10n.statusDisponible;
@@ -676,6 +710,12 @@ class _HomeScreenState extends State<HomeScreen> {
         return l10n.statusReserve;
       case ItemStatus.endommage:
         return l10n.statusEndommage;
+      case 'En Réparation':
+        return l10n.statusEnReparation;
+      case 'Perdu':
+        return l10n.statusPerdu;
+      case 'Archivé':
+        return l10n.statusArchive;
       default:
         return status;
     }
@@ -783,16 +823,32 @@ class _InventoryViewState extends State<_InventoryView> {
                   decoration: InputDecoration(
                     hintText: l10n.search,
                     prefixIcon: const Icon(Icons.search),
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.camera_alt),
-                      onPressed: () async {
-                        final code = await showBarcodeScanner(context);
-                        if (!context.mounted) return;
-                        if (code != null) {
-                          provider.search(code);
-                        }
-                      },
-                      tooltip: l10n.scanBarcode,
+                    suffixIcon: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // FE-05: the scan button used to be the only suffix, so
+                        // an operator who typed a query had no way back to the
+                        // full list except selecting and deleting the text.
+                        // The clear affordance appears only when it can do
+                        // something (§52 -- no dead controls).
+                        if (provider.searchQuery.isNotEmpty)
+                          IconButton(
+                            icon: const Icon(Icons.close),
+                            tooltip: l10n.clearSearch,
+                            onPressed: () => provider.search(''),
+                          ),
+                        IconButton(
+                          icon: const Icon(Icons.camera_alt),
+                          onPressed: () async {
+                            final code = await showBarcodeScanner(context);
+                            if (!context.mounted) return;
+                            if (code != null) {
+                              provider.search(code);
+                            }
+                          },
+                          tooltip: l10n.scanBarcode,
+                        ),
+                      ],
                     ),
                   ),
                   onChanged: (value) => provider.search(value),
@@ -875,6 +931,47 @@ class _InventoryViewState extends State<_InventoryView> {
                         ),
                       ],
                       onChanged: (value) => provider.filterByStatus(value),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              // Category filter dropdown
+              SizedBox(
+                width: 170,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                  ),
+                  decoration: BoxDecoration(
+                    color: scheme.surfaceContainerLow,
+                    borderRadius: AppRadius.field,
+                    border: Border.all(
+                      color: scheme.outlineVariant,
+                      width: AppBorder.width,
+                    ),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String?>(
+                      value: provider.categoryFilter,
+                      hint: Text(l10n.category),
+                      isExpanded: true,
+                      icon: const Icon(Icons.category_outlined),
+                      items: [
+                        DropdownMenuItem<String?>(
+                          value: null,
+                          child: Text(l10n.allCategories),
+                        ),
+                        ...provider.attributes
+                            .where((a) => a.type == 'CATEGORY')
+                            .map(
+                              (cat) => DropdownMenuItem(
+                                value: cat.value,
+                                child: Text(cat.value),
+                              ),
+                            ),
+                      ],
+                      onChanged: (value) => provider.filterByCategory(value),
                     ),
                   ),
                 ),
@@ -1136,11 +1233,24 @@ class _InventoryViewState extends State<_InventoryView> {
             ),
           ),
           if (provider.items.isEmpty && !provider.isLoading)
-            AppEmptyState(
-              icon: Icons.inventory_2_outlined,
-              title: l10n.noItemsFound,
-              compact: true,
-            ),
+            // A real-UI pass caught this card claiming "No items found" on a
+            // client that simply could not reach the host. An empty catalogue
+            // and an unreachable server looked identical, so the operator's
+            // first conclusion was that the data had been lost. When the link
+            // is down, say the link is down and offer the one useful action.
+            (!provider.isHost &&
+                    provider.connectionStatus ==
+                        LanConnectionStatus.disconnected)
+                ? AppErrorState(
+                    message: l10n.errNetwork,
+                    retryLabel: l10n.retry,
+                    onRetry: provider.reload,
+                  )
+                : AppEmptyState(
+                    icon: Icons.inventory_2_outlined,
+                    title: l10n.noItemsFound,
+                    compact: true,
+                  ),
         ],
       ),
     );

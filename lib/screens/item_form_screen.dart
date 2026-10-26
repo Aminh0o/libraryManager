@@ -1,11 +1,17 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
 import '../models/library_item.dart';
 import '../providers/library_provider.dart';
 import '../services/error_messages.dart';
+import '../services/managed_media.dart';
 import '../ui/app_tokens.dart';
 import '../widgets/barcode_scanner_dialog.dart';
+import '../widgets/app_toast.dart';
+import '../services/isbn_lookup_service.dart';
 
 /// Phase L (frontend reconstruction): the item form moved onto the design
 /// system -- themed AppBar, token spacing, the shared filled-field theme (no
@@ -32,8 +38,21 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
   late TextEditingController _emplacementController;
   late TextEditingController _tauxController;
   late TextEditingController _emplacementStockController;
+  // Phase 6 (schema v24) enrichment controls.
+  late TextEditingController _authorController;
+  late TextEditingController _categoryController;
+  late TextEditingController _descriptionController;
+  late TextEditingController _publisherController;
+  late TextEditingController _yearController;
+  String? _language;
   late String _selectedStatus;
   late String _selectedCodeType;
+
+  /// Cover state mirrors the member-photo model: the STORED path plus a
+  /// staged pick applied on save, so cancelling the form touches no files.
+  String? _coverPath;
+  String? _pendingCoverSource;
+  bool _coverCleared = false;
 
   // FE2-01/02: guards the in-flight save so the button cannot be double-tapped
   // and the form stays open (input preserved) until the write is confirmed.
@@ -67,6 +86,21 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
     _emplacementStockController = TextEditingController(
       text: widget.item?.emplacementStock ?? '',
     );
+    _authorController = TextEditingController(text: widget.item?.author ?? '');
+    _categoryController = TextEditingController(
+      text: widget.item?.category ?? '',
+    );
+    _descriptionController = TextEditingController(
+      text: widget.item?.description ?? '',
+    );
+    _publisherController = TextEditingController(
+      text: widget.item?.publisher ?? '',
+    );
+    _yearController = TextEditingController(
+      text: widget.item?.year?.toString() ?? '',
+    );
+    _language = widget.item?.language;
+    _coverPath = widget.item?.coverPath;
 
     // Status initialization
     final provider = Provider.of<LibraryProvider>(context, listen: false);
@@ -121,6 +155,56 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
       });
       // Still generate a NEW internal code for this specific copy
       _autoGenerateCode();
+    } else if (barcode.replaceAll(RegExp(r'[^0-9Xx]'), '').length >= 10) {
+      // Attempt online ISBN auto-lookup for unrecognized physical books
+      _lookupIsbnData();
+    }
+  }
+
+  bool _isLookingUpIsbn = false;
+
+  Future<void> _lookupIsbnData() async {
+    final raw = _barcodeController.text.trim().isNotEmpty
+        ? _barcodeController.text.trim()
+        : _codeController.text.trim();
+    final clean = raw.replaceAll(RegExp(r'[^0-9Xx]'), '');
+    final l10n = AppLocalizations.of(context)!;
+    if (clean.length < 10) {
+      showAppToast(context, l10n.barcodeHint, kind: ToastKind.info);
+      return;
+    }
+    setState(() => _isLookingUpIsbn = true);
+    try {
+      final data = await IsbnLookupService().lookup(raw);
+      if (data != null && mounted) {
+        setState(() {
+          if (data.title.isNotEmpty) _designationController.text = data.title;
+          if (data.author != null && data.author!.isNotEmpty) {
+            _authorController.text = data.author!;
+          }
+          if (data.publisher != null && data.publisher!.isNotEmpty) {
+            _publisherController.text = data.publisher!;
+          }
+          if (data.year != null) {
+            _yearController.text = data.year.toString();
+          }
+          if (data.category != null && data.category!.isNotEmpty) {
+            _categoryController.text = data.category!;
+          }
+          if (data.description != null && data.description!.isNotEmpty) {
+            _descriptionController.text = data.description!;
+          }
+        });
+        showAppToast(context, l10n.isbnAutoFilled, kind: ToastKind.success);
+      } else if (mounted) {
+        showAppToast(context, l10n.isbnNotFound, kind: ToastKind.warning);
+      }
+    } catch (_) {
+      if (mounted) {
+        showAppToast(context, l10n.isbnNotFound, kind: ToastKind.warning);
+      }
+    } finally {
+      if (mounted) setState(() => _isLookingUpIsbn = false);
     }
   }
 
@@ -133,7 +217,50 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
     _emplacementController.dispose();
     _tauxController.dispose();
     _emplacementStockController.dispose();
+    _authorController.dispose();
+    _categoryController.dispose();
+    _descriptionController.dispose();
+    _publisherController.dispose();
+    _yearController.dispose();
     super.dispose();
+  }
+
+  String? _optionalText(TextEditingController c) =>
+      c.text.trim().isEmpty ? null : c.text.trim();
+
+  /// Preview / stored value after save: staged pick previews immediately,
+  /// explicit clear removes it (same contract as the member photo).
+  String? get _effectiveCover {
+    if (_coverCleared) return null;
+    return _pendingCoverSource ?? _coverPath;
+  }
+
+  /// Pick a cover image and stage it for import (applied on save). Only for
+  /// an EXISTING title: its code is the stable file key, and a new form's
+  /// code is still editable, which would orphan the managed file.
+  Future<void> _pickCover() async {
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['png', 'jpg', 'jpeg'],
+    );
+    final path = result?.files.single.path;
+    if (path == null || !mounted) return;
+    try {
+      final length = await File(path).length();
+      if (length == 0 || length > ManagedMedia.maxBytes) {
+        showAppToastOn(messenger, l10n.photoTooLarge, kind: ToastKind.error);
+        return;
+      }
+    } catch (_) {
+      showAppToastOn(messenger, l10n.photoFailed, kind: ToastKind.error);
+      return;
+    }
+    setState(() {
+      _pendingCoverSource = path;
+      _coverCleared = false;
+    });
   }
 
   Future<void> _saveItem() async {
@@ -144,19 +271,83 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
     if (_saving) return;
     if (!_formKey.currentState!.validate()) return;
 
-    final item = LibraryItem(
-      code: _codeController.text,
-      barcode: _barcodeController.text.isEmpty ? null : _barcodeController.text,
-      codeType: _selectedCodeType,
-      designation: _designationController.text,
-      quantite: int.tryParse(_quantiteController.text.trim()) ?? 0,
-      emplacement: _emplacementController.text,
-      taux: double.tryParse(_tauxController.text.trim()) ?? 0.0,
-      emplacementStock: _emplacementStockController.text,
-      status: _selectedStatus,
-    );
-
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    // Read the provider NOW, before any await below, so the async cover
+    // import/remove does not leave a BuildContext read across an async gap
+    // (use_build_context_synchronously).
     final provider = Provider.of<LibraryProvider>(context, listen: false);
+
+    // v24 enrichment inputs (identical shape for both branches below).
+    final author = _optionalText(_authorController);
+    final category = _optionalText(_categoryController);
+    final description = _optionalText(_descriptionController);
+    final publisher = _optionalText(_publisherController);
+    final year = int.tryParse(_yearController.text.trim());
+
+    final String? newCoverPath;
+    try {
+      newCoverPath = _coverCleared
+          ? null
+          : _pendingCoverSource == null
+          ? _coverPath
+          : await ManagedMedia.importImage(
+              sourcePath: _pendingCoverSource!,
+              folder: 'covers',
+              fileName: widget.item!.code,
+            );
+    } on MediaException {
+      showAppToastOn(messenger, l10n.photoFailed, kind: ToastKind.error);
+      return; // form stays open, nothing stored changed
+    }
+    // The import hit the filesystem asynchronously; a form disposed during
+    // that gap must not be written to or read from.
+    if (!mounted) return;
+
+    final LibraryItem item;
+    if (widget.item == null) {
+      item = LibraryItem(
+        code: _codeController.text,
+        barcode: _optionalText(_barcodeController),
+        codeType: _selectedCodeType,
+        designation: _designationController.text,
+        quantite: int.tryParse(_quantiteController.text.trim()) ?? 0,
+        emplacement: _emplacementController.text,
+        taux: double.tryParse(_tauxController.text.trim()) ?? 0.0,
+        emplacementStock: _emplacementStockController.text,
+        status: _selectedStatus,
+        author: author,
+        category: category,
+        description: description,
+        language: _language,
+        publisher: publisher,
+        year: year,
+      );
+    } else {
+      // copyWith over the READ row: whole-field overrides (user text -> null
+      // when blank, so clearing a field really clears it); cover replace or
+      // clear retires the previous managed copy exactly once.
+      if (_coverPath != null && _coverPath != newCoverPath) {
+        await ManagedMedia.removeImage(_coverPath);
+      }
+      item = widget.item!.copyWith(
+        barcode: _optionalText(_barcodeController),
+        designation: _designationController.text,
+        quantite: int.tryParse(_quantiteController.text.trim()) ?? 0,
+        emplacement: _emplacementController.text,
+        taux: double.tryParse(_tauxController.text.trim()) ?? 0.0,
+        emplacementStock: _emplacementStockController.text,
+        status: _selectedStatus,
+        author: author,
+        category: category,
+        description: description,
+        language: _language,
+        publisher: publisher,
+        year: year,
+        coverPath: newCoverPath,
+      );
+    }
+
     setState(() => _saving = true);
     try {
       if (widget.item == null) {
@@ -303,6 +494,8 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
                                   flex: 3,
                                   child: TextFormField(
                                     controller: _codeController,
+                                    // DEF-05: codes are machine-format ASCII.
+                                    textDirection: TextDirection.ltr,
                                     decoration: InputDecoration(
                                       labelText: l10n.code,
                                       hintText: l10n.autoGenerated,
@@ -335,23 +528,45 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
                             const SizedBox(height: AppSpacing.lg),
                             TextFormField(
                               controller: _barcodeController,
+                              // DEF-05: barcodes are machine-format ASCII.
+                              textDirection: TextDirection.ltr,
                               decoration: InputDecoration(
                                 labelText: l10n.barcode,
                                 hintText: l10n.barcodeHint,
                                 prefixIcon: const Icon(
                                   Icons.view_week_outlined,
                                 ),
-                                suffixIcon: IconButton(
-                                  icon: const Icon(Icons.qr_code_scanner),
-                                  onPressed: () async {
-                                    final code = await showBarcodeScanner(
-                                      context,
-                                    );
-                                    if (code != null) {
-                                      _onBarcodeScanned(code);
-                                    }
-                                  },
-                                  tooltip: l10n.scanBarcode,
+                                suffixIcon: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: _isLookingUpIsbn
+                                          ? const SizedBox(
+                                              width: 16,
+                                              height: 16,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                              ),
+                                            )
+                                          : const Icon(Icons.auto_fix_high),
+                                      tooltip: l10n.lookupIsbn,
+                                      onPressed: _isLookingUpIsbn
+                                          ? null
+                                          : _lookupIsbnData,
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.qr_code_scanner),
+                                      onPressed: () async {
+                                        final code = await showBarcodeScanner(
+                                          context,
+                                        );
+                                        if (code != null) {
+                                          _onBarcodeScanned(code);
+                                        }
+                                      },
+                                      tooltip: l10n.scanBarcode,
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
@@ -548,6 +763,335 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
                                         ? l10n.required
                                         : null,
                                   ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xxl),
+                    // ---- Phase 6 (v24) bibliographic enrichment. All
+                    // optional: blank fields store NULL and read back as
+                    // "not set" -- the detail page never invents values.
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSpacing.xl),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              l10n.itemDescription,
+                              style: Theme.of(context).textTheme.titleSmall,
+                            ),
+                            const SizedBox(height: AppSpacing.lg),
+                            Row(
+                              children: [
+                                Expanded(
+                                  flex: 3,
+                                  child: TextFormField(
+                                    controller: _authorController,
+                                    decoration: InputDecoration(
+                                      labelText: l10n.author,
+                                      prefixIcon: const Icon(
+                                        Icons.person_outline,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: AppSpacing.sm),
+                                Expanded(
+                                  flex: 2,
+                                  child: TextFormField(
+                                    controller: _yearController,
+                                    // DEF-05: years are machine-format digits.
+                                    textDirection: TextDirection.ltr,
+                                    keyboardType: TextInputType.number,
+                                    decoration: InputDecoration(
+                                      labelText: l10n.year,
+                                      prefixIcon: const Icon(
+                                        Icons.calendar_today_outlined,
+                                      ),
+                                    ),
+                                    validator: (v) {
+                                      if (v == null || v.trim().isEmpty) {
+                                        return null;
+                                      }
+                                      final n = int.tryParse(v.trim());
+                                      if (n == null || n < 0 || n > 2100) {
+                                        return l10n.wholeNumberRequired;
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: AppSpacing.lg),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Autocomplete<String>(
+                                    initialValue: TextEditingValue(
+                                      text: _categoryController.text,
+                                    ),
+                                    optionsBuilder: (textEditingValue) {
+                                      final categories =
+                                          Provider.of<LibraryProvider>(
+                                                context,
+                                                listen: false,
+                                              ).attributes
+                                              .where(
+                                                (a) => a.type == 'CATEGORY',
+                                              )
+                                              .map((a) => a.value)
+                                              .toList();
+                                      if (textEditingValue.text.isEmpty) {
+                                        return categories;
+                                      }
+                                      return categories.where(
+                                        (c) => c.toLowerCase().contains(
+                                          textEditingValue.text.toLowerCase(),
+                                        ),
+                                      );
+                                    },
+                                    onSelected: (selection) {
+                                      _categoryController.text = selection;
+                                    },
+                                    fieldViewBuilder:
+                                        (
+                                          context,
+                                          textController,
+                                          focusNode,
+                                          onFieldSubmitted,
+                                        ) {
+                                          // Sync back to _categoryController
+                                          textController.addListener(() {
+                                            _categoryController.text =
+                                                textController.text;
+                                          });
+                                          return TextFormField(
+                                            controller: textController,
+                                            focusNode: focusNode,
+                                            onFieldSubmitted: (v) =>
+                                                onFieldSubmitted(),
+                                            decoration: InputDecoration(
+                                              labelText: l10n.category,
+                                              prefixIcon: const Icon(
+                                                Icons.category_outlined,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                  ),
+                                ),
+                                const SizedBox(width: AppSpacing.sm),
+                                Expanded(
+                                  child: DropdownButtonFormField<String?>(
+                                    initialValue: _language,
+                                    isExpanded: true,
+                                    decoration: InputDecoration(
+                                      labelText: l10n.language,
+                                      prefixIcon: const Icon(
+                                        Icons.translate_outlined,
+                                      ),
+                                    ),
+                                    items: [
+                                      DropdownMenuItem(
+                                        value: null,
+                                        child: Text(l10n.notSet),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: 'Arabic',
+                                        child: Text(
+                                          '${l10n.langArabic} (العربية)',
+                                        ),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: 'French',
+                                        child: Text(
+                                          '${l10n.langFrench} (Français)',
+                                        ),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: 'English',
+                                        child: Text(
+                                          '${l10n.langEnglish} (English)',
+                                        ),
+                                      ),
+                                      const DropdownMenuItem(
+                                        value: 'Spanish',
+                                        child: Text('Español (Spanish)'),
+                                      ),
+                                      const DropdownMenuItem(
+                                        value: 'German',
+                                        child: Text('Deutsch (German)'),
+                                      ),
+                                      const DropdownMenuItem(
+                                        value: 'Italian',
+                                        child: Text('Italiano (Italian)'),
+                                      ),
+                                      const DropdownMenuItem(
+                                        value: 'Portuguese',
+                                        child: Text('Português (Portuguese)'),
+                                      ),
+                                      const DropdownMenuItem(
+                                        value: 'Russian',
+                                        child: Text('Русский (Russian)'),
+                                      ),
+                                      const DropdownMenuItem(
+                                        value: 'Turkish',
+                                        child: Text('Türkçe (Turkish)'),
+                                      ),
+                                      const DropdownMenuItem(
+                                        value: 'Chinese',
+                                        child: Text('中文 (Chinese)'),
+                                      ),
+                                      const DropdownMenuItem(
+                                        value: 'Japanese',
+                                        child: Text('日本語 (Japanese)'),
+                                      ),
+                                      const DropdownMenuItem(
+                                        value: 'Korean',
+                                        child: Text('한국어 (Korean)'),
+                                      ),
+                                      const DropdownMenuItem(
+                                        value: 'Hindi',
+                                        child: Text('हिन्दी (Hindi)'),
+                                      ),
+                                      const DropdownMenuItem(
+                                        value: 'Dutch',
+                                        child: Text('Nederlands (Dutch)'),
+                                      ),
+                                      const DropdownMenuItem(
+                                        value: 'Swedish',
+                                        child: Text('Svenska (Swedish)'),
+                                      ),
+                                      const DropdownMenuItem(
+                                        value: 'Polish',
+                                        child: Text('Polski (Polish)'),
+                                      ),
+                                      const DropdownMenuItem(
+                                        value: 'Urdu',
+                                        child: Text('اردو (Urdu)'),
+                                      ),
+                                      const DropdownMenuItem(
+                                        value: 'Persian',
+                                        child: Text('فارسی (Persian)'),
+                                      ),
+                                      const DropdownMenuItem(
+                                        value: 'Latin',
+                                        child: Text('Latina (Latin)'),
+                                      ),
+                                      const DropdownMenuItem(
+                                        value: 'Other',
+                                        child: Text('Other / Autre'),
+                                      ),
+                                      if (_language != null &&
+                                          ![
+                                            'Arabic',
+                                            'French',
+                                            'English',
+                                            'Spanish',
+                                            'German',
+                                            'Italian',
+                                            'Portuguese',
+                                            'Russian',
+                                            'Turkish',
+                                            'Chinese',
+                                            'Japanese',
+                                            'Korean',
+                                            'Hindi',
+                                            'Dutch',
+                                            'Swedish',
+                                            'Polish',
+                                            'Urdu',
+                                            'Persian',
+                                            'Latin',
+                                            'Other',
+                                          ].contains(_language))
+                                        DropdownMenuItem(
+                                          value: _language,
+                                          child: Text(_language!),
+                                        ),
+                                    ],
+                                    onChanged: (v) =>
+                                        setState(() => _language = v),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: AppSpacing.lg),
+                            TextFormField(
+                              controller: _publisherController,
+                              decoration: InputDecoration(
+                                labelText: l10n.publisher,
+                                prefixIcon: const Icon(Icons.business_outlined),
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.lg),
+                            TextFormField(
+                              controller: _descriptionController,
+                              decoration: InputDecoration(
+                                labelText: l10n.itemDescription,
+                                prefixIcon: const Icon(
+                                  Icons.text_snippet_outlined,
+                                ),
+                              ),
+                              maxLines: 3,
+                              minLines: 1,
+                            ),
+                            // Cover affordance only for a SAVED title: its
+                            // code is the stable managed-file key.
+                            if (isEditing) ...[
+                              const SizedBox(height: AppSpacing.lg),
+                              Row(
+                                children: [
+                                  Container(
+                                    width: 44,
+                                    height: 60,
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.surfaceContainerHighest,
+                                      borderRadius: AppRadius.chip,
+                                      image: _effectiveCover == null
+                                          ? null
+                                          : DecorationImage(
+                                              image: FileImage(
+                                                File(_effectiveCover!),
+                                              ),
+                                              fit: BoxFit.cover,
+                                            ),
+                                    ),
+                                    child: _effectiveCover != null
+                                        ? null
+                                        : Icon(
+                                            Icons.book_outlined,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurfaceVariant,
+                                          ),
+                                  ),
+                                  const SizedBox(width: AppSpacing.md),
+                                  Expanded(
+                                    child: TextButton.icon(
+                                      onPressed: _pickCover,
+                                      icon: const Icon(
+                                        Icons.add_photo_alternate_outlined,
+                                      ),
+                                      label: Text(l10n.chooseCover),
+                                    ),
+                                  ),
+                                  if (_effectiveCover != null)
+                                    IconButton(
+                                      tooltip: l10n.removePhoto,
+                                      icon: const Icon(Icons.delete_outline),
+                                      onPressed: () => setState(() {
+                                        _pendingCoverSource = null;
+                                        _coverCleared = true;
+                                      }),
+                                    ),
+                                ],
+                              ),
+                            ],
                           ],
                         ),
                       ),

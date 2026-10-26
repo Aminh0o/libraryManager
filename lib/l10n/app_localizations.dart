@@ -604,11 +604,23 @@ abstract class AppLocalizations {
   /// **'All Statuses'**
   String get allStatuses;
 
+  /// No description provided for @allCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'All Categories'**
+  String get allCategories;
+
   /// No description provided for @clearFilters.
   ///
   /// In en, this message translates to:
   /// **'Clear Filters'**
   String get clearFilters;
+
+  /// No description provided for @clearSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get clearSearch;
 
   /// No description provided for @priceDzd.
   ///
@@ -651,6 +663,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'On Loan'**
   String get onLoan;
+
+  /// No description provided for @statOverdue.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get statOverdue;
+
+  /// No description provided for @statBorrowed7d.
+  ///
+  /// In en, this message translates to:
+  /// **'Borrowed (7 days)'**
+  String get statBorrowed7d;
+
+  /// No description provided for @statReturned7d.
+  ///
+  /// In en, this message translates to:
+  /// **'Returned (7 days)'**
+  String get statReturned7d;
 
   /// No description provided for @historyAction.
   ///
@@ -1108,6 +1138,12 @@ abstract class AppLocalizations {
   /// **'Connect without a camera by typing the 6-digit code from the Host.'**
   String get enterPairingCodeDescription;
 
+  /// No description provided for @pairingQrNotRecognized.
+  ///
+  /// In en, this message translates to:
+  /// **'This QR code is not a Library Manager pairing code. Open the pairing screen on the host machine and scan the code it displays.'**
+  String get pairingQrNotRecognized;
+
   /// No description provided for @pairingSearching.
   ///
   /// In en, this message translates to:
@@ -1299,6 +1335,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Email'**
   String get email;
+
+  /// No description provided for @memberType.
+  ///
+  /// In en, this message translates to:
+  /// **'Member Type'**
+  String get memberType;
+
+  /// No description provided for @typeStudent.
+  ///
+  /// In en, this message translates to:
+  /// **'Student'**
+  String get typeStudent;
+
+  /// No description provided for @typeTeacher.
+  ///
+  /// In en, this message translates to:
+  /// **'Teacher'**
+  String get typeTeacher;
+
+  /// No description provided for @typeStandard.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard'**
+  String get typeStandard;
+
+  /// No description provided for @memberStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Membership Status'**
+  String get memberStatus;
+
+  /// No description provided for @statusActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get statusActive;
+
+  /// No description provided for @statusExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Expired'**
+  String get statusExpired;
+
+  /// No description provided for @statusSuspended.
+  ///
+  /// In en, this message translates to:
+  /// **'Suspended'**
+  String get statusSuspended;
+
+  /// No description provided for @expiryDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Expiry Date'**
+  String get expiryDate;
+
+  /// No description provided for @address.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get address;
+
+  /// No description provided for @notes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get notes;
+
+  /// No description provided for @notSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get notSet;
+
+  /// No description provided for @photo.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo'**
+  String get photo;
+
+  /// No description provided for @choosePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Photo'**
+  String get choosePhoto;
+
+  /// No description provided for @removePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove Photo'**
+  String get removePhoto;
+
+  /// No description provided for @photoTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'Image too large (max 2 MB)'**
+  String get photoTooLarge;
+
+  /// No description provided for @photoFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the image'**
+  String get photoFailed;
+
+  /// No description provided for @coverPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Cover Photo'**
+  String get coverPhoto;
+
+  /// No description provided for @chooseCover.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Cover'**
+  String get chooseCover;
+
+  /// No description provided for @author.
+  ///
+  /// In en, this message translates to:
+  /// **'Author'**
+  String get author;
+
+  /// No description provided for @category.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get category;
+
+  /// No description provided for @itemDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get itemDescription;
+
+  /// No description provided for @publisher.
+  ///
+  /// In en, this message translates to:
+  /// **'Publisher'**
+  String get publisher;
+
+  /// No description provided for @year.
+  ///
+  /// In en, this message translates to:
+  /// **'Year'**
+  String get year;
+
+  /// No description provided for @langFrench.
+  ///
+  /// In en, this message translates to:
+  /// **'French'**
+  String get langFrench;
+
+  /// No description provided for @langArabic.
+  ///
+  /// In en, this message translates to:
+  /// **'Arabic'**
+  String get langArabic;
+
+  /// No description provided for @langEnglish.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get langEnglish;
 
   /// No description provided for @scanToReturn.
   ///
@@ -1843,116 +2041,272 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialMapSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Sequential 9-step guide from initial setup to day-to-day desk operations'**
+  /// **'Nineteen guided learning paths, from first-run setup to daily desk operations and support'**
   String get tutorialMapSubtitle;
+
+  /// No description provided for @tgroupStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Getting started'**
+  String get tgroupStart;
+
+  /// No description provided for @tgroupCatalog.
+  ///
+  /// In en, this message translates to:
+  /// **'Catalogue and members'**
+  String get tgroupCatalog;
+
+  /// No description provided for @tgroupCirc.
+  ///
+  /// In en, this message translates to:
+  /// **'Circulation and stock'**
+  String get tgroupCirc;
+
+  /// No description provided for @tgroupData.
+  ///
+  /// In en, this message translates to:
+  /// **'Search and reporting'**
+  String get tgroupData;
+
+  /// No description provided for @tgroupLan.
+  ///
+  /// In en, this message translates to:
+  /// **'Network and hardware'**
+  String get tgroupLan;
+
+  /// No description provided for @tgroupMaint.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintenance and support'**
+  String get tgroupMaint;
 
   /// No description provided for @tstep1Title.
   ///
   /// In en, this message translates to:
-  /// **'System Initialization & Admin Setup'**
+  /// **'Welcome and first-run setup'**
   String get tstep1Title;
 
   /// No description provided for @tstep1Body.
   ///
   /// In en, this message translates to:
-  /// **'Complete first-run onboarding, establish a resilient administrator credential, and initialize the embedded SQLite engine.'**
+  /// **'Complete the first-run wizard, set a resilient administrator credential, and initialize the local database.'**
   String get tstep1Body;
 
   /// No description provided for @tstep2Title.
   ///
   /// In en, this message translates to:
-  /// **'Catalog & Inventory Management'**
+  /// **'Dashboard and navigation'**
   String get tstep2Title;
 
   /// No description provided for @tstep2Body.
   ///
   /// In en, this message translates to:
-  /// **'Add titles with ISBN-10/13 validation, generate unique barcodes, register individual copy condition notes, or bulk import via CSV.'**
+  /// **'Understand the dashboard, the side rail, and the keyboard shortcut palette for moving between sections.'**
   String get tstep2Body;
 
   /// No description provided for @tstep3Title.
   ///
   /// In en, this message translates to:
-  /// **'Member Registration & QR Cards'**
+  /// **'Add titles and copies'**
   String get tstep3Title;
 
   /// No description provided for @tstep3Body.
   ///
   /// In en, this message translates to:
-  /// **'Register patrons, configure borrowing tiers and limits, and generate official membership cards with opaque QR codes.'**
+  /// **'Register a title with its bibliographic details, then add the individual physical copies that can be borrowed.'**
   String get tstep3Body;
 
   /// No description provided for @tstep4Title.
   ///
   /// In en, this message translates to:
-  /// **'Circulation Desk (Checkout & Returns)'**
+  /// **'Register a member and card'**
   String get tstep4Title;
 
   /// No description provided for @tstep4Body.
   ///
   /// In en, this message translates to:
-  /// **'Rapidly scan book barcodes via USB keyboard-wedge scanners, process returns, calculate overdue fines, and print official circulation receipts.'**
+  /// **'Create a member profile with a photo and type, then generate and print a member card with a QR code.'**
   String get tstep4Body;
 
   /// No description provided for @tstep5Title.
   ///
   /// In en, this message translates to:
-  /// **'Reservation Queues & Hold Tickets'**
+  /// **'Scan and find records'**
   String get tstep5Title;
 
   /// No description provided for @tstep5Body.
   ///
   /// In en, this message translates to:
-  /// **'Queue member reservations with FIFO ordering, automatic promotion upon return, walk-up protection, and printable hold pickup tickets.'**
+  /// **'Use a barcode or QR scanner to locate an item or a member instantly from the scan field.'**
   String get tstep5Body;
 
   /// No description provided for @tstep6Title.
   ///
   /// In en, this message translates to:
-  /// **'Financial Auditing & Reporting'**
+  /// **'Checkout, receipt and return'**
   String get tstep6Title;
 
   /// No description provided for @tstep6Body.
   ///
   /// In en, this message translates to:
-  /// **'Audit circulation history, track collected fines, and export injection-sanitized (CWE-1236) CSV and PDF analytics.'**
+  /// **'Check a copy out to a member, print the loan receipt, and process its return at the desk.'**
   String get tstep6Body;
 
   /// No description provided for @tstep7Title.
   ///
   /// In en, this message translates to:
-  /// **'Multi-Station Private LAN Mode'**
+  /// **'Renew, overdue and fines'**
   String get tstep7Title;
 
   /// No description provided for @tstep7Body.
   ///
   /// In en, this message translates to:
-  /// **'Enable Windows Firewall rules to securely discover and sync workstations across the local subnet with Bearer authentication.'**
+  /// **'Renew a loan, review overdue items, and apply the fine policy.'**
   String get tstep7Body;
 
   /// No description provided for @tstep8Title.
   ///
   /// In en, this message translates to:
-  /// **'Disaster Recovery & Snapshots'**
+  /// **'Manage reservations'**
   String get tstep8Title;
 
   /// No description provided for @tstep8Body.
   ///
   /// In en, this message translates to:
-  /// **'Create point-in-time database snapshots in WAL mode with pre-restore safety backups and zero data loss guarantees.'**
+  /// **'Place and reorder the hold queue and hand a ready reservation to its member.'**
   String get tstep8Body;
 
   /// No description provided for @tstep9Title.
   ///
   /// In en, this message translates to:
-  /// **'In-App Verification & Updates'**
+  /// **'Inventory and stocktaking'**
   String get tstep9Title;
 
   /// No description provided for @tstep9Body.
   ///
   /// In en, this message translates to:
-  /// **'Check for official updates, stream downloads over HTTPS, and automatically verify SHA-256 integrity checksums.'**
+  /// **'Reconcile physical stock against the catalogue and resolve discrepancies.'**
   String get tstep9Body;
+
+  /// No description provided for @tstep10Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Search, filter and sort'**
+  String get tstep10Title;
+
+  /// No description provided for @tstep10Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Narrow the catalogue by query, status, and type; results are filtered and paginated on the host.'**
+  String get tstep10Body;
+
+  /// No description provided for @tstep11Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports and export'**
+  String get tstep11Title;
+
+  /// No description provided for @tstep11Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate and reconcile reports, and export CSV or PDF with injection-safe formatting.'**
+  String get tstep11Body;
+
+  /// No description provided for @tstep12Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Pair a client'**
+  String get tstep12Title;
+
+  /// No description provided for @tstep12Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect a workstation or phone over the LAN with the pairing QR code or manual address.'**
+  String get tstep12Body;
+
+  /// No description provided for @tstep13Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection troubleshooting'**
+  String get tstep13Title;
+
+  /// No description provided for @tstep13Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnose bind, firewall, peer-isolation, and reachability problems with clear, actionable messages.'**
+  String get tstep13Body;
+
+  /// No description provided for @tstep14Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Printers and scanners'**
+  String get tstep14Title;
+
+  /// No description provided for @tstep14Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure thermal and office printers, Arabic PDF output, and barcode scanners.'**
+  String get tstep14Body;
+
+  /// No description provided for @tstep15Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup and restore'**
+  String get tstep15Title;
+
+  /// No description provided for @tstep15Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Create point-in-time database snapshots and restore them safely.'**
+  String get tstep15Body;
+
+  /// No description provided for @tstep16Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Roles and permissions'**
+  String get tstep16Title;
+
+  /// No description provided for @tstep16Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Understand administrator, staff, and viewer rights; enforcement happens on the host.'**
+  String get tstep16Body;
+
+  /// No description provided for @tstep17Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings, language and policy'**
+  String get tstep17Title;
+
+  /// No description provided for @tstep17Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure language, appearance, branding, and library policy.'**
+  String get tstep17Body;
+
+  /// No description provided for @tstep18Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Updates and upgrade'**
+  String get tstep18Title;
+
+  /// No description provided for @tstep18Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Check for official updates, verify integrity, and upgrade safely.'**
+  String get tstep18Body;
+
+  /// No description provided for @tstep19Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnostics and support'**
+  String get tstep19Title;
+
+  /// No description provided for @tstep19Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Run the system-health checks and export a scrubbed support report for escalation.'**
+  String get tstep19Body;
 
   /// No description provided for @hardwareGuideTitle.
   ///
@@ -3094,6 +3448,18 @@ abstract class AppLocalizations {
   /// **'Library Manager v{version}'**
   String helpVersionFooter(String version);
 
+  /// No description provided for @poweredByEvenlio.
+  ///
+  /// In en, this message translates to:
+  /// **'Powered by {brand}'**
+  String poweredByEvenlio(String brand);
+
+  /// No description provided for @website.
+  ///
+  /// In en, this message translates to:
+  /// **'Website'**
+  String get website;
+
   /// No description provided for @settingsCatGeneral.
   ///
   /// In en, this message translates to:
@@ -3153,6 +3519,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Member not found'**
   String get memberNotFound;
+
+  /// No description provided for @memberIdCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'ID: {id}'**
+  String memberIdCaption(String id);
 
   /// No description provided for @registered.
   ///
@@ -3286,6 +3658,12 @@ abstract class AppLocalizations {
   /// **'No members match your search.'**
   String get noMembersMatchSearch;
 
+  /// No description provided for @noMembersYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No members yet. Add the first one to start tracking loans.'**
+  String get noMembersYet;
+
   /// No description provided for @paginationSummary.
   ///
   /// In en, this message translates to:
@@ -3405,6 +3783,222 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You are signed in as the built-in administrator. Create staff or viewer accounts below to grant scoped access to other users.'**
   String get noNamedAccountsHint;
+
+  /// No description provided for @testConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Test Connection'**
+  String get testConnection;
+
+  /// No description provided for @testConnectionSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Host reached successfully ({latency} ms).'**
+  String testConnectionSuccess(int latency);
+
+  /// No description provided for @testConnectionNeedsAuth.
+  ///
+  /// In en, this message translates to:
+  /// **'Host found! Pairing or login is required.'**
+  String get testConnectionNeedsAuth;
+
+  /// No description provided for @testConnectionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to reach host. Check address, Wi-Fi, and firewall.'**
+  String get testConnectionFailed;
+
+  /// No description provided for @aboutApp.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get aboutApp;
+
+  /// No description provided for @poweredByBrand.
+  ///
+  /// In en, this message translates to:
+  /// **'Powered by Evenlio'**
+  String get poweredByBrand;
+
+  /// No description provided for @launchWalkthrough.
+  ///
+  /// In en, this message translates to:
+  /// **'Launch Guided Tour'**
+  String get launchWalkthrough;
+
+  /// No description provided for @walkthroughDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Replay the interactive guided setup tour at any time.'**
+  String get walkthroughDescription;
+
+  /// No description provided for @gender.
+  ///
+  /// In en, this message translates to:
+  /// **'Gender'**
+  String get gender;
+
+  /// No description provided for @genderMale.
+  ///
+  /// In en, this message translates to:
+  /// **'Male'**
+  String get genderMale;
+
+  /// No description provided for @genderFemale.
+  ///
+  /// In en, this message translates to:
+  /// **'Female'**
+  String get genderFemale;
+
+  /// No description provided for @genderOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get genderOther;
+
+  /// No description provided for @advancedAnalytics.
+  ///
+  /// In en, this message translates to:
+  /// **'Analytics & Statistics'**
+  String get advancedAnalytics;
+
+  /// No description provided for @demographics.
+  ///
+  /// In en, this message translates to:
+  /// **'Demographics'**
+  String get demographics;
+
+  /// No description provided for @circulationStats.
+  ///
+  /// In en, this message translates to:
+  /// **'Circulation Performance'**
+  String get circulationStats;
+
+  /// No description provided for @topBorrowedBooks.
+  ///
+  /// In en, this message translates to:
+  /// **'Top Borrowed Books'**
+  String get topBorrowedBooks;
+
+  /// No description provided for @deadStockBooks.
+  ///
+  /// In en, this message translates to:
+  /// **'Zero-Circulation (Dead Stock)'**
+  String get deadStockBooks;
+
+  /// No description provided for @financialOverview.
+  ///
+  /// In en, this message translates to:
+  /// **'Financial Overview'**
+  String get financialOverview;
+
+  /// No description provided for @finesCollected.
+  ///
+  /// In en, this message translates to:
+  /// **'Fines Collected'**
+  String get finesCollected;
+
+  /// No description provided for @finesOutstanding.
+  ///
+  /// In en, this message translates to:
+  /// **'Outstanding Fines'**
+  String get finesOutstanding;
+
+  /// No description provided for @averageLoanDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Avg. Loan Duration'**
+  String get averageLoanDuration;
+
+  /// No description provided for @onTimeReturnRate.
+  ///
+  /// In en, this message translates to:
+  /// **'On-Time Return Rate'**
+  String get onTimeReturnRate;
+
+  /// No description provided for @lookupIsbn.
+  ///
+  /// In en, this message translates to:
+  /// **'Lookup ISBN'**
+  String get lookupIsbn;
+
+  /// No description provided for @isbnNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No book found for this ISBN'**
+  String get isbnNotFound;
+
+  /// No description provided for @isbnAutoFilled.
+  ///
+  /// In en, this message translates to:
+  /// **'Book details auto-filled successfully'**
+  String get isbnAutoFilled;
+
+  /// No description provided for @printBarcodeSheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Print Barcode Sheet (A4)'**
+  String get printBarcodeSheet;
+
+  /// No description provided for @barcodeSheetGenerated.
+  ///
+  /// In en, this message translates to:
+  /// **'Barcode label sheet generated'**
+  String get barcodeSheetGenerated;
+
+  /// No description provided for @stocktaking.
+  ///
+  /// In en, this message translates to:
+  /// **'Shelf Stocktaking & Audit'**
+  String get stocktaking;
+
+  /// No description provided for @startStocktake.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Stocktaking'**
+  String get startStocktake;
+
+  /// No description provided for @itemsScanned.
+  ///
+  /// In en, this message translates to:
+  /// **'Items Scanned'**
+  String get itemsScanned;
+
+  /// No description provided for @itemsMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Items Missing'**
+  String get itemsMissing;
+
+  /// No description provided for @scanShelfPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan item barcode to verify shelf presence…'**
+  String get scanShelfPrompt;
+
+  /// No description provided for @selfCheckoutKiosk.
+  ///
+  /// In en, this message translates to:
+  /// **'Self-Checkout Kiosk'**
+  String get selfCheckoutKiosk;
+
+  /// No description provided for @kioskWelcome.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome! Please scan your member card'**
+  String get kioskWelcome;
+
+  /// No description provided for @kioskScanBook.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan books to borrow or return'**
+  String get kioskScanBook;
+
+  /// No description provided for @exitKiosk.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit Kiosk'**
+  String get exitKiosk;
 }
 
 class _AppLocalizationsDelegate

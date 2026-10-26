@@ -266,7 +266,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get allStatuses => 'جميع الحالات';
 
   @override
+  String get allCategories => 'جميع الفئات';
+
+  @override
   String get clearFilters => 'مسح الفلاتر';
+
+  @override
+  String get clearSearch => 'مسح البحث';
 
   @override
   String get priceDzd => 'السعر (د.ج)';
@@ -288,6 +294,15 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get onLoan => 'قيد الإعارة';
+
+  @override
+  String get statOverdue => 'متأخر';
+
+  @override
+  String get statBorrowed7d => 'مُعار (7 أيام)';
+
+  @override
+  String get statReturned7d => 'مُعاد (7 أيام)';
 
   @override
   String get historyAction => 'السجل';
@@ -348,7 +363,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get importError => 'فشل الاستيراد: ';
 
   @override
-  String get scanBarcode => 'مسح الرمز البارcode';
+  String get scanBarcode => 'مسح الرمز الشريطي';
 
   @override
   String get cameraPermissionRequired =>
@@ -532,6 +547,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'للاتصال بدون كاميرا: أدخل الرمز المكوّن من 6 أرقام المعروض على المضيف.';
 
   @override
+  String get pairingQrNotRecognized =>
+      'رمز QR هذا ليس رمز اقتران مدير المكتبة. افتح شاشة الاقتران على جهاز المضيف امسح الرمز المعروض فيه.';
+
+  @override
   String get pairingSearching => 'جاري البحث عن المضيف على الشبكة المحلية...';
 
   @override
@@ -629,6 +648,87 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get email => 'البريد الإلكتروني';
+
+  @override
+  String get memberType => 'نوع العضوية';
+
+  @override
+  String get typeStudent => 'طالب';
+
+  @override
+  String get typeTeacher => 'أستاذ';
+
+  @override
+  String get typeStandard => 'عادية';
+
+  @override
+  String get memberStatus => 'حالة العضوية';
+
+  @override
+  String get statusActive => 'نشطة';
+
+  @override
+  String get statusExpired => 'منتهية';
+
+  @override
+  String get statusSuspended => 'موقوفة';
+
+  @override
+  String get expiryDate => 'تاريخ الانتهاء';
+
+  @override
+  String get address => 'العنوان';
+
+  @override
+  String get notes => 'ملاحظات';
+
+  @override
+  String get notSet => 'غير محدد';
+
+  @override
+  String get photo => 'الصورة';
+
+  @override
+  String get choosePhoto => 'اختيار صورة';
+
+  @override
+  String get removePhoto => 'حذف الصورة';
+
+  @override
+  String get photoTooLarge => 'الصورة كبيرة جداً (الحد الأقصى 2 ميغابايت)';
+
+  @override
+  String get photoFailed => 'تعذّر حفظ الصورة';
+
+  @override
+  String get coverPhoto => 'صورة الغلاف';
+
+  @override
+  String get chooseCover => 'اختيار غلاف';
+
+  @override
+  String get author => 'المؤلف';
+
+  @override
+  String get category => 'الفئة';
+
+  @override
+  String get itemDescription => 'الوصف';
+
+  @override
+  String get publisher => 'الناشر';
+
+  @override
+  String get year => 'السنة';
+
+  @override
+  String get langFrench => 'الفرنسية';
+
+  @override
+  String get langArabic => 'العربية';
+
+  @override
+  String get langEnglish => 'الإنجليزية';
 
   @override
   String get scanToReturn => 'امسح العنصر للإرجاع';
@@ -929,70 +1029,156 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get tutorialMapSubtitle =>
-      'دليل متسلسل من 9 خطوات من الإعداد الأولي إلى عمليات المكتب اليومية';
+      'تسعة عشر مسارًا تعليميًا، من الإعداد الأولي إلى عمليات المكتب اليومية والدعم';
 
   @override
-  String get tstep1Title => 'تهيئة النظام وإعداد المدير';
+  String get tgroupStart => 'البدء';
+
+  @override
+  String get tgroupCatalog => 'الفهرس والأعضاء';
+
+  @override
+  String get tgroupCirc => 'الإعارة والمقتنيات';
+
+  @override
+  String get tgroupData => 'البحث والتقارير';
+
+  @override
+  String get tgroupLan => 'الشبكة والعتاد';
+
+  @override
+  String get tgroupMaint => 'الصيانة والدعم';
+
+  @override
+  String get tstep1Title => 'الترحيب والإعداد الأولي';
 
   @override
   String get tstep1Body =>
-      'أكمل إعداد التشغيل الأول، وأنشئ كلمة مرور مدير قوية، وابدأ تشغيل محرك SQLite المدمج.';
+      'أكمل معالج التشغيل الأول، وأنشئ كلمة مرور مدير قوية، وابدأ تشغيل قاعدة البيانات المحلية.';
 
   @override
-  String get tstep2Title => 'الفهرسة وإدارة المقتنيات';
+  String get tstep2Title => 'لوحة المعلومات والتنقل';
 
   @override
   String get tstep2Body =>
-      'أضف العناوين مع التحقق من ISBN-10/13، وأنشئ رموزًا شريطية فريدة، وسجّل حالة كل نسخة، أو استورد دفعة واحدة عبر CSV.';
+      'افهم لوحة المعلومات والشريط الجانبي ولوحة اختصارات لوحة المفاتيح للتنقل بين الأقسام.';
 
   @override
-  String get tstep3Title => 'تسجيل الأعضاء وبطاقات QR';
+  String get tstep3Title => 'إضافة العناوين والنسخ';
 
   @override
   String get tstep3Body =>
-      'سجّل القرّاء، واضبط مستويات وحدود الإعارة، وأنشئ بطاقات عضوية رسمية برموز QR مغلقة.';
+      'سجّل عنوانًا ببياناته الببليوغرافية، ثم أضف النسخ المادية الفردية القابلة للإعارة.';
 
   @override
-  String get tstep4Title => 'مكتب التداول (الإعارة والإرجاع)';
+  String get tstep4Title => 'تسجيل عضو وإصدار بطاقته';
 
   @override
   String get tstep4Body =>
-      'امسح رموز الكتب بسرعة عبر قارئات USB بنمط لوحة المفاتيح، وعالج الإرجاعات، واحسب غرامات التأخير، واطبع إيصالات التداول الرسمية.';
+      'أنشئ ملف عضو مع صورة وفئة، ثم أنشئ واطبع بطاقة عضوية برمز QR.';
 
   @override
-  String get tstep5Title => 'قوائم الحجز وتذاكر التخصيص';
+  String get tstep5Title => 'المسح والعثور على السجلات';
 
   @override
   String get tstep5Body =>
-      'رتّب حجوزات الأعضاء بترتيب الأولوية (FIFO)، مع الترقية التلقائية عند الإرجاع، وحماية من التجاوز، وتذاكر استلام قابلة للطباعة.';
+      'استخدم قارئ الرموز الشريطية أو QR للعثور فورًا على مقتنى أو عضو من حقل المسح.';
 
   @override
-  String get tstep6Title => 'التدقيق المالي والتقارير';
+  String get tstep6Title => 'الإعارة والإيصال والإرجاع';
 
   @override
   String get tstep6Body =>
-      'دقّق سجل التداول، وتتبع الغرامات المحصلة، وصدّر تحليلات CSV وPDF معقّمة ضد الحقن (CWE-1236).';
+      'أعِر نسخة لعضو، واطبع إيصال الإعارة، وعالج إرجاعها عند المكتب.';
 
   @override
-  String get tstep7Title => 'وضع الشبكة المحلية متعددة المحطات';
+  String get tstep7Title => 'التجديد والتأخير والغرامات';
 
   @override
   String get tstep7Body =>
-      'فعّل قواعد جدار حماية Windows لاكتشاف محطات العمل ومزامنتها بأمان عبر الشبكة الفرعية المحلية مع مصادقة Bearer.';
+      'جدّد إعارة، وراجع العناصر المتأخرة، وطبّق سياسة الغرامات.';
 
   @override
-  String get tstep8Title => 'الاسترداد من الكوارث واللقطات';
+  String get tstep8Title => 'إدارة الحجوزات';
 
   @override
   String get tstep8Body =>
-      'أنشئ لقطات قاعدة بيانات عند لحظة زمنية في وضع WAL مع نسخ احتياطي للأمان قبل الاستعادة وضمان عدم فقدان البيانات.';
+      'رتّب قائمة الانتظر وأعد ترتيبها، وسلّم الحجز الجاهز إلى صاحبه.';
 
   @override
-  String get tstep9Title => 'التحقق والتحديثات داخل التطبيق';
+  String get tstep9Title => 'الجرد والمطابقة';
 
   @override
-  String get tstep9Body =>
-      'تحقق من التحديثات الرسمية، وحمّل عبر HTTPS، وتحقق تلقائيًا من سلامة المجاميع الاختبارية SHA-256.';
+  String get tstep9Body => 'طابق المقتنيات المادية مع الفهرس واحلّ الفوارق.';
+
+  @override
+  String get tstep10Title => 'البحث والتصفية والترتيب';
+
+  @override
+  String get tstep10Body =>
+      'ضيّق الفهرس بالاستعلام والحالة والفئة؛ تُرشَّف النتائج وتُقسَّم على المضيف.';
+
+  @override
+  String get tstep11Title => 'التقارير والتصدير';
+
+  @override
+  String get tstep11Body =>
+      'أنشئ التقارير وطابقها، وصدّر CSV أو PDF بتنسيق محصّن ضد الحقن.';
+
+  @override
+  String get tstep12Title => 'اقتران عميل';
+
+  @override
+  String get tstep12Body =>
+      'اربط محطة عمل أو هاتفًا عبر الشبكة المحلية برمز الاقتران QR أو بعنوان يدوي.';
+
+  @override
+  String get tstep13Title => 'استكشاف أعطال الاتصال';
+
+  @override
+  String get tstep13Body =>
+      'شخّص أعطال الربط وجدار الحماية وعزل الأنداد وعدم الوصول برسائل واضحة قابلة للتنفيذ.';
+
+  @override
+  String get tstep14Title => 'الطابعات والقارئات';
+
+  @override
+  String get tstep14Body =>
+      'اضبط الطابعات الحرارية والمكتبية وإخراج PDF بالعربية وقارئات الرموز الشريطية.';
+
+  @override
+  String get tstep15Title => 'النسخ الاحتياطي والاستعادة';
+
+  @override
+  String get tstep15Body =>
+      'أنشئ لقطات قاعدة بيانات عند لحظة زمنية واستعدها بأمان.';
+
+  @override
+  String get tstep16Title => 'الأدوار والأذونات';
+
+  @override
+  String get tstep16Body =>
+      'افهم حقوق المدير والموظف والقارئ؛ يتم التنفيذ على المضيف.';
+
+  @override
+  String get tstep17Title => 'الإعدادات واللغة والسياسة';
+
+  @override
+  String get tstep17Body => 'اضبط اللغة والمظهر والعلامة وسياسة المكتبة.';
+
+  @override
+  String get tstep18Title => 'التحديثات والترقية';
+
+  @override
+  String get tstep18Body =>
+      'تحقق من التحديثات الرسمية وأدقّق السلامة وقُم بالترقية بأمان.';
+
+  @override
+  String get tstep19Title => 'التشخيصات والدعم';
+
+  @override
+  String get tstep19Body =>
+      'شغّل فحوص صحة النظام وصدّر تقرير دعم مُجرّدًا للتصعيد.';
 
   @override
   String get hardwareGuideTitle => 'دليل الملحقات المادية وإعداد المكتب';
@@ -1627,6 +1813,14 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String poweredByEvenlio(String brand) {
+    return 'مدعوم من $brand';
+  }
+
+  @override
+  String get website => 'الموقع الإلكتروني';
+
+  @override
   String get settingsCatGeneral => 'عام';
 
   @override
@@ -1655,6 +1849,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get memberNotFound => 'العضو غير موجود';
+
+  @override
+  String memberIdCaption(String id) {
+    return 'رقم العضوية: $id';
+  }
 
   @override
   String get registered => 'تاريخ التسجيل';
@@ -1728,6 +1927,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get noMembersMatchSearch => 'لا يوجد أعضاء مطابقون للبحث.';
 
   @override
+  String get noMembersYet =>
+      'لا يوجد أعضاء بعد. أضف أول عضو لبدء تتبع الإعارات.';
+
+  @override
   String paginationSummary(int from, int to, int total) {
     return 'عرض $from–$to من $total عنصر';
   }
@@ -1737,7 +1940,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get keyboardShortcutsContent =>
-      'Ctrl+K يفتح لوحة الأوامر. Enter ينفذ أعلى نتيجة. Esc يغلب النوافذ. Tab ينتقل بين الحقول؛ الأسهم تتنقل في القوائم.';
+      'Ctrl+K يفتح لوحة الأوامر. Enter ينفذ أعلى نتيجة. Esc يغلق النوافذ. Tab ينتقل بين الحقول؛ الأسهم تتنقل في القوائم.';
 
   @override
   String get historySubjectPlaceholder => 'تصفية حسب الرمز أو هوية العضو...';
@@ -1797,4 +2000,117 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get noNamedAccountsHint =>
       'أنت مسجل الدخول كمسؤول مدمج. أنشئ حسابات موظفين أو عرض أدناه لمنح وصول محدود لمستخدمين آخرين.';
+
+  @override
+  String get testConnection => 'اختبار الاتصال';
+
+  @override
+  String testConnectionSuccess(int latency) {
+    return 'تم الاتصال بالمضيف بنجاح ($latency ميلي ثانية).';
+  }
+
+  @override
+  String get testConnectionNeedsAuth =>
+      'تم العثور على المضيف! يلزم الاقتران أو تسجيل الدخول.';
+
+  @override
+  String get testConnectionFailed =>
+      'تعذر الوصول إلى المضيف. تحقق من العنوان وشبكة Wi-Fi والجدار الناري.';
+
+  @override
+  String get aboutApp => 'حول التطبيق';
+
+  @override
+  String get poweredByBrand => 'مشغل بواسطة Evenlio';
+
+  @override
+  String get launchWalkthrough => 'بدء الجولة الإرشادية';
+
+  @override
+  String get walkthroughDescription =>
+      'إعادة تشغيل الجولة الإرشادية التفاعلية في أي وقت.';
+
+  @override
+  String get gender => 'الجنس';
+
+  @override
+  String get genderMale => 'ذكر';
+
+  @override
+  String get genderFemale => 'أنثى';
+
+  @override
+  String get genderOther => 'آخر';
+
+  @override
+  String get advancedAnalytics => 'التحليلات والإحصائيات';
+
+  @override
+  String get demographics => 'البيانات الديموغرافية';
+
+  @override
+  String get circulationStats => 'أداء الإعارة';
+
+  @override
+  String get topBorrowedBooks => 'الكتب الأكثر استعارة';
+
+  @override
+  String get deadStockBooks => 'كتب دون إعارة (مخزون راكد)';
+
+  @override
+  String get financialOverview => 'نظرة عامة مالية';
+
+  @override
+  String get finesCollected => 'الغرامات المحصلة';
+
+  @override
+  String get finesOutstanding => 'الغرامات المتبقية';
+
+  @override
+  String get averageLoanDuration => 'متوسط مدة الإعارة';
+
+  @override
+  String get onTimeReturnRate => 'نسبة الإرجاع في الموعد';
+
+  @override
+  String get lookupIsbn => 'بحث برقم التردد الدولي (ISBN)';
+
+  @override
+  String get isbnNotFound => 'لم يتم العثور على كتاب لهذا الرقم الدولي';
+
+  @override
+  String get isbnAutoFilled => 'تم ملء بيانات الكتاب تلقائياً';
+
+  @override
+  String get printBarcodeSheet => 'طباعة ملصقات الباركود (A4)';
+
+  @override
+  String get barcodeSheetGenerated => 'تم إنشاء ورقة ملصقات الباركود';
+
+  @override
+  String get stocktaking => 'جرد ومراجعة الرفوف';
+
+  @override
+  String get startStocktake => 'بدء عملية الجرد';
+
+  @override
+  String get itemsScanned => 'العناصر الممسوحة';
+
+  @override
+  String get itemsMissing => 'العناصر المفقودة';
+
+  @override
+  String get scanShelfPrompt => 'امسح باركود العنصر للتحقق من وجوده على الرف…';
+
+  @override
+  String get selfCheckoutKiosk => 'كشك الإعارة الذاتية';
+
+  @override
+  String get kioskWelcome => 'مرحباً بكم! يرجى مسح بطاقة العضوية';
+
+  @override
+  String get kioskScanBook => 'امسح الكتب للإعارة أو الإرجاع';
+
+  @override
+  String get exitKiosk => 'الخروج من الكشك';
 }

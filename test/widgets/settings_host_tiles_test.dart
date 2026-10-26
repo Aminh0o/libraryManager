@@ -158,4 +158,24 @@ void main() {
     expect(find.text('Danger Zone'), findsOneWidget);
     expect(find.text('Erase All Database'), findsOneWidget);
   });
+
+  // FE2-12: a failing operation must show the localized category label and
+  // NEVER the raw exception. `backupData()` throws HostOnlyFeatureException for
+  // a non-DatabaseService repository (the _EmptyRepo seam here), whose toString
+  // is "Backup is host-only" -- the exact text that used to leak into the
+  // SnackBar.
+  testWidgets(
+    'a failed backup shows the localized label, not the raw exception',
+    (tester) async {
+      await _pump(tester, isHost: true);
+      await openCat(tester, 'data');
+
+      await tester.tap(find.text('Backup Database'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Backup failed.'), findsOneWidget);
+      expect(find.textContaining('host-only'), findsNothing);
+      expect(find.textContaining('Backup is host-only'), findsNothing);
+    },
+  );
 }

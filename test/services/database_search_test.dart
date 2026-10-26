@@ -21,6 +21,9 @@ void main() {
     String? designation,
     String? barcode,
     String emplacement = 'A',
+    String? author,
+    String? category,
+    String? publisher,
   }) {
     return LibraryItem(
       code: code,
@@ -32,6 +35,9 @@ void main() {
       emplacementStock: 'S',
       status: status,
       barcode: barcode,
+      author: author,
+      category: category,
+      publisher: publisher,
     );
   }
 
@@ -45,7 +51,9 @@ void main() {
         code TEXT PRIMARY KEY, barcode TEXT, code_type TEXT,
         designation TEXT, quantite INTEGER, emplacement TEXT,
         taux REAL, emplacement_stock TEXT, status TEXT DEFAULT 'Disponible',
-        row_version INTEGER NOT NULL DEFAULT 0)
+        row_version INTEGER NOT NULL DEFAULT 0,
+        author TEXT, category TEXT, description TEXT, language TEXT,
+        publisher TEXT, year INTEGER, cover_path TEXT)
     ''');
     DatabaseService.useDatabaseForTesting(db);
     svc = DatabaseService();
@@ -141,6 +149,36 @@ void main() {
       await insert(mk('0200', barcode: '978-X-123'));
       expect((await svc.getItems(search: '978-X-123')).single.code, '0200');
     });
+
+    test(
+      'search matches the v24 bibliographic fields (author/category/publisher)',
+      () async {
+        await insert(
+          mk(
+            '0210',
+            author: 'Frank Herbert',
+            category: 'Science Fiction',
+            publisher: 'Ace',
+          ),
+        );
+        // Each enrichment field is independently reachable, and the enrichment
+        // term does NOT collide with the 60 baseline 'Titre NNNN' designations.
+        expect((await svc.getItems(search: 'herbert')).single.code, '0210');
+        expect(
+          (await svc.getItems(search: 'science fiction')).single.code,
+          '0210',
+        );
+        expect((await svc.getItems(search: 'ace')).single.code, '0210');
+        expect(await svc.countItems(search: 'Frank Herbert'), 1);
+        // An author match composes with a status filter (intersect, not union).
+        expect(
+          await svc.countItems(search: 'Herbert', status: 'Emprunté'),
+          0,
+          reason:
+              'the enriched row is Disponible, so the AND filter excludes it',
+        );
+      },
+    );
 
     test('combined search + status + codeType filters intersect', () async {
       final page = await svc.getItems(
