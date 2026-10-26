@@ -74,6 +74,25 @@ foreach ($hit in $vsRoots) {
 $sourceDirs += "$env:SystemRoot\System32"
 $sourceDirs = $sourceDirs | Select-Object -Unique
 
+# Newest first. A Visual Studio install keeps several redist toolsets side by
+# side, and glob order is not version order: picking 14.29 while the binaries
+# were linked against a 14.5x CRT can leave the app importing an export that the
+# shipped MSVCP140.dll does not have. The runtime is serviced as one unit, so
+# bundling the newest copy on the machine is always safe for the linked CRT.
+$ordered = @()
+foreach ($dir in $sourceDirs) {
+    $probe = Join-Path $dir 'vcruntime140.dll'
+    # FileVersion strings can carry trailing text ("14.29.30157.0 built by:
+    # cloudtest"), and a malformed one must never abort a release build.
+    $key = [version]'0.0'
+    if (Test-Path $probe) {
+        $raw = (Get-Item $probe).VersionInfo.FileVersion
+        if ($raw -match '(\d+(?:\.\d+){1,3})') { $key = [version]$matches[1] }
+    }
+    $ordered += [pscustomobject]@{ Directory = $dir; SortKey = $key }
+}
+$sourceDirs = $ordered | Sort-Object -Property SortKey -Descending | ForEach-Object { $_.Directory }
+
 $attached = 0
 $missing = @()
 
