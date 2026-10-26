@@ -6,6 +6,121 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.2.0] — 2026-10-26
+
+Codename *shelves-to-suite*. The largest single release of the project: the
+catalogue grows real bibliographic detail, the desk gains three new ways to work
+(self-service kiosk, shelf stocktake, analytics), the paper trail becomes
+printable in all three languages, and the whole product was re-verified from a
+clean checkout end to end.
+
+### Added
+
+- **ISBN auto-cataloguing.** Typing or scanning an ISBN in the item form now
+  fills title, author, publisher, year, category and description from public
+  cataloging APIs (Open Library, then Google Books), with the cover fetched as
+  well. HTTPS only, 5-second budget per provider, and it fails into an empty
+  form rather than a wrong one — the operator can always type the details by
+  hand, so cataloguing never depends on internet access.
+- **Self-service kiosk mode.** A locked-down, touch-friendly, high-contrast
+  screen where a patron scans their card and checks out or returns a copy
+  themselves. Reaching the staff controls behind it requires the admin password,
+  and every kiosk action flows through the same loan state machine as the staff
+  desk, so fines, holds and history stay authoritative.
+- **Shelf stocktake.** Scan the shelf and the screen reports present, missing
+  and misplaced copies against what the catalogue expects, with manual barcode
+  entry for damaged labels and an exportable audit record for the missing ones.
+- **Advanced analytics.** A statistics screen covering membership demographics,
+  loan velocity and overdue rate, collection distribution by type and fine
+  recovery, computed server-side from the same queries the reports use.
+- **Printable barcode label sheets (A4).** Generate a sheet of Code 128 labels
+  with title, author and shelf location from the item detail screen, print it,
+  and stick it on the spine. Barcodes are drawn as vectors, so they scan at any
+  printer resolution.
+- **Bibliographic detail on the catalogue.** Items carry author, category,
+  description, language, publisher, publication year and a cover image; members
+  carry a photograph, card type, status, expiry date, address and notes. Schema
+  v24, additive columns with defaults, so an existing database upgrades in place
+  on first launch (the v9→v24 path is covered by a migration test), and a backup
+  from a *newer* schema is refused on restore rather than silently downgraded.
+- **Arabic and French paperwork that actually prints.** Circulation receipts,
+  loan slips and report PDFs now ship with a bundled Arabic font
+  (IBM Plex Sans Arabic, OFL 1.1), so Arabic text renders as letters instead of
+  empty boxes, and labels follow right-to-left order.
+- **In-app update notices.** On startup an administrator gets one quiet toast
+  when a newer release exists, deduplicated per version and rate-limited to one
+  check per twelve hours. Nothing is shown when the check is unconfigured,
+  already current or simply failed — the app never claims it is up to date when
+  it could not look.
+- **Re-branding follows the shortcut.** Changing the library name or logo now
+  also rewrites the Windows desktop and Start Menu shortcuts, so a re-branded
+  installation looks re-branded before it is even opened.
+- **Spotlight tour on the dashboard.** A guided cut-through of the dashboard
+  controls for a new operator, in all three locales.
+- **Desktop keyboard coverage test.** A widget test asserts the documented
+  shortcuts (search focus, palette, navigation) reach the right handlers on
+  Windows rather than only on a phone-sized layout.
+
+### Improved
+
+- **LAN security is now enforced, not just available.** Before this release a
+  freshly-started host served reads *and writes* to anyone on the network until
+  somebody happened to set a password. Enforcement now engages as soon as a
+  credential exists, role checks are applied per route (a viewer cannot write,
+  staff cannot manage accounts), and failed logins are throttled per source IP
+  into a lockout that returns `429` with a retry window. Verified live against
+  the running server, not only in unit tests.
+- **Bare-PC installation.** The build pipeline now deploys the Visual C++
+  runtime app-local before packaging. Previously the Setup package only started
+  on machines that already had the VC++ 2015–2022 redistributable — which the
+  counter PC in a library almost never has — and Windows refused to launch the
+  exe at all. A guard test keeps `pubspec.yaml`, the in-app version string, the
+  installer script and the installer builder on one version number.
+- **Search, filters and pagination are server-side on every list** that grew
+  past a page, with the clear-search affordance and camera/scanner button
+  coexisting in the field, and offline states rendered as a real error plus
+  retry instead of an empty list pretending the catalogue is empty.
+- **Copy quality in French and Arabic.** Localization parity is now asserted
+  test-side per key and per placeholder; the French plural/truncation defects and
+  the Arabic right-to-left issues found in the verification pass were fixed at
+  the source ARB files rather than patched in widgets.
+
+### Fixed
+
+- Pagination flags defaulted to optimistic `true`, which showed a spinner
+  forever at the end of a short list; they now start false and are set from the
+  server response.
+- The inventory list's offline branch rendered a blank panel; it renders the
+  network error state with a retry button.
+- Several right-to-left layouts placed chevrons, avatars and mixed
+  number-plus-unit strings ("99+", "Retard de 3 jours") on the wrong side or with
+  broken bidi ordering.
+
+### Verified for this release
+
+- `flutter gen-l10n`, `dart format --set-exit-if-changed lib test`,
+  `flutter analyze --no-pub` and `flutter build windows --release` all clean.
+- Full suite: 900+ automated tests green (schema migrations, LAN routes, auth
+  roles, rate limiting, idempotency, receipt payloads, widget states).
+- Manual pass on the real Windows build across every screen in English, French
+  and Arabic, plus live LAN API probes from a second process.
+
+### Known issues (deliberately shipped, tracked)
+
+- The circulation lists are still thin on large catalogues: no per-column sort
+  on loans, no days-late column on the fine list, and the item detail panel
+  hides metadata below the fold at narrow window widths.
+- Command palette navigation works, but searching the palette for an item or a
+  member by name is not implemented yet.
+- Barcode *camera* scanning is a mobile feature; on Windows the scanner dialog
+  correctly expects a USB (keyboard-wedge) scanner or typed code, so a webcam
+  scan on desktop is not available.
+- Copy vocabulary for a few circulation statuses is stored as French literals in
+  the seeded code definitions; those labels render in French even in the English
+  UI until they move behind the localization layer.
+
+---
+
 ## [1.1.5] — 2026-10-17
 
 Codename *white-label-and-teach*. Closes the last "high-end product" gaps an

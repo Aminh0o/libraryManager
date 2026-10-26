@@ -9,8 +9,9 @@
 <p align="center">
   <a href="#-download-and-install"><img alt="Download" src="https://img.shields.io/badge/download-windows%20x64-2f6feb?style=flat-square&logo=windows&logoColor=white"/></a>
   <a href="https://github.com/Aminh0o/libraryManager/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/Aminh0o/libraryManager/ci.yml?style=flat-square&label=tests"/></a>
+  <a href="https://github.com/Aminh0o/libraryManager/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/Aminh0o/libraryManager?style=flat-square&color=0d8a6a&label=release"/></a>
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-4b2e83?style=flat-square"/></a>
-  <a href="#-feature-tour"><img alt="Screens" src="https://img.shields.io/badge/screens-14-0d8a6a?style=flat-square"/></a>
+  <a href="#-feature-tour"><img alt="Screens" src="https://img.shields.io/badge/screens-23-0d8a6a?style=flat-square"/></a>
   <a href="SECURITY.md"><img alt="Security" src="https://img.shields.io/badge/security-PBKDF2--HMAC--SHA256-b6236a?style=flat-square"/></a>
 </p>
 
@@ -35,37 +36,54 @@ server granted it.
 
 | Area | What you get |
 | --- | --- |
-| **Catalogue** | Books, journals, media, dual-code (internal ID + barcode), dynamic abbreviations, per-copy inventory with individual condition notes, cover images, batch import from XLSX / CSV. |
-| **Circulation** | USB-HID barcode check-out / check-in, camera scanning, date-based auto-return, overdue detection, fine engine, force-return with audit trail, renewal with configurable cap. |
-| **Members** | Auto-generated `YY0001` professional IDs, membership tiers, per-member loan and hold history, contact directory, GDPR-friendly right-to-erase. |
+| **Catalogue** | Books, journals, media, dual-code (internal ID + barcode), dynamic abbreviations, per-copy inventory with individual condition notes, cover images, bibliographic detail (author, publisher, year, language, description), batch import from XLSX / CSV. |
+| **Cataloguing speed** | Type or scan an ISBN and the item fills itself in from Open Library / Google Books — title, author, publisher, year, subject, blurb and cover. HTTPS only, five seconds per provider, and the form stays editable, so a machine with no internet loss nothing. |
+| **Circulation** | USB-HID barcode check-out / check-in (keyboard-wedge scanners; typed codes work too), date-based auto-return, overdue detection, fine engine, force-return with audit trail, renewal with configurable cap, selectable loan period at the desk. |
+| **Self-service & shelf work** | A locked-down **kiosk** screen patrons can use to borrow and return by themselves, a **stocktake** mode that scans the shelves and reports missing or misplaced copies, and printable **A4 barcode label sheets** with vector Code 128. |
+| **Members** | Auto-generated `YY0001` professional IDs, membership tiers, card photo, status and expiry, per-member loan and hold history, contact directory, GDPR-friendly right-to-erase. |
 | **Reservations** | First-in / first-out hold queue with admin-driven priority reorder, per-copy holds, availability notifications, cancellation with reason codes. |
-| **Reports** | Twelve read-only analytical surfaces (loans by period, overdue, member activity, inventory valuation, fine ledger, hold turn-around, etc.), one-click CSV and PDF export, deterministic rendering shared with the on-screen table. |
+| **Reports & analytics** | Twelve read-only analytical surfaces plus a live **analytics** screen (demographics, loan velocity, overdue rate, collection distribution, fine recovery), one-click CSV and PDF export, deterministic rendering shared with the on-screen table. |
 | **Multi-device LAN** | Turn any install into a **host** or connect a laptop as a **client**; pairing via QR or manual IP; per-device role binding; idempotency-key middleware so a flaky Wi-Fi never double-checks-out. |
 | **Users & roles** | Three-tier model — **admin / staff / viewer** — enforced identically on the host SQLite path and the HTTP surface, last-admin guard, reserved-name guard, PBKDF2-HMAC-SHA256 password hashing with a per-user salt. |
 | **Chat** | Peer-to-peer staff message channel on the LAN, delivered via the same authenticated token; ephemeral text messages with a 1,000-character cap and rolling buffer. |
 | **Localisation** | Fully localised in **English**, **Français** and **العربية**, including proper RTL layout for Arabic across every screen and every dialog. |
 | **Diagnostics** | Structured rolling app log, one-click diagnostics bundle (redacted), safe-mode repair, `VACUUM INTO` online backup with verification, restore with rollback. |
-| **Appearance** | Light / dark / system theme, accent colour, density, font scale — persisted per device, no rebuild required. |
+| **Appearance** | Light / dark / system theme, accent colour, density, font scale, custom library name and logo — persisted per device, no rebuild required. Re-branding also rewrites the Windows desktop and Start Menu shortcuts. |
+| **Updates** | The app checks GitHub on startup (administrator only, at most once every twelve hours) and offers a verified in-app download of the new package, with a SHA-256 check before it installs anything. |
 | **Accessibility** | High-contrast status palette with icon + label + colour (never colour alone), screen-reader labels on every icon-only control, keyboard-navigable tables, focus indicators on all interactive widgets. |
 
 ---
 
-## 🖼️ Screenshots
+## 🖼️ Seeing it
 
-> Screenshots are bundled with each release page on GitHub. Grab the
-> `screenshots.zip` asset attached to the latest tag to see every screen
-> in English, French and Arabic, light and dark theme.
+There is no screenshot gallery in this repository: the product holds real
+patron records and the demo data is not separable enough to publish safely.
+Instead, every release ships the real thing — install it and the first launch
+gives you a 60-second onboarding, the dashboard carries a **guided spotlight
+tour** of each surface, and the Help Center holds a written walkthrough of every
+screen in English, French and Arabic. If you want a guided look before
+installing, open an issue and we will walk you through a hosted session.
 
 ---
 
 ## 📥 Download and install
 
-### Option A — Grab the prebuilt Windows binary
+### Option A — Run the installer (recommended)
 
-1. Open the [**Releases**](../../releases) page.
-2. Download `LibraryManager-<version>-windows-x64.zip`.
-3. Unzip to any folder (no installer, no admin rights needed).
-4. Run `library_manager.exe`.
+1. Open the [**Releases**](../../releases/latest) page.
+2. Download `LibraryManager-Setup-<version>-windows-x64.exe`.
+3. Run it. Install for **your user only** (no admin rights) or for every user on
+   the machine when prompted; choose a Start Menu shortcut and, optionally, a
+   desktop icon.
+4. Launch *Library Manager*.
+
+The Setup package contains the Visual C++ runtime files it needs, so it starts
+on a clean Windows 10 / 11 machine with nothing else installed — no redistributable
+to find and install first. Each release also attaches the portable folder as a
+`.zip` and a `sha256sums.txt` so you can verify what you downloaded.
+
+To uninstall: *Apps & Features* → Library Manager → Uninstall, or run
+`unins000.exe` in the install folder (`/VERYSILENT` works for imaging).
 
 The first launch walks you through a **60-second onboarding** that lets you
 choose a language, seed the local database and (optionally) declare this
@@ -81,7 +99,7 @@ flutter --version          # require Flutter 3.32+ / Dart 3.10+
 flutter pub get
 flutter gen-l10n           # regenerates lib/l10n/app_localizations*.dart
 flutter analyze            # must be zero-issues
-flutter test               # 755+ tests, ~4 min
+flutter test               # 900+ tests, ~4 min
 flutter build windows --release
 ```
 
@@ -204,14 +222,29 @@ diagnostics bundle).
 
 ## 🗑 Data & privacy
 
-- The application is **fully offline-first**. No telemetry, no analytics, no
-  phone-home, no update server dependency (the updater only ever contacts a
-  URL you configure).
-- All patron, loan and fine data lives in a single SQLite file inside the
-  user's `LOCALAPPDATA`. Uninstalling and deleting that folder removes every
-  trace.
+- The application is **offline-first**. No telemetry, no analytics, no
+  phone-home. There are exactly three kinds of outbound request in the whole
+  product, and each one is deliberate, tiny and listed here:
+  1. **ISBN lookup** sends the ISBN you typed or scanned to Open Library, then
+     Google Books, to fill in the catalogue form. It runs when the operator
+     presses the lookup button, and once more automatically when a scanned
+     barcode is not yet in the catalogue and looks like an ISBN (10+ digits).
+     It carries no patron, loan or fine data — only the ISBN. Both calls are
+     HTTPS with a five-second timeout.
+  2. **Update check** asks GitHub for the newest release tag (an administrator
+     session only, at most once every twelve hours) so the app can tell you an
+     update exists.
+  3. **Download** fetches the release package from the URL that check returns
+     and verifies its SHA-256 before using it.
+  Everything else — the database, backups, logs, receipts, reports — never
+  leaves the machine or the local subnet.
+- All patron, loan and fine data lives in a single SQLite file,
+  `\<user\>\Documents\library_manager.db`, with automatic backups beside it in
+  `Documents\library_backups\`. Uninstalling and deleting those two folders
+  removes every trace.
 - The LAN HTTP server binds to the local subnet only; nothing is
-  port-forwarded and no UPnP is used.
+  port-forwarded and no UPnP is used. Client pairing and every mutating request
+  are authenticated and role-checked once any credential exists on the host.
 
 ## 📖 Documentation
 
@@ -228,10 +261,13 @@ diagnostics bundle).
 The next milestones are tracked as [milestones](../../milestones) on GitHub.
 Highlights currently planned:
 
-- **v1.2** — CSV / MARC21 catalogue import; per-item shelf-list printing.
-- **v1.3** — Multi-branch libraries (one host, many branches, cross-branch
+- **v1.2** — done and shipped: ISBN auto-cataloguing, kiosk self-checkout,
+  shelf stocktake, analytics, A4 barcode label sheets.
+- **v1.3** — CSV / MARC21 catalogue import; per-item shelf-list printing;
+  richer circulation lists (sorting, days-late, pagination on loans).
+- **v1.4** — Multi-branch libraries (one host, many branches, cross-branch
   transit).
-- **v1.4** — SIP2 / NCIP bridge so existing self-checkouts can talk to the
+- **v1.5** — SIP2 / NCIP bridge so existing self-checkouts can talk to the
   host.
 - **v2.0** — Cross-platform shells (Linux / macOS) once the Windows product
   reaches feature-parity with commercial ILS tools at this tier.
