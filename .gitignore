@@ -111,6 +111,10 @@ seed_test.py
 _*.ps1
 _*.py
 
+# ─── Throwaway scratch dirs from local audits (never a deliverable) ─────────
+.tmp_qa/
+.tmp_*/
+
 # ─── Build / release bundles produced locally ────────────────────────────────
 dist/
 release_bundle/

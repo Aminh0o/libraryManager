@@ -53,6 +53,14 @@ jobs:
 
       - name: Build release
         run: flutter build windows --release
+      # The bundle is zipped and shipped to end users, so it has to be
+      # self-contained: the exe and several plugin DLLs import the Visual C++
+      # 2015-2022 runtime, which a clean Windows box does not have. This copies
+      # those DLLs next to the exe (same step the local installer builder runs)
+      # so the portable zip starts where the Setup package starts.
+      - name: Attach MSVC runtime app-local
+        shell: pwsh
+        run: .\scripts\attach_vc_runtime.ps1 -ReleaseDir build/windows/x64/runner/Release
 
       - name: Determine tag / version
         id: version

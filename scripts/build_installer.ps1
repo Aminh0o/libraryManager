@@ -9,7 +9,7 @@
 #>
 
 param(
-    [string]$Version = "1.1.5"
+    [string]$Version = "1.2.0"
 )
 
 $ErrorActionPreference = "Stop"
@@ -57,6 +57,17 @@ if (-not (Test-Path $exePath)) {
         Write-Error "Flutter Windows release build failed."
         exit 1
     }
+}
+
+# 2b. Make the release folder self-contained: deploy the MSVC runtime app-local.
+# Without this the Setup package only starts on PCs that already have the
+# Visual C++ 2015-2022 redistributable, which a library's counter machine
+# usually does not (see scripts/attach_vc_runtime.ps1 for the import evidence).
+Write-Host "[*] Attaching the MSVC runtime to the release folder (bare-PC readiness)..." -ForegroundColor Yellow
+& "powershell.exe" -ExecutionPolicy Bypass -File "scripts\attach_vc_runtime.ps1"
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "MSVC runtime attach failed - the installer would require the VC++ redistributable on the target PC."
+    exit 1
 }
 
 # 3. Ensure executable is signed
