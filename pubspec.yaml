@@ -41,7 +41,7 @@ dependencies:
     sdk: flutter
   intl: ^0.20.0
   data_table_2: ^2.5.8
-  pdf: ^3.10.8
+  pdf: ^3.12.0
   # Direct: the printed-slip QR / barcode renderer used by
   # lib/services/circulation_documents.dart (already present transitively via
   # pdf; declared explicitly because we import package:barcode directly).
