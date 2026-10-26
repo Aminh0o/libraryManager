@@ -100,13 +100,22 @@ clean checkout end to end.
 
 - `flutter gen-l10n`, `dart format --set-exit-if-changed lib test`,
   `flutter analyze --no-pub` and `flutter build windows --release` all clean.
-- Full suite: 900+ automated tests green (schema migrations, LAN routes, auth
+- Full suite: 930 tests passing, 1 skipped (schema migrations, LAN routes, auth
   roles, rate limiting, idempotency, receipt payloads, widget states).
-- Manual pass on the real Windows build across every screen in English, French
-  and Arabic, plus live LAN API probes from a second process.
+- Manual pass on the real Windows build across the inventory, circulation,
+  settings, security, pairing and LAN surfaces in English, French and Arabic,
+  plus live API probes against a running host from a second process (unauthenticated
+  read/write behaviour, token login, the admin/staff/viewer role matrix and the
+  brute-force lockout).
+- **Not yet manually verified:** the three surfaces added in this release — kiosk,
+  stocktake and analytics — have automated test coverage of their logic and states,
+  but they have not been driven through the real window in all three locales the way
+  the rest of the product has. Treat them as the least-proven part of 1.2.0.
 
 ### Known issues (deliberately shipped, tracked)
 
+- The three new surfaces (kiosk, stocktake, analytics) carry automated coverage
+  but not yet a manual pass in all three locales — see *Verified for this release*.
 - The circulation lists are still thin on large catalogues: no per-column sort
   on loans, no days-late column on the fine list, and the item detail panel
   hides metadata below the fold at narrow window widths.
