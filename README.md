@@ -79,8 +79,7 @@ installing, open an issue and we will walk you through a hosted session.
 
 The Setup package contains the Visual C++ runtime files it needs, so it starts
 on a clean Windows 10 / 11 machine with nothing else installed — no redistributable
-to find and install first. Each release also attaches the portable folder as a
-`.zip` and a `sha256sums.txt` so you can verify what you downloaded.
+to find and install first.
 
 To uninstall: *Apps & Features* → Library Manager → Uninstall, or run
 `unins000.exe` in the install folder (`/VERYSILENT` works for imaging).
@@ -89,7 +88,23 @@ The first launch walks you through a **60-second onboarding** that lets you
 choose a language, seed the local database and (optionally) declare this
 machine as the LAN host.
 
-### Option B — Build from source
+### Option B — Use the portable bundle
+
+Download `LibraryManager-<version>-windows-x64.zip`, extract it **whole** to any
+folder and run `library_manager.exe` from there. The `.exe` is not standalone —
+it needs the `data\` folder and the DLLs that sit beside it, so keep the folder
+structure intact. This is the bundle the in-app updater offers, and it needs no
+admin rights.
+
+Every release attaches a `<file>.sha256sum` next to each download so you can
+verify what you got:
+
+```powershell
+Get-FileHash .\LibraryManager-Setup-<version>-windows-x64.exe -Algorithm SHA256
+# compare (case-insensitively) with the digest inside the .sha256sum file
+```
+
+### Option C — Build from source
 
 ```powershell
 git clone https://github.com/Aminh0o/libraryManager.git
@@ -99,7 +114,7 @@ flutter --version          # require Flutter 3.32+ / Dart 3.10+
 flutter pub get
 flutter gen-l10n           # regenerates lib/l10n/app_localizations*.dart
 flutter analyze            # must be zero-issues
-flutter test               # 900+ tests, ~4 min
+flutter test               # 930+ tests, ~4 min
 flutter build windows --release
 ```
 
@@ -125,8 +140,8 @@ target machine (the `.exe` is not standalone; it needs the sibling
 ### Standalone (single machine)
 
 Just launch the app and start adding items. Everything runs against a local
-SQLite file at `%LOCALAPPDATA%\library_manager\library.db`. Backups land next
-to it. No network exposure.
+SQLite file at `%USERPROFILE%\Documents\library_manager.db`, with automatic
+backups in `Documents\library_backups\`. No network exposure.
 
 ### Host + clients on a LAN
 

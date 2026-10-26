@@ -47,8 +47,8 @@ $zip = Join-Path $OutDir "LibraryManager-$Version-windows-x64.zip"
 if (Test-Path $zip) { Remove-Item $zip -Force }
 
 # Contents sit at the zip root (data\, *.dll, library_manager.exe) - the folder
-# layout the README's "unzip anywhere and run" instruction describes, and the
-# layout every previously published bundle used.
+# layout the README's "extract it whole to any folder and run library_manager.exe"
+# instruction describes, and the layout every previously published bundle used.
 Compress-Archive -Path (Join-Path $ReleaseDir '*') -DestinationPath $zip -CompressionLevel Optimal
 
 $hash = (Get-FileHash -Path $zip -Algorithm SHA256).Hash

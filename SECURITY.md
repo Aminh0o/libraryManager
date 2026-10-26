@@ -65,7 +65,7 @@ the assumptions below.
 
 - A well-resourced nation-state on the LAN segment.
 - Physical access to the host machine's disk (SQLite is at rest in cleartext
-  in `%LOCALAPPDATA%` — use BitLocker or an equivalent volume encryption).
+  in the user's *Documents* folder — use BitLocker or an equivalent volume encryption).
 - Malware already running in the user's Windows session (that is a whole-OS
   trust problem, not an application problem).
 
@@ -119,8 +119,9 @@ the assumptions below.
 
 ### Data at rest
 
-- SQLite file lives under `%LOCALAPPDATA%\library_manager\library.db`. Not
-  encrypted at application level. **For public-facing or shared machines
+- SQLite file lives at `\<user\>\Documents\library_manager.db`, with automatic
+  snapshots in `Documents\library_backups\`. Not encrypted at application
+  level. **For public-facing or shared machines
   enable BitLocker (or equivalent) on the volume.**
 - The credential file storing PBKDF2 hashes is written with
   `FileMode.writeOnly`, so any pre-existing version is destroyed. It is
@@ -139,7 +140,8 @@ the assumptions below.
 
 ### Logging
 
-- `AppLogger` writes a rolling log under `%LOCALAPPDATA%\library_manager\logs`.
+- `AppLogger` writes a rolling log to `\<user\>\Documents\logs\library_manager.log`
+  (rotated siblings get a `.1`, `.2` … suffix).
 - A hard rule enforced in review: **no secret, token, salt or PII is ever
   logged**. Any code path tempted to log one of these must be redacted at
   the sink, not at the caller, so future code cannot accidentally bypass it.
