@@ -46,7 +46,7 @@ dependencies:
   # lib/services/circulation_documents.dart (already present transitively via
   # pdf; declared explicitly because we import package:barcode directly).
   barcode: ^2.2.9
-  printing: ^5.11.1
+  printing: ^5.14.3
   csv: ^6.0.0
   google_fonts: ^6.1.0
   shelf: ^1.4.1
